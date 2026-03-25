@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
@@ -6,6 +7,7 @@ public class PlayerMovement : MonoBehaviour
 
     private Rigidbody2D rb;
     private Vector2 movement;
+    
 
     void Start()
     {
@@ -27,4 +29,7 @@ public class PlayerMovement : MonoBehaviour
         // 2. 물리 엔진을 이용한 실제 이동 처리
         rb.MovePosition(rb.position + movement * moveSpeed * Time.fixedDeltaTime);
     }
+
+    // image_3.png의 코루틴 함수 부분을 아래와 같이 수정
+    
 }
