@@ -1,118 +1,235 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using System.Collections.Generic;
+using UnityEngine.Pool;
+using System.Linq;
+
+[System.Serializable]
+public class BiomeSetting
+{
+    public string name;
+    public int priority; 
+    public TileBase[] tiles; // 0~15번 비트마스크 타일 배열
+    public GameObject[] prefabs;
+    [Range(0, 1)] public float weight;
+    [Range(0, 1)] public float spawnChance;
+    public float minSpacing = 1.5f;
+    [HideInInspector] public float threshold;
+}
 
 public class MapGenerator : MonoBehaviour
 {
-    [Header("연결 설정")]
+    [Header("참조 설정")]
     public Tilemap tilemap;
-    
-    // 각 지형별로 여러 개의 타일을 등록할 수 있도록 배열로 선언
-    public TileBase[] waterTiles;  // 물 타일들
-    public TileBase[] sandTiles;   // 모래 타일들
-    public TileBase[] grassTiles;  // 풀 타일들
-    public TileBase[] rockTiles;   // 바위 타일들
+    public Transform player;
 
     [Header("지형 설정")]
     public int chunkSize = 16;
-    public int viewDistance = 2;
-    public float scale = 40f; 
-    public string seed = "MyWorld";
+    public float noiseScale = 0.05f;
+    public List<BiomeSetting> biomes = new List<BiomeSetting>();
 
-    [Header("덩어리 조절")]
-    [Range(1f, 50f)]
-    public float warpStrength = 20f; // 이 값을 높일수록 경계가 더 흐물흐물하고 둥글게 변함 [cite: 2026-03-04]
+    [Header("렌더링 설정")]
+    public int renderDistance = 3;
+    
+    private Dictionary<Vector2Int, TerrainChunk> chunks = new Dictionary<Vector2Int, TerrainChunk>();
+    private IObjectPool<GameObject> objectPool;
 
-    private Dictionary<Vector2Int, bool> spawnedChunks = new Dictionary<Vector2Int, bool>();
-    private Transform player;
-    private float seedOffset;
-
-    void Start()
+    void Awake()
     {
-        GameObject playerObj = GameObject.FindWithTag("Player");
-        if (playerObj != null) player = playerObj.transform;
-        
-        seedOffset = (float)(seed.GetHashCode() % 10000);
-        UpdateChunks();
+        objectPool = new ObjectPool<GameObject>(
+            createFunc: () => new GameObject("PooledObject"),
+            actionOnGet: (obj) => obj.SetActive(true),
+            actionOnRelease: (obj) => {
+                foreach (Transform child in obj.transform) Destroy(child.gameObject);
+                obj.SetActive(false);
+            },
+            collectionCheck: false,
+            defaultCapacity: 100,
+            maxSize: 1000
+        );
+
+        CalculateThresholds();
     }
 
-    void Update()
+    void Update() => UpdateVisibleChunks();
+
+    void CalculateThresholds()
     {
-        if (player != null) UpdateChunks();
+        float total = biomes.Sum(b => b.weight);
+        float current = 0;
+        for (int i = 0; i < biomes.Count; i++)
+        {
+            current += biomes[i].weight / total;
+            biomes[i].threshold = current;
+        }
     }
 
-    void UpdateChunks()
+    void UpdateVisibleChunks()
     {
-        Vector2Int currentChunkCoord = new Vector2Int(
+        Vector2Int playerCoord = new Vector2Int(
             Mathf.FloorToInt(player.position.x / chunkSize),
             Mathf.FloorToInt(player.position.y / chunkSize)
         );
 
-        for (int x = -viewDistance; x <= viewDistance; x++)
+        for (int x = -renderDistance; x <= renderDistance; x++)
         {
-            for (int y = -viewDistance; y <= viewDistance; y++)
+            for (int y = -renderDistance; y <= renderDistance; y++)
             {
-                Vector2Int targetCoord = currentChunkCoord + new Vector2Int(x, y);
-                if (!spawnedChunks.ContainsKey(targetCoord))
+                Vector2Int coord = playerCoord + new Vector2Int(x, y);
+                if (!chunks.ContainsKey(coord))
                 {
-                    GenerateChunk(targetCoord);
+                    chunks[coord] = new TerrainChunk(coord, this);
                 }
+                chunks[coord].UpdateChunk(player.position, renderDistance * chunkSize);
             }
         }
     }
 
-    void GenerateChunk(Vector2Int coord)
+    // 1. 노이즈를 기반으로 바이옴의 '인덱스'만 반환 (데이터 생성용)
+    public int GetBiomeIndexAt(int x, int y)
     {
-        for (int x = 0; x < chunkSize; x++)
+        float noiseValue = Mathf.PerlinNoise(x * noiseScale, y * noiseScale);
+        for (int i = 0; i < biomes.Count; i++)
         {
-            for (int y = 0; y < chunkSize; y++)
-            {
-                int worldX = coord.x * chunkSize + x;
-                int worldY = coord.y * chunkSize + y;
-
-                // 1. 좌표 왜곡 (Warping) - 둥근 느낌을 위해 nX, nY를 섞음
-                float nX = Mathf.PerlinNoise((worldX + seedOffset) / scale, (worldY + seedOffset) / scale);
-                float nY = Mathf.PerlinNoise((worldX + seedOffset + 5231f) / scale, (worldY + seedOffset + 5231f) / scale);
-
-                float warpedX = worldX + (nX - 0.5f) * warpStrength;
-                float warpedY = worldY + (nY - 0.5f) * warpStrength;
-
-                // 2. 덩어리 결정을 위한 값 (둥근 경계를 위해 왜곡된 좌표 사용)
-                int cellX = Mathf.FloorToInt(warpedX / (scale * 0.8f));
-                int cellY = Mathf.FloorToInt(warpedY / (scale * 0.8f));
-                float biomeValue = GetSymmetricRandom(cellX, cellY, 0); // 덩어리 종류 결정용
-
-                // 3. 해당 칸 내에서 타일을 랜덤하게 고르기 위한 값 (개별 타일 변화용)
-                float tileVariationValue = GetSymmetricRandom(worldX, worldY, 1);
-
-                TileBase selectedTile = null;
-
-                // 덩어리 값에 따라 배열 중 하나를 랜덤하게 선택
-                if (biomeValue < 0.3f)      selectedTile = PickRandomTile(waterTiles, tileVariationValue);
-                else if (biomeValue < 0.45f) selectedTile = PickRandomTile(sandTiles, tileVariationValue);
-                else if (biomeValue < 0.85f) selectedTile = PickRandomTile(grassTiles, tileVariationValue);
-                else                        selectedTile = PickRandomTile(rockTiles, tileVariationValue);
-
-                tilemap.SetTile(new Vector3Int(worldX, worldY, 0), selectedTile);
-            }
+            if (noiseValue <= biomes[i].threshold) return i;
         }
-        spawnedChunks.Add(coord, true);
+        return biomes.Count - 1;
     }
 
-    // 배열 내에서 랜덤하게 타일을 하나 골라주는 헬퍼 함수
-    TileBase PickRandomTile(TileBase[] tileArray, float variation)
+    // 2. [핵심] 데이터 테이블을 참조하여 듀얼 그리드 타일을 실제로 그림
+    public void RenderDualTileFromTable(TerrainChunk chunk, int localX, int localY)
     {
-        if (tileArray == null || tileArray.Length == 0) return null;
-        int index = Mathf.FloorToInt(variation * tileArray.Length);
-        return tileArray[Mathf.Clamp(index, 0, tileArray.Length - 1)];
+        // 테이블에서 4개 인접 지점의 바이옴 인덱스 참조
+        int blIdx = chunk.terrainData[localX, localY];
+        int brIdx = chunk.terrainData[localX + 1, localY];
+        int tlIdx = chunk.terrainData[localX, localY + 1];
+        int trIdx = chunk.terrainData[localX + 1, localY + 1];
+
+        BiomeSetting bl = biomes[blIdx];
+        BiomeSetting br = biomes[brIdx];
+        BiomeSetting tl = biomes[tlIdx];
+        BiomeSetting tr = biomes[trIdx];
+
+        // 우선순위가 가장 높은 바이옴 찾기
+        int maxP = Mathf.Max(bl.priority, br.priority, tl.priority, tr.priority);
+        BiomeSetting dominant = (tl.priority == maxP) ? tl : 
+                                (tr.priority == maxP) ? tr : 
+                                (bl.priority == maxP) ? bl : br;
+
+        // 비트마스크 계산 (8:TL, 4:TR, 2:BL, 1:BR)
+        int mask = 0;
+        if (tl.priority == maxP) mask += 8;
+        if (tr.priority == maxP) mask += 4;
+        if (bl.priority == maxP) mask += 2;
+        if (br.priority == maxP) mask += 1;
+
+        int worldX = chunk.coord.x * chunkSize + localX;
+        int worldY = chunk.coord.y * chunkSize + localY;
+
+        if (dominant.tiles != null && mask < dominant.tiles.Length)
+        {
+            tilemap.SetTile(new Vector3Int(worldX, worldY, 0), dominant.tiles[mask]);
+        }
     }
 
-    // 좌표 기반 해시 함수 (seedOffset 등을 섞어 매번 다른 결과 반환)
+    public void TrySpawnObject(TerrainChunk chunk, int x, int y, BiomeSetting setting, List<Vector2Int> occupied)
+    {
+        if (setting.prefabs == null || setting.prefabs.Length == 0) return;
+        if (GetSymmetricRandom(x, y, 2) > setting.spawnChance) return;
+
+        Vector2Int pos = new Vector2Int(x, y);
+        if (occupied.Any(o => Vector2Int.Distance(o, pos) < setting.minSpacing)) return;
+
+        GameObject obj = objectPool.Get();
+        int pIdx = Mathf.FloorToInt(GetSymmetricRandom(x, y, 3) * setting.prefabs.Length) % setting.prefabs.Length;
+        Instantiate(setting.prefabs[pIdx], obj.transform);
+
+        obj.transform.position = new Vector3(x + 0.5f, y + 0.5f, 0);
+        obj.transform.SetParent(chunk.objectParent);
+        chunk.AddObject(obj);
+        occupied.Add(pos);
+    }
+
+    public void ReleaseObject(GameObject obj) => objectPool.Release(obj);
+
     float GetSymmetricRandom(int x, int y, int offset)
     {
         int n = x + y * 57 + offset * 131;
         n = (n << 13) ^ n;
-        int result = (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff;
-        return (float)result / 2147483647f;
+        return ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 2147483647f;
+    }
+}
+
+public class TerrainChunk
+{
+    public Vector2Int coord;
+    public int[,] terrainData; // 데이터 테이블
+    public Transform objectParent;
+    private List<GameObject> objects = new List<GameObject>();
+    private MapGenerator gen;
+    private bool isActive = false;
+
+    public TerrainChunk(Vector2Int coord, MapGenerator gen)
+    {
+        this.coord = coord;
+        this.gen = gen;
+        
+        GameObject go = new GameObject($"Chunk_{coord.x}_{coord.y}");
+        objectParent = go.transform;
+        objectParent.SetParent(gen.transform);
+        
+        GenerateContent();
+    }
+
+    void GenerateContent()
+    {
+        // 1. 데이터 테이블 생성 (인접 청크 경계를 위해 +1 크게 생성)
+        terrainData = new int[gen.chunkSize + 1, gen.chunkSize + 1];
+        for (int x = 0; x <= gen.chunkSize; x++)
+        {
+            for (int y = 0; y <= gen.chunkSize; y++)
+            {
+                int worldX = coord.x * gen.chunkSize + x;
+                int worldY = coord.y * gen.chunkSize + y;
+                terrainData[x, y] = gen.GetBiomeIndexAt(worldX, worldY);
+            }
+        }
+
+        // 2. 렌더링 및 오브젝트 배치
+        List<Vector2Int> occupied = new List<Vector2Int>();
+        for (int x = 0; x < gen.chunkSize; x++)
+        {
+            for (int y = 0; y < gen.chunkSize; y++)
+            {
+                // 지형 렌더링 (테이블 기반)
+                gen.RenderDualTileFromTable(this, x, y);
+
+                // 오브젝트 스폰 (중심점 바이옴 기반)
+                int worldX = coord.x * gen.chunkSize + x;
+                int worldY = coord.y * gen.chunkSize + y;
+                gen.TrySpawnObject(this, worldX, worldY, gen.biomes[terrainData[x,y]], occupied);
+            }
+        }
+    }
+
+    public void AddObject(GameObject obj) => objects.Add(obj);
+
+    public void UpdateChunk(Vector3 playerPos, float maxD)
+    {
+        float dist = Vector2.Distance(new Vector2(playerPos.x, playerPos.y), 
+                     new Vector2(objectParent.position.x + gen.chunkSize/2f, objectParent.position.y + gen.chunkSize/2f));
+        bool shouldBeActive = dist <= maxD;
+
+        if (shouldBeActive && !isActive)
+        {
+            objectParent.gameObject.SetActive(true);
+            isActive = true;
+        }
+        else if (!shouldBeActive && isActive)
+        {
+            objectParent.gameObject.SetActive(false);
+            isActive = false;
+        }
     }
 }
