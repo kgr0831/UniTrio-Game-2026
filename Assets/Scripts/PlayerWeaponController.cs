@@ -242,13 +242,26 @@ public class PlayerWeaponController : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
+    /// <summary>
+    /// 무기 매니저에 의해 오브젝트가 꺼지게 될 때(강제 무기 스왑 등)
+    /// 무기가 굳어버리는 것을 방지하기 위해 내부 로직을 깔끔하게 리셋합니다.
+    /// </summary>
+    private void OnDisable()
     {
-        // Monster 태그 판정 (트리거)
-        if (other.CompareTag("Monster"))
+        _isAttacking = false;
+        _attackQueued = false;
+        _comboStep = 1;
+        _hitboxFired = false;
+        
+        if (_hitboxCollider != null)
         {
-            // Monster 측의 맞는 판정 로직을 향후 이 부분에 호출
-            Debug.Log("[PlayerWeapon] 몬스터 피격 판정 발생!");
+            _hitboxCollider.enabled = false;
+        }
+
+        // 칼 애니메이터도 디폴트 상태(대기)로 리셋
+        if (_swordAnimator != null)
+        {
+            _swordAnimator.Play("Idle", 0, 0f);
         }
     }
 }
