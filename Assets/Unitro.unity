@@ -5138,6 +5138,7 @@ GameObject:
   - component: {fileID: 250688860}
   - component: {fileID: 250688859}
   - component: {fileID: 250688863}
+  - component: {fileID: 250688864}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -5295,6 +5296,18 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
+--- !u!114 &250688864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 250688858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba41db1747ba80a408e6704ae40d730c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
 --- !u!1 &307038410
 GameObject:
   m_ObjectHideFlags: 0
@@ -10906,6 +10919,7 @@ GameObject:
   - component: {fileID: 1280341653}
   - component: {fileID: 1280341655}
   - component: {fileID: 1280341656}
+  - component: {fileID: 1280341657}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -11009,14 +11023,14 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1280341652}
-  m_BodyType: 1
+  m_BodyType: 0
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -11027,7 +11041,53 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
+--- !u!61 &1280341657
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1280341652}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 0.32, y: 0.32}
+    newSize: {x: 0.32, y: 0.32}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 0.32, y: 0.32}
+  m_EdgeRadius: 0
 --- !u!1 &1291502346
 GameObject:
   m_ObjectHideFlags: 0
@@ -11149,8 +11209,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1291502346}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.06534216, y: 0.010142041, z: -0.001071005, w: 0.99781084}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -20}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -11921,11 +11981,14 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 3a304fb5a48000f4d8d7d8c8cbbe8d94, type: 2}
     - {fileID: 11400000, guid: 4c7ba272e018f19458b73b9877775dc0, type: 2}
     - {fileID: 11400000, guid: a1b75a1c643f9934089af2d7448c6956, type: 2}
-    prefabs: []
-    weight: 0.5
-    spawnChance: 0
-    minSpacing: 0
+    prefabs:
+    - {fileID: 4351201107849012885, guid: f11fad816431e5c4e85929dd4e585fe3, type: 3}
+    - {fileID: 4351201107849012885, guid: f26945a3e06f71d40aeeb0a1c0d2b632, type: 3}
+    weight: 0.017
+    spawnChance: 0.006
+    minSpacing: 5
     threshold: 0
+    tileSize: {x: 10, y: 10}
   - name: 
     priority: 3
     tiles:
@@ -11950,6 +12013,7 @@ MonoBehaviour:
     spawnChance: 0
     minSpacing: 0
     threshold: 0
+    tileSize: {x: 1, y: 1}
   renderDistance: 3
 --- !u!483693784 &2051489258
 TilemapRenderer:

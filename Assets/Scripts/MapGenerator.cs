@@ -16,6 +16,7 @@ public class BiomeSetting
     [Range(0, 1)] public float spawnChance;
     public float minSpacing = 1.5f;
     [HideInInspector] public float threshold;
+    public Vector2Int tileSize = new Vector2Int(2, 2); // 추가: 이 바이옴의 오브젝트가 차지할 타일 수 (1x1, 2x2 등)
 }
 
 public class MapGenerator : MonoBehaviour
@@ -65,6 +66,7 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
+    // UpdateVisibleChunks 내부 로직 보강
     void UpdateVisibleChunks()
     {
         Vector2Int playerCoord = new Vector2Int(
@@ -72,6 +74,7 @@ public class MapGenerator : MonoBehaviour
             Mathf.FloorToInt(player.position.y / chunkSize)
         );
 
+        // renderDistance를 2 이상으로 설정하면 캐릭터 주변 5x5 혹은 그 이상의 청크가 활성화됩니다.
         for (int x = -renderDistance; x <= renderDistance; x++)
         {
             for (int y = -renderDistance; y <= renderDistance; y++)
@@ -81,7 +84,19 @@ public class MapGenerator : MonoBehaviour
                 {
                     chunks[coord] = new TerrainChunk(coord, this);
                 }
+            
+                // 단순히 거리로 끄는게 아니라, renderDistance 내에 있으면 무조건 활성화
                 chunks[coord].UpdateChunk(player.position, renderDistance * chunkSize);
+            }
+        }
+
+        // [추가] 범위를 벗어난 청크 비활성화 로직 (선택 사항)
+        foreach (var chunk in chunks)
+        {
+            float dist = Vector2.Distance(playerCoord, chunk.Key);
+            if (dist > renderDistance + 1) // 한 칸 정도 더 여유를 두고 비활성화
+            {
+                chunk.Value.UpdateChunk(player.position, renderDistance * chunkSize);
             }
         }
     }
@@ -133,22 +148,64 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
-    public void TrySpawnObject(TerrainChunk chunk, int x, int y, BiomeSetting setting, List<Vector2Int> occupied)
+    // 기존 이중 루프 방식이 아닌, 청크당 스폰 시도 횟수를 기반으로 호출하도록 변경 권장
+    public void TrySpawnObject(TerrainChunk chunk, BiomeSetting setting)
     {
         if (setting.prefabs == null || setting.prefabs.Length == 0) return;
-        if (GetSymmetricRandom(x, y, 2) > setting.spawnChance) return;
 
-        Vector2Int pos = new Vector2Int(x, y);
-        if (occupied.Any(o => Vector2Int.Distance(o, pos) < setting.minSpacing)) return;
+        // 1. 청크 면적에 비례하여 스폰 시도 횟수 설정 (spawnChance를 밀도로 사용)
+        int spawnAttempts = Mathf.FloorToInt(chunkSize * chunkSize * setting.spawnChance);
 
-        GameObject obj = objectPool.Get();
-        int pIdx = Mathf.FloorToInt(GetSymmetricRandom(x, y, 3) * setting.prefabs.Length) % setting.prefabs.Length;
-        Instantiate(setting.prefabs[pIdx], obj.transform);
+        for (int i = 0; i < spawnAttempts; i++)
+        {
+            // 2. 정수(int)가 아닌 실수(float) 기반의 자유 좌표 생성
+            // i를 offset으로 활용해 고유한 랜덤값 추출
+            float localX = GetSymmetricRandom(chunk.coord.x, i, 100) * chunkSize;
+            float localY = GetSymmetricRandom(chunk.coord.y, i, 200) * chunkSize;
 
-        obj.transform.position = new Vector3(x + 0.5f, y + 0.5f, 0);
-        obj.transform.SetParent(chunk.objectParent);
-        chunk.AddObject(obj);
-        occupied.Add(pos);
+            Vector3 spawnPos = new Vector3(
+                chunk.coord.x * chunkSize + localX,
+                chunk.coord.y * chunkSize + localY,
+                0
+            );
+
+            // 3. 물리 엔진을 이용한 겹침 체크 (CircleCast 또는 OverlapCircle)
+            // 설정된 minSpacing과 오브젝트의 tileSize 중 큰 값을 기준으로 반경 설정
+            float checkRadius = setting.minSpacing + (Mathf.Max(setting.tileSize.x, setting.tileSize.y) * 0.4f);
+            
+            // 해당 위치에 이미 배치된 오브젝트(Collider2D)가 있는지 확인
+            Collider2D hit = Physics2D.OverlapCircle(spawnPos, checkRadius);
+
+            if (hit == null)
+            {
+                // 4. 오브젝트 풀에서 컨테이너 가져오기 및 위치 설정
+                GameObject container = objectPool.Get();
+                container.transform.position = spawnPos;
+
+                // 5. 비주얼 프리팹 생성 및 스케일 조절 (기존 로직 유지)
+                int pIdx = Mathf.FloorToInt(GetSymmetricRandom((int)spawnPos.x, (int)spawnPos.y, 3) * setting.prefabs.Length) % setting.prefabs.Length;
+                GameObject visual = Instantiate(setting.prefabs[pIdx], container.transform);
+
+                SpriteRenderer sr = visual.GetComponentInChildren<SpriteRenderer>();
+                if (sr != null && sr.sprite != null)
+                {
+                    Vector2 spriteSize = sr.sprite.bounds.size;
+                    float scaleX = setting.tileSize.x / spriteSize.x;
+                    float scaleY = setting.tileSize.y / spriteSize.y;
+                    
+                    // 비율 유지를 원한다면 Mathf.Min(scaleX, scaleY)를 사용하세요.
+                    visual.transform.localScale = new Vector3(scaleX, scaleY, 1);
+                    
+                    // 자유 배치이므로 로컬 위치는 중앙(0,0,0)으로 초기화
+                    visual.transform.localPosition = Vector3.zero;
+                }
+
+                container.transform.SetParent(chunk.objectParent);
+                chunk.AddObject(container);
+                
+                // 주의: 생성된 프리팹에 Collider2D가 있어야 다음 루프에서 hit으로 감지됩니다.
+            }
+        }
     }
 
     public void ReleaseObject(GameObject obj) => objectPool.Release(obj);
@@ -174,11 +231,13 @@ public class TerrainChunk
     {
         this.coord = coord;
         this.gen = gen;
-        
+    
         GameObject go = new GameObject($"Chunk_{coord.x}_{coord.y}");
         objectParent = go.transform;
+        // [수정] 청크의 실제 월드 위치를 설정합니다.
+        objectParent.position = new Vector3(coord.x * gen.chunkSize, coord.y * gen.chunkSize, 0);
         objectParent.SetParent(gen.transform);
-        
+    
         GenerateContent();
     }
 
@@ -196,20 +255,20 @@ public class TerrainChunk
             }
         }
 
-        // 2. 렌더링 및 오브젝트 배치
-        List<Vector2Int> occupied = new List<Vector2Int>();
+        // 2. 지형 렌더링
         for (int x = 0; x < gen.chunkSize; x++)
         {
             for (int y = 0; y < gen.chunkSize; y++)
             {
-                // 지형 렌더링 (테이블 기반)
                 gen.RenderDualTileFromTable(this, x, y);
-
-                // 오브젝트 스폰 (중심점 바이옴 기반)
-                int worldX = coord.x * gen.chunkSize + x;
-                int worldY = coord.y * gen.chunkSize + y;
-                gen.TrySpawnObject(this, worldX, worldY, gen.biomes[terrainData[x,y]], occupied);
             }
+        }
+
+        // 3. 오브젝트 배치 (수정된 부분)
+        // 각 바이옴 설정별로 청크 전체에 대해 스폰을 시도하도록 호출합니다.
+        foreach (var biome in gen.biomes)
+        {
+            gen.TrySpawnObject(this, biome);
         }
     }
 
@@ -217,19 +276,21 @@ public class TerrainChunk
 
     public void UpdateChunk(Vector3 playerPos, float maxD)
     {
-        float dist = Vector2.Distance(new Vector2(playerPos.x, playerPos.y), 
-                     new Vector2(objectParent.position.x + gen.chunkSize/2f, objectParent.position.y + gen.chunkSize/2f));
+        // 청크 중심점 계산: (현재 위치 + 청크 절반 크기)
+        Vector2 chunkCenter = new Vector2(
+            objectParent.position.x + gen.chunkSize / 2f, 
+            objectParent.position.y + gen.chunkSize / 2f
+        );
+    
+        float dist = Vector2.Distance(new Vector2(playerPos.x, playerPos.y), chunkCenter);
+    
+        // 렌더링 거리(maxD) 안에 있는지 확인
         bool shouldBeActive = dist <= maxD;
 
-        if (shouldBeActive && !isActive)
+        if (shouldBeActive != isActive)
         {
-            objectParent.gameObject.SetActive(true);
-            isActive = true;
-        }
-        else if (!shouldBeActive && isActive)
-        {
-            objectParent.gameObject.SetActive(false);
-            isActive = false;
+            objectParent.gameObject.SetActive(shouldBeActive);
+            isActive = shouldBeActive;
         }
     }
 }
