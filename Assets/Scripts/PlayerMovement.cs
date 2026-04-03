@@ -4,6 +4,11 @@ public class PlayerMovement : MonoBehaviour
 {
     public float moveSpeed = 5f;
 
+    /// <summary>
+    /// 외부(활 차징 등)에서 임시로 이동속도를 조절합니다. 정상 = 1.0f
+    /// </summary>
+    [HideInInspector] public float SpeedMultiplier = 1f;
+
     private Rigidbody2D rb;
     private Vector2     movement;
 
@@ -21,6 +26,6 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
-        rb.MovePosition(rb.position + movement * moveSpeed * Time.fixedDeltaTime);
+        rb.MovePosition(rb.position + movement * moveSpeed * SpeedMultiplier * Time.fixedDeltaTime);
     }
-}
+}
