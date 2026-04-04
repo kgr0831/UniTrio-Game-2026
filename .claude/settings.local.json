@@ -16,7 +16,10 @@
       "mcp__UnityMCP__refresh_unity",
       "mcp__UnityMCP__manage_editor",
       "mcp__UnityMCP__manage_asset",
-      "mcp__UnityMCP__validate_script"
+      "mcp__UnityMCP__validate_script",
+      "mcp__UnityMCP__manage_script",
+      "mcp__UnityMCP__manage_material",
+      "mcp__UnityMCP__manage_prefabs"
     ]
   }
 }

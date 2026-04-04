@@ -17,13 +17,15 @@ public class PlayerWeaponController : MonoBehaviour
     [Tooltip("슬롯 수 만큼 크기를 맞추고 각 무기의 루트 GameObject를 할당하세요.")]
     [SerializeField] private GameObject[] _weaponObjects = new GameObject[2];
 
+    [Header("Hand Position (손 위치 보정)")]
+    [Tooltip("좌/우/하단을 향할 때 피봇을 아래로 내리는 양. 위를 향할 때는 0, 나머지 방향에서 이 값만큼 내려갑니다.")]
+    [SerializeField] private float _handYOffset = 0.15f;
+
     private static readonly int _hashDirX = Animator.StringToHash("DirX");
     private static readonly int _hashDirY = Animator.StringToHash("DirY");
 
     private Camera _mainCamera;
     private float  _camToWorldZ;
-    private Vector3 _pivotRestLocalPos;
-
     // ── 콤보 엔진 ─────────────────────────────────────────
     // _comboStep : 다음 번에 실행될 공격의 타수(step).
     // BeginAttack 호출 후 즉시 증가하므로, UpdateCursorDirection이
@@ -42,9 +44,8 @@ public class PlayerWeaponController : MonoBehaviour
 
     private void Awake()
     {
-        _mainCamera      = Camera.main;
-        _camToWorldZ     = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
-        _pivotRestLocalPos = _weaponPivot.localPosition;
+        _mainCamera  = Camera.main;
+        _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
 
         // 시작 시 1번 슬롯(검) 자동 장착
         EquipWeapon(0);
@@ -53,9 +54,9 @@ public class PlayerWeaponController : MonoBehaviour
     private void Update()
     {
         HandleWeaponSwitch();
-        UpdateCursorDirection();
+        CheckAttackFinished();    // UpdateCursorDirection 전에 실행해야 공격 종료 프레임에서
+        UpdateCursorDirection();  // 즉시 피봇 회전이 갱신되어 이상한 각도가 1프레임도 보이지 않음
         HandleAttackInput();
-        CheckAttackFinished();
     }
 
     // ── 무기 교체 ─────────────────────────────────────────
@@ -158,11 +159,16 @@ public class PlayerWeaponController : MonoBehaviour
                 goBehind = (dy > 0f);
         }
 
-        // 모든 무기는 에디터에서 배치한 피봇 위치를 그대로 유지하고 Z축 회전만 합니다.
-        Vector3 pivotPos = _pivotRestLocalPos;
-        pivotPos.z = _pivotRestLocalPos.z + (goBehind ? 1f : -1f);
-        pivotPos.y = _pivotRestLocalPos.y + (goBehind ? 0.001f : -0.001f);
-        _weaponPivot.localPosition = pivotPos;
+        // 피봇은 항상 플레이어 중심(0,0)에 고정. 공전 반경은 각 무기 오브젝트의
+        // localPosition.x 값(에디터에서 orbitRadius만큼 +X로 배치)으로 결정됨.
+        // 피봇이 커서 방향으로 회전하면 무기가 그 거리만큼 떨어진 채 공전.
+        float zDepth = goBehind ? 1f : -1f;
+        float depthNudge = goBehind ? 0.001f : -0.001f;
+
+        // 손 위치 보정: 위를 향할 때(dy=1)는 오프셋 0, 좌/우/하단(dy≤0)은 _handYOffset만큼 내림.
+        // Clamp01으로 dy<0 구간을 모두 0으로 처리해 아래 방향도 동일하게 적용.
+        float handY = Mathf.Lerp(-_handYOffset, 0f, Mathf.Clamp01(dy));
+        _weaponPivot.localPosition = new Vector3(0f, handY + depthNudge, zDepth);
     }
 
     // ── 공격 입력 처리 ────────────────────────────────────

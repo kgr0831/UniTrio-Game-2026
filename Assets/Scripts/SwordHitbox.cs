@@ -6,10 +6,6 @@ using UnityEngine;
 /// </summary>
 public class SwordHitbox : MonoBehaviour
 {
-    [Header("Hit Stop (역경직)")]
-    [SerializeField] private float _hitStopDuration = 0.08f; // 히트 스톱 유지 시간 (초)
-    private static bool _isHitStopping = false; // 동시다발적 트리거 시 중단 보호용
-
     [Header("Hit VFX (타격 이펙트)")]
     [SerializeField] private GameObject[] _hitVfxPrefabs; // 인스펙터에서 여러 개의 프리팹을 등록
     [SerializeField] private float _vfxOffsetTowardsEnemy = 0.3f; // 충돌점으로부터 적 중심쪽으로 파고드는 깊이
@@ -31,12 +27,6 @@ public class SwordHitbox : MonoBehaviour
 
                 SpawnHitVFX(other);
                 SpawnDamageText(other, damageDealt);
-
-                // 통쾌한 타격감을 위한 히트 스톱 발생!
-                if (!_isHitStopping)
-                {
-                    StartCoroutine(HitStopRoutine());
-                }
             }
         }
     }
@@ -100,19 +90,4 @@ public class SwordHitbox : MonoBehaviour
         }
     }
 
-    private System.Collections.IEnumerator HitStopRoutine()
-    {
-        _isHitStopping = true;
-        
-        // 치는 순간 시간을 아주 잠깐 완전히 멈춥니다! 
-        // 0.05 정도로 주어 극적인 슬로우 모션을 연출할 수도 있지만 역경직은 0이 가장 찰집니다.
-        Time.timeScale = 0f; 
-
-        // Time.timeScale에 영향을 받지 않는 실제 현실(Real) 시간을 기준으로 대기!
-        yield return new WaitForSecondsRealtime(_hitStopDuration);
-
-        // 시간 원상복구
-        Time.timeScale = 1f;
-        _isHitStopping = false;
-    }
 }

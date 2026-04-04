@@ -50,9 +50,21 @@ public class BowBehaviour : WeaponBehaviourBase
     [Tooltip("활이 위/왼쪽을 향할 때 플레이어 뒤로 숨길지 여부입니다. 공전 시에는 보통 꺼두는 게 자연스럽습니다.")]
     [SerializeField] private bool  _useGoBehind  = false;
 
+    [Header("글로우 설정 (Brackeys Glow)")]
+    [Tooltip("발사 시점까지 차오를 최대 글로우 강도입니다.")]
+    [SerializeField] private float _maxGlowIntensity = 5f;
+    [Tooltip("최대 차징 시 맥동하는 강도 범위입니다.")]
+    [SerializeField] private float _pulseAmplitude = 1.5f;
+    [Tooltip("글로우 색상 (HDR)")]
+    [ColorUsage(true, true)]
+    [SerializeField] private Color _glowColor = new Color(0.7f, 0f, 1f, 1f); // 보랏빛 기본값
+
+
     // ── WeaponBehaviourBase 오버라이드 ───────────────────────────
     public override float PivotRotationOffset      => 0f;
-    public override bool  UseYScaleFlip            => false;
+    // 왼쪽을 향할 때 피봇 Y-scale을 -1로 반전해 스프라이트를 mirror 처리.
+    // false(순수 회전)이면 180° 뒤집혀 비대칭하게 보여 좌측에서 크기가 달라 보임.
+    public override bool  UseYScaleFlip            => true;
     public override float OrbitRadius              => _orbitRadius;
     public override bool  UseGoBehind             => _useGoBehind;
     public override bool  LockRotationDuringAttack => false;
@@ -74,12 +86,21 @@ public class BowBehaviour : WeaponBehaviourBase
     private GameObject     _aimUpVfx;          // 100% 차징 시 켜지는 VFX (Player의 자식)
     private bool           _aimVfxTriggered;   // 이번 차징에서 이미 켰는지 방지용
 
+    private SpriteRenderer       _spriteRenderer;
+    private MaterialPropertyBlock _propBlock;
+    private static readonly int  _glowIntensityId = Shader.PropertyToID("_GlowIntensity");
+    private static readonly int  _glowColorId     = Shader.PropertyToID("_GlowColor");
+
+
     private void Awake()
     {
         CurrentComboStep   = 1;
         _playerMovement    = GetComponentInParent<PlayerMovement>();
         _weaponTransform   = transform;
         _weaponLocalOrigin = _weaponTransform.localPosition;
+
+        _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        _propBlock      = new MaterialPropertyBlock();
 
         // Player의 자식에서 Aim_UPVFX 오브젝트를 이름으로 찾아 참조합니다.
         Transform root = GetComponentInParent<Transform>().root;
@@ -177,8 +198,29 @@ public class BowBehaviour : WeaponBehaviourBase
             {
                 ReleaseCharge();
             }
+
+            UpdateGlowEffect();
         }
     }
+
+    private void UpdateGlowEffect()
+    {
+        if (_spriteRenderer == null) return;
+
+        float intensity = _chargeRatio * _maxGlowIntensity;
+
+        // 최대 차징 시 맥동(Pulse) 효과 추가
+        if (_chargeRatio >= 1f)
+        {
+            intensity += Mathf.PingPong(Time.time * 5f, _pulseAmplitude);
+        }
+
+        _spriteRenderer.GetPropertyBlock(_propBlock);
+        _propBlock.SetColor(_glowColorId, _glowColor);
+        _propBlock.SetFloat(_glowIntensityId, intensity);
+        _spriteRenderer.SetPropertyBlock(_propBlock);
+    }
+
 
     /// <summary>우클릭을 놓았을 때 차징 상태를 종료하고 차징 화살을 발사합니다.</summary>
     private void ReleaseCharge()
@@ -208,12 +250,21 @@ public class BowBehaviour : WeaponBehaviourBase
         _hasFired   = true;
     }
 
-    /// <summary>차징 관련 부작용(속도 둔화, 떨림, 애니메이터 속도)을 모두 초기화합니다.</summary>
+    /// <summary>차징 관련 부작용(속도 둔화, 떨림, 애니메이터 속도, 글로우)을 모두 초기화합니다.</summary>
     private void ResetChargeEffects()
     {
         if (_playerMovement != null) _playerMovement.SpeedMultiplier = 1f;
         _weaponTransform.localPosition = _weaponLocalOrigin;
+        
         if (_weaponAnimator != null) _weaponAnimator.speed = 1f;
+
+        // 글로우 초기화
+        if (_spriteRenderer != null)
+        {
+            _spriteRenderer.GetPropertyBlock(_propBlock);
+            _propBlock.SetFloat(_glowIntensityId, 0f);
+            _spriteRenderer.SetPropertyBlock(_propBlock);
+        }
     }
 
     private System.Collections.IEnumerator DisableAimVfxAfterDelay(float delay)

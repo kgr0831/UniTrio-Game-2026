@@ -42,9 +42,26 @@ public class SwordBehaviour : WeaponBehaviourBase
 
     private void LateUpdate()
     {
-        // 애니메이터의 position 커브가 검/VFX를 이동시키지 못하도록 매 프레임 고정
-        if (_weaponAnimator != null) _weaponAnimator.transform.localPosition = _weaponRestLocalPos;
-        if (_vfxAnimator    != null) _vfxAnimator.transform.localPosition    = _vfxRestLocalPos;
+        if (_weaponAnimator != null)
+        {
+            _weaponAnimator.transform.localPosition = _weaponRestLocalPos;
+            // 공격 중이 아닐 때: LateUpdate에서 매 프레임 rotation을 0으로 고정.
+            // Animator는 Play("Idle") 이후에도 LateUpdate에서 Attack의 마지막 rotation 값을
+            // 계속 적용할 수 있으므로, !IsAttacking 구간에서 강제로 눌러둡니다.
+            if (!IsAttacking) _weaponAnimator.transform.localEulerAngles = Vector3.zero;
+        }
+        if (_vfxAnimator != null)
+        {
+            _vfxAnimator.transform.localPosition = _vfxRestLocalPos;
+            if (!IsAttacking) _vfxAnimator.transform.localEulerAngles = Vector3.zero;
+        }
+    }
+
+    /// <summary>Idle 전환 직후 애니메이터가 갱신되기 전에 rotation을 리셋합니다.</summary>
+    private void ResetChildRotations()
+    {
+        if (_weaponAnimator != null) _weaponAnimator.transform.localEulerAngles = Vector3.zero;
+        if (_vfxAnimator    != null) _vfxAnimator.transform.localEulerAngles    = Vector3.zero;
     }
 
     public override void BeginAttack(int comboStep)
@@ -84,6 +101,10 @@ public class SwordBehaviour : WeaponBehaviourBase
                 _weaponAnimator.Play("Idle", 0, 0f);
                 if (_vfxAnimator != null) _vfxAnimator.Play("Idle", 0, 0f);
             }
+            // Idle 전환 직후 animation 커브 갱신 전에 rotation을 리셋.
+            // CheckAttackFinished가 UpdateCursorDirection보다 먼저 실행되므로
+            // 같은 프레임에 피봇 회전도 즉시 갱신되어 이상한 각도가 보이지 않음.
+            ResetChildRotations();
             return true;
         }
         return false;
@@ -98,6 +119,7 @@ public class SwordBehaviour : WeaponBehaviourBase
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
         if (_weaponAnimator  != null) _weaponAnimator.Play("Idle", 0, 0f);
         if (_vfxAnimator     != null) _vfxAnimator.Play("Idle", 0, 0f);
+        ResetChildRotations();
     }
 
     // 물리 사이클 2회 후 히트박스 비활성화 (1 physics frame 온전히 보장)
