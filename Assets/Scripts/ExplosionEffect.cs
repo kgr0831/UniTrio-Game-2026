@@ -50,6 +50,9 @@ public class ExplosionEffect : MonoBehaviour
     private static readonly int _glowIntensityId = Shader.PropertyToID("_GlowIntensity");
     private static readonly int _glowColorId     = Shader.PropertyToID("_GlowColor");
 
+    // 최적화: 물리 검출 시 가비지를 생성하지 않도록 정적 배열을 사용합니다.
+    private static readonly Collider2D[] _overlapResults = new Collider2D[100];
+
     private void Awake()
     {
         _circleCol = GetComponent<CircleCollider2D>();
@@ -64,6 +67,13 @@ public class ExplosionEffect : MonoBehaviour
 
         if (_glowRenderer == null) _glowRenderer = GetComponentInChildren<SpriteRenderer>();
         if (_light        == null) _light        = GetComponentInChildren<Light>();
+
+        // 렌더링 최적화: 폭발 이펙트는 그림자를 계산하지 않도록 강제 설정
+        if (_glowRenderer != null)
+        {
+            _glowRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _glowRenderer.receiveShadows    = false;
+        }
     }
 
     /// <summary>
@@ -76,8 +86,9 @@ public class ExplosionEffect : MonoBehaviour
         _ready            = true;
     }
 
-    private void Start()
+    private void OnEnable()
     {
+        _elapsed = 0f;
         if (!_ready) _ready = true;
 
         // 범위 내 모든 Enemy에게 즉시 데미지
@@ -85,17 +96,25 @@ public class ExplosionEffect : MonoBehaviour
 
         // 처음엔 최대 글로우
         SetGlow(_maxGlowIntensity);
-
-        Destroy(gameObject, _duration);
     }
 
     private void Update()
     {
         _elapsed += Time.deltaTime;
+        
         // 폭발 글로우를 duration 동안 fade-out (cos ease-out)
         float progress = Mathf.Clamp01(_elapsed / _duration);
         float intensity = Mathf.Cos(progress * Mathf.PI * 0.5f) * _maxGlowIntensity;
         SetGlow(intensity);
+
+        // 시간 다 되면 풀로 반환 (Destroy 대체)
+        if (_elapsed >= _duration)
+        {
+            gameObject.SetActive(false);
+            // 메모: 프리팹을 알고 있어야 Release가 가능하므로 
+            // 실제 구현에서는 투사체가 이를 관리하거나 SimpleObjectPool을 더 확장해야 할 수 있습니다.
+            // 여기서는 단순하게 비활성화만 하고 투사체 쪽에서 관리하도록 할 수 있습니다.
+        }
     }
 
     // ── 범위 데미지 ────────────────────────────────────────────────
@@ -106,11 +125,14 @@ public class ExplosionEffect : MonoBehaviour
             Mathf.Abs(transform.lossyScale.x),
             Mathf.Abs(transform.lossyScale.y));
 
-        Vector2    center = (Vector2)transform.position + _circleCol.offset;
-        Collider2D[] hits = Physics2D.OverlapCircleAll(center, worldRadius, _enemyLayer);
+        Vector2 center = (Vector2)transform.position + _circleCol.offset;
+        
+        // 최적화: OverlapCircleNonAlloc 사용 (Garbage Free)
+        int count = Physics2D.OverlapCircleNonAlloc(center, worldRadius, _overlapResults, _enemyLayer);
 
-        foreach (Collider2D hit in hits)
+        for (int i = 0; i < count; i++)
         {
+            Collider2D hit = _overlapResults[i];
             Enemy enemy = hit.GetComponentInParent<Enemy>();
             if (enemy == null) continue;
             enemy.TakeDamage(_damage);

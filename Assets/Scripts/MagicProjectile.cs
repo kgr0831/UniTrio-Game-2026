@@ -63,13 +63,36 @@ public class MagicProjectile : MonoBehaviour
 
         if (_glowRenderer == null) _glowRenderer = GetComponent<SpriteRenderer>();
         if (_light        == null) _light        = GetComponentInChildren<Light>();
+
+        // 렌더링 최적화: 투사체는 그림자를 계산하지 않도록 강제 설정
+        if (_glowRenderer != null)
+        {
+            _glowRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _glowRenderer.receiveShadows    = false;
+        }
     }
 
-    private void Start()
+    private void OnEnable()
     {
-        Destroy(gameObject, _lifeTime);
+        _exploded = false;
+        gameObject.SetActive(true); // 활성화 보장
+
         // 즉시 최대 글로우로 시작
         ApplyGlow(_glowIntensity);
+        
+        // 라이프타임 기반 자동 반환 예약
+        Invoke(nameof(ReturnToPool), _lifeTime);
+    }
+
+    private void OnDisable()
+    {
+        CancelInvoke(nameof(ReturnToPool));
+    }
+
+    private void ReturnToPool()
+    {
+        if (gameObject.activeSelf)
+            SimpleObjectPool.Instance.Release(gameObject);
     }
 
     private void Update()
@@ -94,9 +117,8 @@ public class MagicProjectile : MonoBehaviour
         ApplyGlow(0f); // 폭발 전 글로우 끔
         SpawnExplosion();
 
-        // 즉시 비활성화하여 1~2프레임 잔상을 방지합니다.
-        gameObject.SetActive(false);
-        Destroy(gameObject);
+        // 즉시 비활성화하여 풀로 반환
+        SimpleObjectPool.Instance.Release(gameObject);
     }
 
     // ── 폭발 VFX 스폰 ─────────────────────────────────────────────
@@ -105,7 +127,8 @@ public class MagicProjectile : MonoBehaviour
     {
         if (_explosionVfxPrefab == null) return;
 
-        GameObject vfx = Instantiate(_explosionVfxPrefab, transform.position, Quaternion.identity);
+        // 최적화: 풀링 시스템에서 폭발 효과를 가져옵니다.
+        GameObject vfx = SimpleObjectPool.Instance.Get(_explosionVfxPrefab, transform.position, Quaternion.identity);
         ExplosionEffect fx = vfx.GetComponent<ExplosionEffect>();
         if (fx != null)
             fx.SetupExplosion(_damage, _damageTextPrefab);

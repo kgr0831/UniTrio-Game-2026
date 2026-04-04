@@ -205,7 +205,8 @@ public class WandBehaviour : WeaponBehaviourBase
         Vector2 fireDir  = GetCurrentCursorDirection();
         Vector3 spawnPos = _muzzlePoint != null ? _muzzlePoint.position : transform.position;
 
-        GameObject      proj = Instantiate(_projectilePrefab, spawnPos, Quaternion.identity);
+        // 최적화: 풀링 시스템에서 투사체를 가져옵니다.
+        GameObject      proj = SimpleObjectPool.Instance.Get(_projectilePrefab, spawnPos, Quaternion.identity);
         MagicProjectile mp   = proj.GetComponent<MagicProjectile>();
         if (mp != null) mp.SetStats(_projectileSpeed, _projectileDamage, fireDir);
     }
