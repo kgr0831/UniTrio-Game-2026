@@ -21,9 +21,6 @@ public class PlayerWeaponController : MonoBehaviour
     [Tooltip("좌/우/하단을 향할 때 피봇을 아래로 내리는 양. 위를 향할 때는 0, 나머지 방향에서 이 값만큼 내려갑니다.")]
     [SerializeField] private float _handYOffset = 0.15f;
 
-    private static readonly int _hashDirX = Animator.StringToHash("DirX");
-    private static readonly int _hashDirY = Animator.StringToHash("DirY");
-
     private Camera _mainCamera;
     private float  _camToWorldZ;
     // ── 콤보 엔진 ─────────────────────────────────────────
@@ -123,8 +120,7 @@ public class PlayerWeaponController : MonoBehaviour
             dy *= inv;
         }
 
-        _playerAnimator.SetFloat(_hashDirX, dx);
-        _playerAnimator.SetFloat(_hashDirY, dy);
+        // - 캐릭터 바라보는 방향 파라미터(DirX, DirY)는 이제 PlayerMovement.cs에서 설정함 -
 
         // 공격 중에는 피봇 각도를 고정 (주로 근접 무기). 설정에 따라 활처럼 조준을 유지할 수도 있습니다.
         if (_activeBehaviour != null && _activeBehaviour.IsAttacking && _activeBehaviour.LockRotationDuringAttack) return;
@@ -178,17 +174,18 @@ public class PlayerWeaponController : MonoBehaviour
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return;
 
-        if (Input.GetMouseButtonDown(0))
+        // "GetMouseButton" (꾹 누르기)를 지원하여 연타 느낌 제공
+        if (Input.GetMouseButton(0))
         {
             _attackQueued    = true;
             _attackQueueTime = Time.time;
         }
 
-        // 버퍼 유효 시간(0.3초) 초과 시 파기
+        // 버퍼 유효 시간(0.3초) 초과 시 파기 (연사 중에는 계속 갱신됨)
         if (_attackQueued && Time.time - _attackQueueTime > 0.3f)
             _attackQueued = false;
 
-        // 공격 중이면 대기
+        // 공격 중이면 대기 (애니메이터 상태가 다시 전이 가능해질 때까지 기다림)
         if (_activeBehaviour == null || _activeBehaviour.IsAttacking) return;
 
         // 콤보 유효 시간이 지났으면 1타로 리셋
@@ -202,7 +199,7 @@ public class PlayerWeaponController : MonoBehaviour
 
             _activeBehaviour.BeginAttack(_comboStep);
 
-            // 다음 클릭을 위해 스텝 순환 (1→2→1→ … MaxComboSteps까지)
+            // 다음 클릭/연사를 위해 스텝 순환
             _comboStep = (_comboStep % _activeBehaviour.MaxComboSteps) + 1;
         }
     }

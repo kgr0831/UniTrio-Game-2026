@@ -60,8 +60,17 @@ public class SwordBehaviour : WeaponBehaviourBase
     /// <summary>Idle 전환 직후 애니메이터가 갱신되기 전에 rotation을 리셋합니다.</summary>
     private void ResetChildRotations()
     {
-        if (_weaponAnimator != null) _weaponAnimator.transform.localEulerAngles = Vector3.zero;
-        if (_vfxAnimator    != null) _vfxAnimator.transform.localEulerAngles    = Vector3.zero;
+        if (_weaponAnimator != null)
+        {
+             _weaponAnimator.transform.localEulerAngles = Vector3.zero;
+             // 애니메이터가 비활성화된 후에도 마지막 프레임이 남지 않도록 강제 업데이트
+             _weaponAnimator.Update(0f);
+        }
+        if (_vfxAnimator != null)
+        {
+             _vfxAnimator.transform.localEulerAngles = Vector3.zero;
+             _vfxAnimator.Update(0f);
+        }
     }
 
     public override void BeginAttack(int comboStep)
@@ -70,8 +79,8 @@ public class SwordBehaviour : WeaponBehaviourBase
         _hitboxFired     = false;
         CurrentComboStep = comboStep;
 
-        _weaponAnimator.Play("Attack", 0, 0f);
-        if (_vfxAnimator != null) _vfxAnimator.Play("Attack", 0, 0f);
+        _weaponAnimator.SetTrigger("Attack");
+        if (_vfxAnimator != null) _vfxAnimator.SetTrigger("Attack");
     }
 
     public override bool PollFinished(float attackStartTime)

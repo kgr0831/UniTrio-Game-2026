@@ -60,8 +60,8 @@ public class SpearBehaviour : WeaponBehaviourBase
 
         if (_vfxRenderer != null) _vfxRenderer.enabled = true;
 
-        _weaponAnimator.Play("Attack", 0, 0f);
-        if (_vfxAnimator != null) _vfxAnimator.Play("Attack", 0, 0f);
+        _weaponAnimator.SetTrigger("Attack");
+        if (_vfxAnimator != null) _vfxAnimator.SetTrigger("Attack");
     }
 
     public override bool PollFinished(float attackStartTime)
@@ -107,8 +107,16 @@ public class SpearBehaviour : WeaponBehaviourBase
 
         if (_vfxRenderer != null) _vfxRenderer.enabled = false;
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
-        if (_weaponAnimator  != null) _weaponAnimator.Play("Idle", 0, 0f);
-        if (_vfxAnimator     != null) _vfxAnimator.Play("Idle", 0, 0f);
+        if (_weaponAnimator  != null) 
+        {
+            _weaponAnimator.Play("Idle", 0, 0f);
+            _weaponAnimator.Update(0f);
+        }
+        if (_vfxAnimator != null) 
+        {
+            _vfxAnimator.Play("Idle", 0, 0f);
+            _vfxAnimator.Update(0f);
+        }
     }
 
     private IEnumerator DisableHitboxAfterThrust()

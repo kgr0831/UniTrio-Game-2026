@@ -133,10 +133,7 @@ public class WandBehaviour : WeaponBehaviourBase
 
         if (_weaponAnimator != null)
         {
-            if (_weaponAnimator.HasState(0, Animator.StringToHash("Attack")))
-                _weaponAnimator.Play("Attack", 0, 0f);
-            else
-                Debug.LogWarning("[WandBehaviour] Animator에 'Attack' 상태가 없습니다.", _weaponAnimator);
+            _weaponAnimator.SetTrigger("Attack");
         }
     }
 
@@ -192,8 +189,11 @@ public class WandBehaviour : WeaponBehaviourBase
         IsAttacking = false;
         _hasFired   = false;
         SetGlow(0f);
-        if (_weaponAnimator != null && _weaponAnimator.HasState(0, Animator.StringToHash("Idle")))
+        if (_weaponAnimator != null)
+        {
             _weaponAnimator.Play("Idle", 0, 0f);
+            _weaponAnimator.Update(0f);
+        }
     }
 
     // ── 투사체 발사 ────────────────────────────────────────────────

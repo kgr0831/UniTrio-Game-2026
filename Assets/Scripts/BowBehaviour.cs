@@ -240,7 +240,7 @@ public class BowBehaviour : WeaponBehaviourBase
         if (_weaponAnimator != null)
         {
             _weaponAnimator.speed = 1f;
-            _weaponAnimator.Play("Attack", 0, _fireDelayNormalizedTime);
+            _weaponAnimator.SetTrigger("Attack"); // 차징 해제 시에도 공격 트리거 발생
         }
 
         // 자동 종료를 위해 "NormalAttack" 상태처럼 잠시 IsAttacking 켜기
@@ -288,7 +288,7 @@ public class BowBehaviour : WeaponBehaviourBase
         if (_weaponAnimator != null)
         {
             _weaponAnimator.speed = 1f;
-            _weaponAnimator.Play("Attack", 0, 0f);
+            _weaponAnimator.SetTrigger("Attack");
         }
     }
 
@@ -316,8 +316,11 @@ public class BowBehaviour : WeaponBehaviourBase
             IsAttacking = false;
             _bowState   = BowState.Idle;
 
-            if (info.IsName("Attack"))
+            if (_weaponAnimator != null)
+            {
                 _weaponAnimator.Play("Idle", 0, 0f);
+                _weaponAnimator.Update(0f);
+            }
 
             return true;
         }
@@ -355,6 +358,9 @@ public class BowBehaviour : WeaponBehaviourBase
         ResetChargeEffects();
 
         if (_weaponAnimator != null)
+        {
             _weaponAnimator.Play("Idle", 0, 0f);
+            _weaponAnimator.Update(0f);
+        }
     }
 }
