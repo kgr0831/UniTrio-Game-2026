@@ -174,8 +174,8 @@ public class PlayerWeaponController : MonoBehaviour
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return;
 
-        // "GetMouseButton" (꾹 누르기)를 지원하여 연타 느낌 제공
-        if (Input.GetMouseButton(0))
+        // "GetMouseButtonDown" (최초 클릭)으로 변경하여 꾹 누르기 자동 연사 제거
+        if (Input.GetMouseButtonDown(0))
         {
             _attackQueued    = true;
             _attackQueueTime = Time.time;

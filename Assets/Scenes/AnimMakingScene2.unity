@@ -246,6 +246,7 @@ GameObject:
   - component: {fileID: 303385937}
   - component: {fileID: 303385936}
   - component: {fileID: 303385935}
+  - component: {fileID: 303385940}
   m_Layer: 8
   m_Name: zombie
   m_TagString: Enemy
@@ -265,8 +266,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf3cce33d4698d8438580a6ea4941df0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
-  _maxHealth: 99999
-  _flashDuration: 0.15
 --- !u!50 &303385936
 Rigidbody2D:
   serializedVersion: 5
@@ -414,6 +413,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1943030188}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &303385940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 303385934}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65aa398753a6cc84384da5487e25c7e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
+  _maxHp: 5
+  _flashDuration: 0.15
 --- !u!1 &319789253
 GameObject:
   m_ObjectHideFlags: 0
@@ -574,6 +587,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WandBehaviour
   _weaponAnimator: {fileID: 328322509}
+  _playerEntity: {fileID: 894001046}
   _projectilePrefab: {fileID: 8023693217554315298, guid: 080b98023cebbaf459a93bbb3c081acb, type: 3}
   _muzzlePoint: {fileID: 653975843205274071}
   _projectileSpeed: 12
@@ -705,6 +719,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39d5d524d6b86b24ab506652d93410b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SwordHitbox
+  _playerEntity: {fileID: 894001046}
+  _baseDamage: 5
   _hitVfxPrefabs:
   - {fileID: 1269719350042245573, guid: 88c3589b303e1224c83b59a6f8301ea3, type: 3}
   - {fileID: 4470203588049779849, guid: 23ebdc688fe69904a954ade9a759990c, type: 3}
@@ -890,6 +906,7 @@ MonoBehaviour:
   _maxSlowRatio: 0.5
   _shakeAmplitude: 0.01
   _shakeFrequency: 30
+  _playerEntity: {fileID: 894001046}
   _orbitRadius: 0.15
   _useGoBehind: 1
   _maxGlowIntensity: 5
@@ -1010,6 +1027,12 @@ GameObject:
   - component: {fileID: 894001043}
   - component: {fileID: 894001044}
   - component: {fileID: 894001045}
+  - component: {fileID: 894001049}
+  - component: {fileID: 894001048}
+  - component: {fileID: 894001047}
+  - component: {fileID: 894001046}
+  - component: {fileID: 894001051}
+  - component: {fileID: 894001050}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -1228,6 +1251,92 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.1, y: 0.3}
   m_EdgeRadius: 0
+--- !u!114 &894001046
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894001038}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73f19fa2975c3bb46807a1a5838e7322, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerEntity
+--- !u!114 &894001047
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894001038}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7aa4cb43290f40c41a8e310075bafc4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KarmaHandler
+  _maxKarma: 10
+--- !u!114 &894001048
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894001038}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28829a976b9058542b5e9e7d08b6053b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StatSystem
+  _baseAtk: 5
+  _baseDef: 0
+  _baseMoveSpeed: 5
+  _baseMana: 100
+  _manaRegen: 1
+  _currentMana: 0
+--- !u!114 &894001049
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894001038}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65aa398753a6cc84384da5487e25c7e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
+  _maxHp: 100
+  _flashDuration: 0.15
+--- !u!114 &894001050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894001038}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54f8c274b5dab30498b49a8eff8662ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStateMachine
+  _currentStateName: 
+--- !u!114 &894001051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894001038}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 223b6e4ae34291842b97b0966435d338, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DashHandler
+  _dashKey: 32
+  _dashForce: 14
+  _dashDuration: 0.18
+  _cooldown: 1
 --- !u!1 &989394696
 GameObject:
   m_ObjectHideFlags: 0
@@ -1241,6 +1350,7 @@ GameObject:
   - component: {fileID: 989394700}
   - component: {fileID: 989394699}
   - component: {fileID: 989394701}
+  - component: {fileID: 989394702}
   m_Layer: 8
   m_Name: zombie
   m_TagString: Enemy
@@ -1407,7 +1517,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf3cce33d4698d8438580a6ea4941df0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
-  _maxHealth: 99999
+--- !u!114 &989394702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 989394696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65aa398753a6cc84384da5487e25c7e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
+  _maxHp: 10
   _flashDuration: 0.15
 --- !u!1 &1521561835
 GameObject:
@@ -2002,6 +2124,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39d5d524d6b86b24ab506652d93410b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SwordHitbox
+  _playerEntity: {fileID: 0}
+  _baseDamage: 5
   _hitVfxPrefabs:
   - {fileID: 1269719350042245573, guid: 88c3589b303e1224c83b59a6f8301ea3, type: 3}
   - {fileID: 4470203588049779849, guid: 23ebdc688fe69904a954ade9a759990c, type: 3}
@@ -2581,6 +2705,7 @@ GameObject:
   - component: {fileID: 2124410088}
   - component: {fileID: 2124410087}
   - component: {fileID: 2124410086}
+  - component: {fileID: 2124410091}
   m_Layer: 8
   m_Name: zombie
   m_TagString: Enemy
@@ -2600,8 +2725,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf3cce33d4698d8438580a6ea4941df0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
-  _maxHealth: 99999
-  _flashDuration: 0.15
 --- !u!50 &2124410087
 Rigidbody2D:
   serializedVersion: 5
@@ -2749,6 +2872,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1943030188}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2124410091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2124410085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65aa398753a6cc84384da5487e25c7e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
+  _maxHp: 5
+  _flashDuration: 0.15
 --- !u!4 &653975843205274071
 Transform:
   m_ObjectHideFlags: 0

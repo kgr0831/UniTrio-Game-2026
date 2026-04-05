@@ -27,21 +27,16 @@ public class ExplosionEffect : MonoBehaviour
     [SerializeField] private GameObject _damageTextPrefab;
 
     [Header("Explosion Glow")]
-    [Tooltip("폭발 비주얼 SpriteRenderer. Custom/SpriteGlow 셰이더 사용 권장.\n비워두면 GetComponentInChildren<SpriteRenderer>()로 자동 검색합니다.")]
     [SerializeField] private SpriteRenderer _glowRenderer;
-    [Tooltip("폭발 글로우 색상 (HDR).")]
     [ColorUsage(true, true)]
     [SerializeField] private Color _glowColor = new Color(0.3f, 0.6f, 1f, 1f);
-    [Tooltip("폭발 순간 최대 글로우 강도.")]
     [SerializeField] private float _maxGlowIntensity = 25f;
-    [Tooltip("폭발에 붙은 Light. 비워두면 GetComponentInChildren<Light>()로 자동 검색합니다.")]
     [SerializeField] private Light _light;
-    [Tooltip("Light 최대 강도.")]
     [SerializeField] private float _maxLightIntensity = 10f;
 
     // MagicProjectile 이 SetupExplosion() 으로 주입하는 값
-    private int        _damage;
-    private bool       _ready;
+    private float _damage;
+    private bool  _ready;
 
     private CircleCollider2D      _circleCol;
     private MaterialPropertyBlock _propBlock;
@@ -50,15 +45,15 @@ public class ExplosionEffect : MonoBehaviour
     private static readonly int _glowIntensityId = Shader.PropertyToID("_GlowIntensity");
     private static readonly int _glowColorId     = Shader.PropertyToID("_GlowColor");
 
-    // 최적화: 물리 검출 시 가비지를 생성하지 않도록 정적 배열을 사용합니다.
+    // 최적화: 물리 검출 시 가비지를 생성하지 않도록 정적 배열 사용 (ContactFilter2D + OverlapCircle 오버로드)
     private static readonly Collider2D[] _overlapResults = new Collider2D[100];
+    private ContactFilter2D              _contactFilter;
 
     private void Awake()
     {
         _circleCol = GetComponent<CircleCollider2D>();
         _propBlock = new MaterialPropertyBlock();
 
-        // Rigidbody2D 강제 설정
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         rb.bodyType     = RigidbodyType2D.Kinematic;
         rb.gravityScale = 0f;
@@ -68,18 +63,20 @@ public class ExplosionEffect : MonoBehaviour
         if (_glowRenderer == null) _glowRenderer = GetComponentInChildren<SpriteRenderer>();
         if (_light        == null) _light        = GetComponentInChildren<Light>();
 
-        // 렌더링 최적화: 폭발 이펙트는 그림자를 계산하지 않도록 강제 설정
         if (_glowRenderer != null)
         {
             _glowRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _glowRenderer.receiveShadows    = false;
         }
+
+        // ContactFilter2D로 레이어 마스크를 필터링 (OverlapCircleNonAlloc 대체)
+        _contactFilter = new ContactFilter2D();
+        _contactFilter.SetLayerMask(_enemyLayer);
+        _contactFilter.useTriggers = true;
     }
 
-    /// <summary>
-    /// MagicProjectile이 Instantiate 직후 호출합니다.
-    /// </summary>
-    public void SetupExplosion(int damage, GameObject damageTextPrefab = null)
+    /// <summary>MagicProjectile이 풀에서 꺼낸 직후 호출합니다.</summary>
+    public void SetupExplosion(float damage, GameObject damageTextPrefab = null)
     {
         _damage           = damage;
         _damageTextPrefab = damageTextPrefab != null ? damageTextPrefab : _damageTextPrefab;
@@ -91,33 +88,22 @@ public class ExplosionEffect : MonoBehaviour
         _elapsed = 0f;
         if (!_ready) _ready = true;
 
-        // 범위 내 모든 Enemy에게 즉시 데미지
         ApplyAreaDamage();
-
-        // 처음엔 최대 글로우
         SetGlow(_maxGlowIntensity);
     }
 
     private void Update()
     {
         _elapsed += Time.deltaTime;
-        
-        // 폭발 글로우를 duration 동안 fade-out (cos ease-out)
-        float progress = Mathf.Clamp01(_elapsed / _duration);
+
+        // 폭발 글로우 cos ease-out fade
+        float progress  = Mathf.Clamp01(_elapsed / _duration);
         float intensity = Mathf.Cos(progress * Mathf.PI * 0.5f) * _maxGlowIntensity;
         SetGlow(intensity);
 
-        // 시간 다 되면 풀로 반환 (Destroy 대체)
         if (_elapsed >= _duration)
-        {
             gameObject.SetActive(false);
-            // 메모: 프리팹을 알고 있어야 Release가 가능하므로 
-            // 실제 구현에서는 투사체가 이를 관리하거나 SimpleObjectPool을 더 확장해야 할 수 있습니다.
-            // 여기서는 단순하게 비활성화만 하고 투사체 쪽에서 관리하도록 할 수 있습니다.
-        }
     }
-
-    // ── 범위 데미지 ────────────────────────────────────────────────
 
     private void ApplyAreaDamage()
     {
@@ -126,16 +112,17 @@ public class ExplosionEffect : MonoBehaviour
             Mathf.Abs(transform.lossyScale.y));
 
         Vector2 center = (Vector2)transform.position + _circleCol.offset;
-        
-        // 최적화: OverlapCircleNonAlloc 사용 (Garbage Free)
-        int count = Physics2D.OverlapCircleNonAlloc(center, worldRadius, _overlapResults, _enemyLayer);
+
+        // Physics2D.OverlapCircle (배열 오버로드): 가비지 없는 물리 검출
+        int count = Physics2D.OverlapCircle(center, worldRadius, _contactFilter, _overlapResults);
 
         for (int i = 0; i < count; i++)
         {
-            Collider2D hit = _overlapResults[i];
-            Enemy enemy = hit.GetComponentInParent<Enemy>();
-            if (enemy == null) continue;
-            enemy.TakeDamage(_damage);
+            Collider2D  hit    = _overlapResults[i];
+            IDamageable target = hit.GetComponentInParent<IDamageable>();
+            if (target == null || !target.IsAlive) continue;
+
+            target.TakeDamage(_damage, gameObject);
             SpawnDamageText(hit.bounds.center);
         }
     }
@@ -146,10 +133,8 @@ public class ExplosionEffect : MonoBehaviour
         Vector3    spawnPos = position + Vector3.up * 0.5f;
         GameObject textObj  = Instantiate(_damageTextPrefab, spawnPos, Quaternion.identity);
         DamageText dmgText  = textObj.GetComponent<DamageText>();
-        if (dmgText != null) dmgText.Setup(_damage);
+        if (dmgText != null) dmgText.Setup(Mathf.RoundToInt(_damage));
     }
-
-    // ── 글로우 적용 ────────────────────────────────────────────────
 
     private void SetGlow(float intensity)
     {
@@ -165,7 +150,6 @@ public class ExplosionEffect : MonoBehaviour
             _light.intensity = _maxLightIntensity * (intensity / Mathf.Max(0.001f, _maxGlowIntensity));
     }
 
-    // ── 에디터 시각화 ──────────────────────────────────────────────
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {

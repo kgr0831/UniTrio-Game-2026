@@ -16,13 +16,17 @@ public class WandBehaviour : WeaponBehaviourBase
     [Tooltip("Wand 오브젝트의 Animator를 연결하세요.")]
     [SerializeField] private Animator _weaponAnimator;
 
+    [Header("Stats (플레이어 스탯 연동)")]
+    [Tooltip("Player 루트 오브젝트의 PlayerEntity 컴포넌트를 인스펙터에서 연결하세요.")]
+    [SerializeField] private PlayerEntity _playerEntity;
+
     [Header("Projectile")]
     [Tooltip("MagicProjectile 컴포넌트가 붙은 프리팹을 연결하세요.")]
     [SerializeField] private GameObject _projectilePrefab;
     [Tooltip("투사체가 생성될 위치 (완드 끝 MuzzlePoint 트랜스폼).")]
     [SerializeField] private Transform  _muzzlePoint;
     [SerializeField] private float _projectileSpeed  = 12f;
-    [SerializeField] private int   _projectileDamage = 15;
+    [SerializeField] private float _projectileDamage = 15f;
 
     [Header("Attack Timing")]
     [Tooltip("투사체를 발사할 normalizedTime. 0.5 = 애니메이션 절반 지점")]
@@ -206,9 +210,12 @@ public class WandBehaviour : WeaponBehaviourBase
         Vector3 spawnPos = _muzzlePoint != null ? _muzzlePoint.position : transform.position;
 
         // 최적화: 풀링 시스템에서 투사체를 가져옵니다.
+        float statAtk = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
+        float damage  = DamageCalculator.CalcOutgoingDamage(statAtk, _projectileDamage);
+
         GameObject      proj = SimpleObjectPool.Instance.Get(_projectilePrefab, spawnPos, Quaternion.identity);
         MagicProjectile mp   = proj.GetComponent<MagicProjectile>();
-        if (mp != null) mp.SetStats(_projectileSpeed, _projectileDamage, fireDir);
+        if (mp != null) mp.SetStats(_projectileSpeed, damage, fireDir);
     }
 
     private Vector2 GetCurrentCursorDirection()

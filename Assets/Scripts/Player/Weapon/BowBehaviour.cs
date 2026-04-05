@@ -44,6 +44,10 @@ public class BowBehaviour : WeaponBehaviourBase
     [Tooltip("떨림 주기입니다. 값이 높을수록 더 빠르게 떨립니다.")]
     [SerializeField] private float _shakeFrequency = 30f;
 
+    [Header("Stats (플레이어 스탯 연동)")]
+    [Tooltip("Player 루트 오브젝트의 PlayerEntity 컴포넌트를 인스펙터에서 연결하세요.")]
+    [SerializeField] private PlayerEntity _playerEntity;
+
     [Header("공전 설정")]
     [Tooltip("캐릭터 중심으로부터 활이 떠있는 거리입니다. 0이면 캐릭터 중심에서 회전합니다.")]
     [SerializeField] private float _orbitRadius  = 0.5f;
@@ -236,11 +240,10 @@ public class BowBehaviour : WeaponBehaviourBase
         // 차징 화살 발사
         FireArrow(ratio);
 
-        // 나머지 발사 후 애니메이션 후속 재생 (발사 후 복원 모션)
+        // 발사 후 애니메이션이 현재 차징 지점에서 자연스럽게 나머지(발사 모션)를 재생하도록 속도만 복구
         if (_weaponAnimator != null)
         {
             _weaponAnimator.speed = 1f;
-            _weaponAnimator.SetTrigger("Attack"); // 차징 해제 시에도 공격 트리거 발생
         }
 
         // 자동 종료를 위해 "NormalAttack" 상태처럼 잠시 IsAttacking 켜기
@@ -336,18 +339,17 @@ public class BowBehaviour : WeaponBehaviourBase
         _hasFired = true;
         if (_arrowPrefab == null || _arrowPos == null) return;
 
-        // 속도, 데미지 보간
-        float speed  = Mathf.Lerp(_minArrowSpeed,  _maxArrowSpeed,  chargeRatio);
-        int   damage = Mathf.RoundToInt(Mathf.Lerp(_minArrowDamage, _maxArrowDamage, chargeRatio));
+        // 속도, 데미지 보간 (무기 데미지 + 플레이어 Atk 보너스)
+        float speed       = Mathf.Lerp(_minArrowSpeed, _maxArrowSpeed, chargeRatio);
+        float weaponDmg   = Mathf.Lerp(_minArrowDamage, _maxArrowDamage, chargeRatio);
+        float statAtk     = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
+        float damage      = DamageCalculator.CalcOutgoingDamage(statAtk, weaponDmg);
 
         GameObject arrowObj = Instantiate(_arrowPrefab, _arrowPos.position, _arrowPos.rotation);
 
         // ArrowProjectile에 차징 값 전달
         ArrowProjectile ap = arrowObj.GetComponent<ArrowProjectile>();
-        if (ap != null)
-        {
-            ap.SetStats(speed, damage);
-        }
+        if (ap != null) ap.SetStats(speed, damage);
     }
 
     public override void OnDeactivated()

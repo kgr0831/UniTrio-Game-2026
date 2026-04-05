@@ -1,93 +1,79 @@
 using UnityEngine;
 
 /// <summary>
-/// 검의 히트박스 판정을 전담하는 스크립트.
-/// SwordHitbox 게임 오브젝트 (Rigidbody2D + BoxCollider2D Trigger) 에 부착하여 사용합니다.
+/// 검(및 창)의 히트박스 판정 전담 스크립트.
+/// IDamageable 인터페이스를 통해 적에게 데미지를 주며,
+/// PlayerEntity에서 공격력을 가져와 DamageCalculator 공식으로 최종 데미지를 산출합니다.
+///
+/// 공격 공식: (PlayerEntity.TotalAtk + _baseDamage) * 1.0
 /// </summary>
 public class SwordHitbox : MonoBehaviour
 {
-    [Header("Hit VFX (타격 이펙트)")]
-    [SerializeField] private GameObject[] _hitVfxPrefabs; // 인스펙터에서 여러 개의 프리팹을 등록
-    [SerializeField] private float _vfxOffsetTowardsEnemy = 0.3f; // 충돌점으로부터 적 중심쪽으로 파고드는 깊이
+    [Header("Stats")]
+    [Tooltip("Player 루트 오브젝트의 PlayerEntity 컴포넌트를 인스펙터에서 연결하세요.")]
+    [SerializeField] private PlayerEntity _playerEntity;
+    [Tooltip("이 무기 고유의 기본 데미지 (무기 스탯). WeaponData 도입 전 임시값.")]
+    [SerializeField] private float _baseDamage = 5f;
 
-    [Header("Damage Text (데미지 팝업)")]
-    [SerializeField] private GameObject _damageTextPrefab; // DamageText스크립트가 붙은 프리팹 할당
+    [Header("Hit VFX")]
+    [SerializeField] private GameObject[] _hitVfxPrefabs;
+    [SerializeField] private float _vfxOffsetTowardsEnemy = 0.3f;
+
+    [Header("Damage Text")]
+    [SerializeField] private GameObject _damageTextPrefab;
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Enemy"))
-        {
-            // 타격 시 하위/상위 어디에 컴포넌트가 있던 Enemy를 가져오기 위함
-            Enemy enemy = other.GetComponentInParent<Enemy>();
-            if (enemy != null)
-            {
-                // 기본으로 데미지 10을 입힙니다 (이 수치는 자유롭게 조절하시면 됩니다)
-                int damageDealt = 10;
-                enemy.TakeDamage(damageDealt);
+        if (!other.CompareTag("Enemy")) return;
 
-                SpawnHitVFX(other);
-                SpawnDamageText(other, damageDealt);
-            }
-        }
+        // Enemy → IDamageable 로 접근해 결합도를 낮춤
+        IDamageable target = other.GetComponentInParent<IDamageable>();
+        if (target == null || !target.IsAlive) return;
+
+        // (StatAtk + WeaponBaseDmg) * 1.0
+        float atk    = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
+        float damage = DamageCalculator.CalcOutgoingDamage(atk, _baseDamage);
+
+        target.TakeDamage(damage, gameObject);
+
+        SpawnHitVFX(other);
+        SpawnDamageText(other, damage);
     }
 
     private void SpawnHitVFX(Collider2D enemyCollider)
     {
-        // 1. 등록된 프리팹 리스트가 있는지 방어 코드
         if (_hitVfxPrefabs == null || _hitVfxPrefabs.Length == 0) return;
 
-        // 2. 가장 가까운 표면 충돌 지점 계산
-        Vector3 swordBasePos = transform.position;
-        Vector3 closestHitPoint = enemyCollider.ClosestPoint(swordBasePos);
+        Vector3 closestHitPoint = enemyCollider.ClosestPoint(transform.position);
+        Vector3 enemyCenter     = enemyCollider.bounds.center;
+        Vector3 dirToCenter     = (enemyCenter - closestHitPoint).normalized;
 
-        // 3. 충돌 지점에서 적의 한가운데(중심)를 향하는 방향 벡터 도출
-        Vector3 enemyCenter = enemyCollider.bounds.center;
-        Vector3 dirToCenter = (enemyCenter - closestHitPoint).normalized;
+        float   maxDist      = Vector3.Distance(closestHitPoint, enemyCenter);
+        float   actualOffset = Mathf.Min(_vfxOffsetTowardsEnemy, maxDist * 0.5f);
+        Vector3 spawnPos     = closestHitPoint + dirToCenter * actualOffset;
 
-        // 4. "충돌 지점보다 적 방향으로 살짝 더 들어간" 최종 스폰 위치 (중심을 넘어가진 않게 방지)
-        float maxDist = Vector3.Distance(closestHitPoint, enemyCenter);
-        float actualOffset = Mathf.Min(_vfxOffsetTowardsEnemy, maxDist * 0.5f);
-        Vector3 spawnPos = closestHitPoint + dirToCenter * actualOffset;
+        GameObject vfxObj = Instantiate(
+            _hitVfxPrefabs[Random.Range(0, _hitVfxPrefabs.Length)],
+            spawnPos,
+            Quaternion.Euler(0f, 0f, Random.Range(0f, 360f)));
 
-        // 5. 리스트 중 무작위 프리팹 1개 뽑기
-        GameObject selectedPrefab = _hitVfxPrefabs[Random.Range(0, _hitVfxPrefabs.Length)];
-
-        // 6. 무작위 각도로 꺾어주면 타격감이 훨씬 좋아짐 (스타일리시 게임 국룰)
-        Quaternion randomRotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
-
-        // 7. 소환!
-        GameObject vfxObj = Instantiate(selectedPrefab, spawnPos, randomRotation);
-
-        // 8. 프리팹 스스로의 길이를 계산하여 똑똑하게 자동 파기 (동적 Lifetime)
-        float autoLifetime = 0.5f; // 만약 길이가 없을 경우를 대비한 최소 보장 시간
-
-        // 애니메이터 길이 감지 (현재 VFX는 오직 애니메이터만 사용)
+        float autoLifetime = 0.5f;
         Animator anim = vfxObj.GetComponent<Animator>();
         if (anim != null)
         {
-            // Instantiate 직후에는 0프레임이라 길이가 0일 수 있으므로 즉시 한 프레임을 업데이트 시켜 강제 초기화
-            anim.Update(0f); 
+            anim.Update(0f);
             autoLifetime = anim.GetCurrentAnimatorStateInfo(0).length;
         }
-        
-        // 파기 예약
         Destroy(vfxObj, autoLifetime);
     }
 
-    private void SpawnDamageText(Collider2D enemyCollider, int damageAmount)
+    private void SpawnDamageText(Collider2D enemyCollider, float damageAmount)
     {
         if (_damageTextPrefab == null) return;
 
-        // 적의 머리 위쪽쯤(약간 위)을 기준으로 스폰하여 겹침을 방지합니다.
-        Vector3 spawnPos = enemyCollider.bounds.center + Vector3.up * 0.5f;
-
-        GameObject textObj = Instantiate(_damageTextPrefab, spawnPos, Quaternion.identity);
-        
-        DamageText dmgText = textObj.GetComponent<DamageText>();
-        if (dmgText != null)
-        {
-            dmgText.Setup(damageAmount);
-        }
+        Vector3    spawnPos = enemyCollider.bounds.center + Vector3.up * 0.5f;
+        GameObject textObj  = Instantiate(_damageTextPrefab, spawnPos, Quaternion.identity);
+        DamageText dmgText  = textObj.GetComponent<DamageText>();
+        if (dmgText != null) dmgText.Setup(Mathf.RoundToInt(damageAmount));
     }
-
 }
