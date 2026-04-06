@@ -15,6 +15,9 @@ public class SwordHitbox : MonoBehaviour
     [Tooltip("이 무기 고유의 기본 데미지 (무기 스탯). WeaponData 도입 전 임시값.")]
     [SerializeField] private float _baseDamage = 5f;
 
+    [Tooltip("이 무기가 공격할 수 있는 대상의 태그 목록. 기본값은 'Enemy'.")]
+    [SerializeField] private string[] _targetTags = new string[] { "Enemy", "Tree" };
+
     [Header("Hit VFX")]
     [SerializeField] private GameObject[] _hitVfxPrefabs;
     [SerializeField] private float _vfxOffsetTowardsEnemy = 0.3f;
@@ -24,7 +27,19 @@ public class SwordHitbox : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!other.CompareTag("Enemy")) return;
+        bool isValidTag = false;
+        if (_targetTags != null)
+        {
+            foreach (var t in _targetTags)
+            {
+                if (other.CompareTag(t))
+                {
+                    isValidTag = true;
+                    break;
+                }
+            }
+        }
+        if (!isValidTag) return;
 
         // Enemy → IDamageable 로 접근해 결합도를 낮춤
         IDamageable target = other.GetComponentInParent<IDamageable>();
