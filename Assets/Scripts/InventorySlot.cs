@@ -23,7 +23,7 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         currentCount = count;
         
         if (currentData != null) {
-            iconImage.sprite = currentData.Icon;
+            iconImage.sprite = currentData._Icon;  // 신규 API: Icon → _Icon
             iconImage.enabled = true;
             countText.text = currentCount.ToString();
         } else {

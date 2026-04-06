@@ -19,7 +19,8 @@
       "mcp__UnityMCP__validate_script",
       "mcp__UnityMCP__manage_script",
       "mcp__UnityMCP__manage_material",
-      "mcp__UnityMCP__manage_prefabs"
+      "mcp__UnityMCP__manage_prefabs",
+      "Bash(rm:*)"
     ]
   }
 }

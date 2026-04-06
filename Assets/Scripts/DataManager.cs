@@ -21,18 +21,22 @@ public class DataManager : MonoBehaviour {
 
     private void GenerateCache() {
         foreach (var item in itemDatabase) {
-            if (!itemCache.ContainsKey(item.id)) itemCache.Add(item.id, item);
+            // 신규 ItemData API: id → _Id
+            if (item != null && !itemCache.ContainsKey(item._Id)) itemCache.Add(item._Id, item);
         }
         foreach (var skill in skillDatabase) {
-            if (!skillCache.ContainsKey(skill.id)) skillCache.Add(skill.id, skill);
+            if (skill != null && !skillCache.ContainsKey(skill.id)) skillCache.Add(skill.id, skill);
         }
     }
 
-    // 서버 데이터를 기반으로 리소스를 찾아주는 핵심 함수
+    /// <summary>ID로 ItemData를 조회합니다.</summary>
+    public ItemData GetItem(int id) {
+        return itemCache.TryGetValue(id, out var item) ? item : null;
+    }
+
+    /// <summary>스킬 전용 IUseable 조회. ItemData는 IUseable을 구현하지 않으므로 Item은 GetItem()을 사용하세요.</summary>
     public IUseable GetUseable(string type, int id) {
-        if (type == "Item") {
-            return itemCache.TryGetValue(id, out var item) ? item : null;
-        } else if (type == "Skill") {
+        if (type == "Skill") {
             return skillCache.TryGetValue(id, out var skill) ? skill : null;
         }
         return null;
