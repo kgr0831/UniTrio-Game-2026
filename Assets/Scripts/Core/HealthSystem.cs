@@ -15,9 +15,13 @@ public sealed class HealthSystem : MonoBehaviour
     [Tooltip("피격 플래시가 유지되는 시간 (초)")]
     [SerializeField] private float _flashDuration = 0.15f;
 
+    // Inspector(Normal 모드)에서 실시간 HP / 생존 여부 확인용
+    [SerializeField] private float _currentHealth;
+    [SerializeField] private bool  _isAlive;
+
     public float MaxHp     => _maxHp;
-    public float CurrentHp { get; private set; }
-    public bool  IsAlive   => CurrentHp > 0f;
+    public float CurrentHp => _currentHealth;
+    public bool  IsAlive   => _isAlive;
 
     // 이벤트 기반 갱신 → UI·외부 로직은 구독만 하면 됨 (폴링 불필요)
     public event Action<float, float> OnHpChanged; // (currentHp, maxHp)
@@ -31,7 +35,8 @@ public sealed class HealthSystem : MonoBehaviour
 
     private void Awake()
     {
-        CurrentHp       = _maxHp;
+        _currentHealth  = _maxHp;
+        _isAlive        = true;
         _spriteRenderer = GetComponent<SpriteRenderer>();
 
         // SpriteRenderer가 없는 엔티티(비가시 트리거 등)도 허용 – null 체크로 방어
@@ -56,31 +61,33 @@ public sealed class HealthSystem : MonoBehaviour
     {
         if (!IsAlive) return;
 
-        CurrentHp = Mathf.Max(0f, CurrentHp - damage);
+        _currentHealth = Mathf.Max(0f, _currentHealth - damage);
+        _isAlive       = _currentHealth > 0f;
 
         // 플래시 시작 (타이머 리셋으로 중첩 점멸 방지)
         SetFlashShader(1f);
         _flashTimer = _flashDuration;
 
         OnHit?.Invoke();
-        OnHpChanged?.Invoke(CurrentHp, _maxHp);
+        OnHpChanged?.Invoke(_currentHealth, _maxHp);
 
-        if (CurrentHp <= 0f)
+        if (_currentHealth <= 0f)
             OnDied?.Invoke();
     }
 
     public void Heal(float amount)
     {
         if (!IsAlive) return;
-        CurrentHp = Mathf.Min(CurrentHp + amount, _maxHp);
-        OnHpChanged?.Invoke(CurrentHp, _maxHp);
+        _currentHealth = Mathf.Min(_currentHealth + amount, _maxHp);
+        OnHpChanged?.Invoke(_currentHealth, _maxHp);
     }
 
     public void SetMaxHp(float newMax, bool refill = false)
     {
-        _maxHp    = newMax;
-        CurrentHp = refill ? _maxHp : Mathf.Min(CurrentHp, _maxHp);
-        OnHpChanged?.Invoke(CurrentHp, _maxHp);
+        _maxHp         = newMax;
+        _currentHealth = refill ? _maxHp : Mathf.Min(_currentHealth, _maxHp);
+        _isAlive       = _currentHealth > 0f;
+        OnHpChanged?.Invoke(_currentHealth, _maxHp);
     }
 
     // ── 내부 ────────────────────────────────────────────────────────

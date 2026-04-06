@@ -266,6 +266,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf3cce33d4698d8438580a6ea4941df0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
+  _contactDamage: 1
+  _contactDamageCooldown: 0.5
 --- !u!50 &303385936
 Rigidbody2D:
   serializedVersion: 5
@@ -427,6 +429,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
   _maxHp: 5
   _flashDuration: 0.15
+  _currentHealth: 0
+  _isAlive: 0
 --- !u!1 &319789253
 GameObject:
   m_ObjectHideFlags: 0
@@ -1306,8 +1310,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65aa398753a6cc84384da5487e25c7e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
-  _maxHp: 100
+  _maxHp: 1
   _flashDuration: 0.15
+  _currentHealth: 0
+  _isAlive: 0
 --- !u!114 &894001050
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1517,6 +1523,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf3cce33d4698d8438580a6ea4941df0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
+  _contactDamage: 1
+  _contactDamageCooldown: 0.5
 --- !u!114 &989394702
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1529,8 +1537,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65aa398753a6cc84384da5487e25c7e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
-  _maxHp: 10
+  _maxHp: 9999
   _flashDuration: 0.15
+  _currentHealth: 0
+  _isAlive: 0
 --- !u!1 &1521561835
 GameObject:
   m_ObjectHideFlags: 0
@@ -2725,6 +2735,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf3cce33d4698d8438580a6ea4941df0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
+  _contactDamage: 1
+  _contactDamageCooldown: 0.5
 --- !u!50 &2124410087
 Rigidbody2D:
   serializedVersion: 5
@@ -2886,6 +2898,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
   _maxHp: 5
   _flashDuration: 0.15
+  _currentHealth: 0
+  _isAlive: 0
 --- !u!4 &653975843205274071
 Transform:
   m_ObjectHideFlags: 0

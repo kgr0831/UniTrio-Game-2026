@@ -20,8 +20,8 @@ public class IdleState : PlayerState
             return;
         }
 
-        // 대시 입력 감지 (쿨다운 포함 확인)
-        if (Machine.Dash.TryConsumeDashInput())
+        // 공격 중에는 대시 불가 (양방향 잠금: 대시 중 공격 불가는 DashState에서 처리)
+        if (!Machine.WeaponCtrl.IsAttacking && Machine.Dash.TryConsumeDashInput())
         {
             // Idle 시 커서 방향(FacingDirection)으로 대시
             Machine.Dash.StartDash(Machine.Movement.FacingDirection);

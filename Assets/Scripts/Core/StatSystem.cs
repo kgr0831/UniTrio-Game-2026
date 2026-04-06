@@ -16,8 +16,8 @@ public sealed class StatSystem : MonoBehaviour
     [Tooltip("초당 마나 자연 회복량")]
     [SerializeField] private float _manaRegen     = 1f;
 
-    // Play 모드 Inspector에서 실시간 확인용 (읽기 전용 표시)
-    [SerializeField, HideInInspector] private float _currentMana;
+    // Play 모드 Inspector에서 실시간 확인용 (Normal/Debug 모드 모두 표시)
+    [SerializeField] private float _currentMana;
     public float CurrentMana
     {
         get => _currentMana;

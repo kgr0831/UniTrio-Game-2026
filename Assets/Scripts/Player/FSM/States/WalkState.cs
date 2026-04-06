@@ -14,8 +14,8 @@ public class WalkState : PlayerState
             return;
         }
 
-        // 대시 입력 (이동 방향으로 대시)
-        if (Machine.Dash.TryConsumeDashInput())
+        // 공격 중에는 대시 불가 (양방향 잠금: 대시 중 공격 불가는 DashState에서 처리)
+        if (!Machine.WeaponCtrl.IsAttacking && Machine.Dash.TryConsumeDashInput())
         {
             Machine.Dash.StartDash(Machine.Movement.MoveInput);
             Machine.TransitionTo(Machine.DashSt);

@@ -40,8 +40,8 @@ public class DashHandler : MonoBehaviour
 
     private void Update()
     {
-        // 입력 버퍼링 (0.15초 내 눌린 Space를 기억)
-        if (Input.GetKeyDown(_dashKey))
+        // 쿨다운/대시 중에는 버퍼링하지 않음 → 입력 예약으로 인한 자동 대시 방지
+        if (Input.GetKeyDown(_dashKey) && _cooldownTimer <= 0f && !IsDashing)
             _dashInputBuffered = true;
 
         if (_cooldownTimer > 0f)

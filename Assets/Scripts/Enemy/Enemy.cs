@@ -8,6 +8,33 @@ using UnityEngine;
 /// </summary>
 public class Enemy : LivingEntity
 {
+    [Header("Contact Damage")]
+    [Tooltip("플레이어 접촉 시 주는 데미지")]
+    [SerializeField] private float _contactDamage = 1f;
+    [Tooltip("접촉 데미지 쿨다운 (초) — 같은 플레이어에게 연속 타격 방지")]
+    [SerializeField] private float _contactDamageCooldown = 0.5f;
+
+    private float _contactDamageTimer;
+
+    private void Update()
+    {
+        // 타이머 방식 쿨다운 (GC 없음)
+        if (_contactDamageTimer > 0f)
+            _contactDamageTimer -= Time.deltaTime;
+    }
+
+    // OnCollisionStay2D: Rigidbody2D가 있는 오브젝트와 맞닿아 있는 동안 매 프레임 호출
+    private void OnCollisionStay2D(Collision2D col)
+    {
+        if (!IsAlive || _contactDamageTimer > 0f) return;
+
+        var damageable = col.gameObject.GetComponent<IDamageable>();
+        if (damageable == null || !damageable.IsAlive) return;
+
+        damageable.TakeDamage(_contactDamage, gameObject);
+        _contactDamageTimer = _contactDamageCooldown;
+    }
+
     protected override void OnDeath()
     {
         Debug.Log($"[{gameObject.name}] 처치됨");

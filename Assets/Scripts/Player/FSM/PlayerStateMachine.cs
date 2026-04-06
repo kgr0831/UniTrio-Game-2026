@@ -31,8 +31,8 @@ public class PlayerStateMachine : MonoBehaviour
 
     private PlayerState _current;
 
-    // Debug 모드 Inspector에서 현재 상태 이름 확인용
-    [SerializeField, HideInInspector] private string _currentStateName;
+    // Inspector에서 현재 상태 이름 실시간 확인용 (Normal/Debug 모드 모두 표시)
+    [SerializeField] private string _currentStateName;
 
     // ── 초기화 ───────────────────────────────────────────────────
 

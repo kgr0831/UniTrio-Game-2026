@@ -21,6 +21,9 @@ public class PlayerWeaponController : MonoBehaviour
     [Tooltip("좌/우/하단을 향할 때 피봇을 아래로 내리는 양. 위를 향할 때는 0, 나머지 방향에서 이 값만큼 내려갑니다.")]
     [SerializeField] private float _handYOffset = 0.15f;
 
+    /// <summary>현재 공격 애니메이션 재생 중인지 여부. FSM에서 대시 진입 조건으로 사용합니다.</summary>
+    public bool IsAttacking => _activeBehaviour != null && _activeBehaviour.IsAttacking;
+
     private Camera _mainCamera;
     private float  _camToWorldZ;
     // ── 콤보 엔진 ─────────────────────────────────────────

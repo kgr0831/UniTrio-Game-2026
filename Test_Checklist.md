@@ -48,7 +48,7 @@
 **확인 항목:**
 - [ ] `_maxHp` = 100
 - [ ] `_currentHealth` (내부 필드) = 100
-- [ ] `IsAlive` = true
+- [ ] `IsAlive` = true -> IsAlive가 인스펙터에서 안보임.
 
 ---
 
@@ -72,10 +72,10 @@
 **방법:**
 1. Play 모드 진입
 2. `Player` 선택 → Inspector → `Stat System` → Debug 모드
-3. `_currentMana` 필드를 실시간으로 관찰
-
+3. `_currentMana` 필드를 실시간으로 관찰 -> _currentMana가 인스펙터에서 안보임
 **확인 항목:**
-- [ ] 시작 시 `_currentMana` = 100
+3. `_currentMana` 필드를 실시간으로 관찰 -> _currentMana가 인스펙터에서 안보임
+- [ ] 시작 시 `_currentMana` = 100 -> _currentMana가  안보임
 - [ ] `_manaRegen` = 1이면 1초마다 숫자가 1씩 증가
 - [ ] 최대(`_baseMana` = 100)를 초과하지 않음
 
@@ -163,7 +163,7 @@
 **방법:**
 1. `Player → Health System._maxHp`를 **1**로 변경
 2. Play 모드 진입
-3. 좀비에게 접근해 맞기 (데미지 1 이상 받으면 즉사)
+3. 좀비에게 접근해 맞기 (데미지 1 이상 받으면 즉사) -> 좀비에게 접근해도 아무런 일이 발생하지 않음.
 4. Console 확인
 
 **확인 항목:**
@@ -224,12 +224,12 @@ protected override float CalculateIncomingDamage(float rawDamage)
 ### [M2-02] FSM — Idle ↔ Walk 전환
 
 **방법:**
-1. Play 모드 진입, `_currentStateName` 필드 관찰
+1. Play 모드 진입, `_currentStateName` 필드 관찰 -> _currentStateName가 인스펙터에서 보이지 않음.
 2. WASD 이동 입력
 
 **확인 항목:**
-- [ ] 이동 키 누르는 순간 `_currentStateName` = **"WalkState"**
-- [ ] 이동 키 떼는 순간 `_currentStateName` = **"IdleState"** 복귀
+- [ ] 이동 키 누르는 순간 `_currentStateName` = **"WalkState"** -> _currentStateName가 인스펙터에서 보이지 않음.
+- [ ] 이동 키 떼는 순간 `_currentStateName` = **"IdleState"** 복귀 -> _currentStateName가 인스펙터에서 보이지 않음.
 
 ---
 
@@ -243,7 +243,7 @@ protected override float CalculateIncomingDamage(float rawDamage)
 - [ ] 커서 방향으로 빠르게 이동 (약 0.18초)
 - [ ] 대시 중 스프라이트가 **반투명 파란 색조**로 변경
 - [ ] 대시 후 스프라이트 **흰색**으로 복귀
-- [ ] `_currentStateName` 순서: Idle → **"DashState"** → Idle
+- [ ] `_currentStateName` 순서: Idle → **"DashState"** → Idle -> _currentStateName가 인스펙터에서 보이지 않음.
 
 ---
 
@@ -267,7 +267,7 @@ protected override float CalculateIncomingDamage(float rawDamage)
 2. **Space** 키 연타 (빠르게 2번 이상 입력)
 
 **확인 항목:**
-- [ ] 첫 번째 대시 후 **약 1초** 동안 대시 불가
+- [ ] 첫 번째 대시 후 **약 1초** 동안 대시 불가 -> 빠르게 2연타 하면 1번 대시 하고, 1초뒤에 입력이 없음에도 2번째 대시가 나감, 이거 고쳐야함. 입력을 예약하지 않음.
 - [ ] 1초 이내 Space 재입력 시 대시가 실행되지 않음
 - [ ] 1초 후 Space 입력 시 정상 대시 실행
 
@@ -280,7 +280,7 @@ protected override float CalculateIncomingDamage(float rawDamage)
 **방법:**
 1. `Player → Health System._maxHp` = **1** 설정
 2. Play 모드 진입
-3. 좀비 위를 **Space 대시**로 통과
+3. 좀비 위를 **Space 대시**로 통과 -> 좀비를 뚫지 못함 또한 대시중 공격은 안돼지만 공격중에 대시하는건 됨. 서로 안되야 정상임.
 
 **확인 항목:**
 - [ ] 대시 중 좀비와 겹쳐도 HP가 깎이지 않음
@@ -296,7 +296,7 @@ protected override float CalculateIncomingDamage(float rawDamage)
 **방법:**
 1. `Player → Health System._maxHp` = **200** (충분히 높게)
 2. Play 모드 진입
-3. 좀비에게 의도적으로 맞기
+3. 좀비에게 의도적으로 맞기 -> 좀비에게 부딛혀도 HP가 그대로임. 아무일도 발생안함.
 4. 피격 즉시 WASD + 좌클릭 시도
 
 **확인 항목:**
@@ -312,7 +312,7 @@ protected override float CalculateIncomingDamage(float rawDamage)
 **방법:**
 1. `Player → Health System._maxHp` = **1**
 2. Play 모드 진입
-3. 좀비에게 맞아 사망
+3. 좀비에게 맞아 사망 -> 좀비에게 부딛혀도 HP가 그대로임. 아무일도 발생안함.
 
 **확인 항목:**
 - [ ] `_currentStateName` = **"DeathState"** 전환
@@ -344,7 +344,7 @@ protected override float CalculateIncomingDamage(float rawDamage)
 
 **방법:**
 1. Play 모드 진입
-2. 대시와 동시에 **좌클릭** 연타
+2. 대시와 동시에 **좌클릭** 연타 -> 시중 공격은 안돼지만 공격중에 대시하는건 됨. 서로 안되야 정상임.
 
 **확인 항목:**
 - [ ] 대시 중 공격 애니메이션이 재생되지 않음
