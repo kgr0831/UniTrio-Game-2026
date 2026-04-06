@@ -11,7 +11,7 @@ public static class DamageCalculator
 {
     /// <summary>최종 공격력 계산.</summary>
     /// <param name="statAtk">캐릭터 스탯 기반 공격력 (StatSystem.TotalAtk)</param>
-    /// <param name="itemAtk">무기 고유 데미지 (WeaponData._Damage 등)</param>
+    /// <param name="itemAtk">무기 고유 데미지 (WeaponData.Damage 등)</param>
     /// <param name="multiplier">버프/크리티컬 등 추가 배율</param>
     public static float CalcOutgoingDamage(float statAtk, float itemAtk = 0f, float multiplier = 1f)
     {

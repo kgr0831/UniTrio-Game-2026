@@ -12,20 +12,24 @@ public struct IngredientInfo
 }
 
 /// <summary>
-/// 모든 아이템 데이터의 베이스 (ScriptableObject)
+/// 모든 아이템 데이터의 베이스 (ScriptableObject).
+/// 파생 클래스는 OnEnable()을 override하여 _Type을 자동 설정합니다.
 /// </summary>
 public abstract class ItemData : ScriptableObject
 {
-    public int _Id;               // 고유 인덱스
-    public string _Name;         // 이름
+    public int Id;               // 고유 인덱스
+    public string Name;          // 이름
     [TextArea]
-    public string _Description;  // 설명
-    public ItemType _Type;       // 아이템 타입
-    public Sprite _Icon;         // 아이콘
+    public string Description;   // 설명
+    public ItemType Type;        // 아이템 타입 (파생 클래스 OnEnable에서 자동 설정)
+    public Sprite Icon;          // 아이콘
 
-    public List<IngredientInfo> _IngredientList; // 제작 재료 리스트
+    public List<IngredientInfo> IngredientList; // 제작 재료 리스트
 
-    // 자식 클래스에서 구현할 공통 인터페이스
+    /// <summary>파생 클래스에서 override하여 _Type을 자동 설정합니다.</summary>
+    protected virtual void OnEnable() { }
+
+    /// <summary>파생 클래스에서 스탯 설명 문자열을 반환합니다.</summary>
     public abstract string GetStatDescription();
 }
 
@@ -35,10 +39,10 @@ public abstract class ItemData : ScriptableObject
 [CreateAssetMenu(fileName = "NewWeaponData", menuName = "Data/Items/Weapon")]
 public class WeaponData : ItemData
 {
-    public float _Damage;
-    public float _AttackSpeed;
+    public float Damage;
+    public float AttackSpeed;
 
-    public override string GetStatDescription() => $"데미지: {_Damage} | 공격속도: {_AttackSpeed}";
+    public override string GetStatDescription() => $"데미지: {Damage} | 공격속도: {AttackSpeed}";
 }
 
 /// <summary>
@@ -47,9 +51,9 @@ public class WeaponData : ItemData
 [CreateAssetMenu(fileName = "NewConsumableData", menuName = "Data/Items/Consumable")]
 public class ConsumableData : ItemData
 {
-    public float _HealAmount;
+    public float HealAmount;
 
-    public override string GetStatDescription() => $"회복량: {_HealAmount}";
+    public override string GetStatDescription() => $"회복량: {HealAmount}";
 }
 
 /// <summary>

@@ -23,10 +23,12 @@ public class DragManager : MonoBehaviour
     // 드래그 시작 시 호출
     public void StartDrag(ItemData data, Sprite icon)
     {
+        if (dragVisualIcon == null) return;
+
         draggingData = data;
         dragVisualIcon.sprite = icon;
         dragVisualIcon.gameObject.SetActive(true);
-        
+
         // 드래그 아이콘은 마우스 클릭을 방해하면 안 되므로 Raycast Target 해제 확인
         dragVisualIcon.raycastTarget = false;
     }
@@ -34,16 +36,15 @@ public class DragManager : MonoBehaviour
     // 드래그 중 마우스 위치 갱신 (Screen Space)
     public void UpdateDragPosition(Vector2 mousePosition)
     {
-        if (dragVisualIcon.gameObject.activeSelf)
-        {
+        if (dragVisualIcon != null && dragVisualIcon.gameObject.activeSelf)
             dragVisualIcon.transform.position = mousePosition;
-        }
     }
 
     // 드래그 종료 시 초기화
     public void EndDrag()
     {
         draggingData = null;
-        dragVisualIcon.gameObject.SetActive(false);
+        if (dragVisualIcon != null)
+            dragVisualIcon.gameObject.SetActive(false);
     }
 }

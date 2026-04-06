@@ -13,12 +13,13 @@ public class PlayerStateMachine : MonoBehaviour
 {
     // ── 컴포넌트 참조 ─────────────────────────────────────────────
 
-    public PlayerEntity           Entity    { get; private set; }
-    public PlayerMovement         Movement  { get; private set; }
-    public PlayerWeaponController WeaponCtrl { get; private set; }
-    public DashHandler            Dash      { get; private set; }
-    public Animator               Animator  { get; private set; }
-    public SpriteRenderer         Sprite    { get; private set; }
+    public PlayerEntity           Entity         { get; private set; }
+    public PlayerMovement         Movement       { get; private set; }
+    public PlayerWeaponController WeaponCtrl     { get; private set; }
+    public DashHandler            Dash           { get; private set; }
+    public Animator               Animator       { get; private set; }
+    public SpriteRenderer         Sprite         { get; private set; }
+    public DashAfterimagePool     AfterimagePool { get; private set; }
 
     // ── 상태 인스턴스 ─────────────────────────────────────────────
 
@@ -38,12 +39,16 @@ public class PlayerStateMachine : MonoBehaviour
 
     private void Awake()
     {
-        Entity     = GetComponent<PlayerEntity>();
-        Movement   = GetComponent<PlayerMovement>();
-        WeaponCtrl = GetComponent<PlayerWeaponController>();
-        Dash       = GetComponent<DashHandler>();
-        Animator   = GetComponent<Animator>();
-        Sprite     = GetComponent<SpriteRenderer>();
+        Entity         = GetComponent<PlayerEntity>();
+        Movement       = GetComponent<PlayerMovement>();
+        WeaponCtrl     = GetComponent<PlayerWeaponController>();
+        Dash           = GetComponent<DashHandler>();
+        Animator       = GetComponent<Animator>();
+        Sprite         = GetComponent<SpriteRenderer>();
+        // DashAfterimagePool이 씬에 없으면 자동 추가 (Tools > Setup Dash Upgrade 없이도 동작)
+        AfterimagePool = GetComponent<DashAfterimagePool>();
+        if (AfterimagePool == null)
+            AfterimagePool = gameObject.AddComponent<DashAfterimagePool>();
 
         Idle     = new IdleState(this);
         Walk     = new WalkState(this);

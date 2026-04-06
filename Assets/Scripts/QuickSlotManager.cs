@@ -12,17 +12,17 @@ public class QuickSlotManager : MonoBehaviour
 
         if (data is ConsumableData consumable)
         {
-            Debug.Log($"{consumable._Name} 사용 (회복량: {consumable._HealAmount})");
+            Debug.Log($"{consumable.Name} 사용 (회복량: {consumable.HealAmount})");
             // TODO: 실제 플레이어 힐 연동 (HealingSystem, Milestone 3)
         }
         else if (data is WeaponData weapon)
         {
-            Debug.Log($"{weapon._Name} 장착");
+            Debug.Log($"{weapon.Name} 장착");
             // TODO: WeaponSlotManager 연동 (Milestone 3)
         }
         else
         {
-            Debug.Log($"{data._Name} 사용");
+            Debug.Log($"{data.Name} 사용");
         }
 
         // 수량 차감

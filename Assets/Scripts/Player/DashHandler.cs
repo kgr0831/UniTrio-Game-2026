@@ -22,6 +22,13 @@ public class DashHandler : MonoBehaviour
     [Tooltip("대시 쿨다운 (초)")]
     [SerializeField] private float   _cooldown     = 1f;
 
+    [Header("Upgrade (스킬트리 연동 전 임시 제어)")]
+    [Tooltip("true = 업그레이드 대시 (무적·충돌무시·잔상 VFX)\nfalse = 기본 대시 (이동만)")]
+    [SerializeField] private bool _isUpgraded = false;
+
+    /// <summary>업그레이드 대시 여부. 스킬트리에서 외부 설정 가능.</summary>
+    public bool IsUpgraded => _isUpgraded;
+
     /// <summary>현재 대시 중이면 true.</summary>
     public bool IsDashing => _dashTimer > 0f;
 

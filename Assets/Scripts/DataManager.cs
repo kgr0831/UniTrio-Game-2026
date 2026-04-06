@@ -22,10 +22,10 @@ public class DataManager : MonoBehaviour {
     private void GenerateCache() {
         foreach (var item in itemDatabase) {
             // 신규 ItemData API: id → _Id
-            if (item != null && !itemCache.ContainsKey(item._Id)) itemCache.Add(item._Id, item);
+            if (item != null && !itemCache.ContainsKey(item.Id)) itemCache.Add(item.Id, item);
         }
         foreach (var skill in skillDatabase) {
-            if (skill != null && !skillCache.ContainsKey(skill.id)) skillCache.Add(skill.id, skill);
+            if (skill != null && !skillCache.ContainsKey(skill.Id)) skillCache.Add(skill.Id, skill);
         }
     }
 
@@ -34,11 +34,8 @@ public class DataManager : MonoBehaviour {
         return itemCache.TryGetValue(id, out var item) ? item : null;
     }
 
-    /// <summary>스킬 전용 IUseable 조회. ItemData는 IUseable을 구현하지 않으므로 Item은 GetItem()을 사용하세요.</summary>
-    public IUseable GetUseable(string type, int id) {
-        if (type == "Skill") {
-            return skillCache.TryGetValue(id, out var skill) ? skill : null;
-        }
-        return null;
+    /// <summary>ID로 SkillData를 조회합니다.</summary>
+    public SkillData GetSkill(int id) {
+        return skillCache.TryGetValue(id, out var skill) ? skill : null;
     }
 }

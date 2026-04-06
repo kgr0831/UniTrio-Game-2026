@@ -20,7 +20,7 @@ public class ItemDatabase : ScriptableObject
         if (AllItems == null) return null;
 
         // 리스트에서 해당 ID를 가진 첫 번째 아이템을 찾음
-        return AllItems.Find(item => item != null && item._Id == id);
+        return AllItems.Find(item => item != null && item.Id == id);
     }
 
     /// <summary>
@@ -28,7 +28,7 @@ public class ItemDatabase : ScriptableObject
     /// </summary>
     public List<ItemData> GetItemsByType(ItemType type)
     {
-        return AllItems.FindAll(item => item != null && item._Type == type);
+        return AllItems.FindAll(item => item != null && item.Type == type);
     }
 
     /// <summary>
@@ -40,8 +40,8 @@ public class ItemDatabase : ScriptableObject
         _itemDict = new Dictionary<int, ItemData>();
         foreach (var item in AllItems)
         {
-            if (item != null && !_itemDict.ContainsKey(item._Id))
-                _itemDict.Add(item._Id, item);
+            if (item != null && !_itemDict.ContainsKey(item.Id))
+                _itemDict.Add(item.Id, item);
         }
     }
 }

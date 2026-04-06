@@ -44,8 +44,9 @@ public class PlayerWeaponController : MonoBehaviour
 
     private void Awake()
     {
-        _mainCamera  = Camera.main;
-        _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
+        _mainCamera = Camera.main;
+        if (_mainCamera != null)
+            _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
 
         // 시작 시 1번 슬롯(검) 자동 장착
         EquipWeapon(0);
@@ -74,7 +75,8 @@ public class PlayerWeaponController : MonoBehaviour
         }
     }
 
-    private void EquipWeapon(int index)
+    /// <summary>지정 슬롯 인덱스의 무기를 장착합니다. WeaponSlotManager에서 E키 스왑 시 호출합니다.</summary>
+    public void EquipWeapon(int index)
     {
         if (index < 0 || index >= _weaponBehaviours.Length) return;
         if (_weaponBehaviours[index] == null) return;
@@ -108,6 +110,8 @@ public class PlayerWeaponController : MonoBehaviour
 
     private void UpdateCursorDirection()
     {
+        if (_mainCamera == null) return;
+
         Vector3 mouseScreenPos = Input.mousePosition;
         mouseScreenPos.z       = _camToWorldZ;
         Vector3 mouseWorld     = _mainCamera.ScreenToWorldPoint(mouseScreenPos);

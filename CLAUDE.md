@@ -20,9 +20,12 @@
 - **상태 관리 (State Machine):** 플레이어와 보스 몬스터의 행동 패턴(Idle, Move, Attack, Dash 등)은 `switch-case`로 떡칠하지 말고, 유한 상태 기계(FSM, Finite State Machine) 패턴이나 State 패턴을 적용하여 확장 가능하게 작성하세요.
 
 ## 3. URP 및 3D 탑다운 액션 특화 규칙 (URP & Top-Down Action Rules)
-- **물리 연산 (Physics):** 2D 탑다운이지만 3D 공간을 사용하므로, 충돌 처리 시 `Rigidbody`와 `Collider`(3D)를 쓸지, `Rigidbody2D`와 `Collider2D`를 쓸지 혼용하지 마세요. (프로젝트 설정에 따라 일관되게 작성할 것). 충돌 감지 로직은 최대한 가볍게 작성하고, 레이어 매트릭스(Layer Collision Matrix)를 활용할 수 있도록 레이어를 분리해서 제안하세요.
-- **Z축/Y축 깊이 정렬 (Depth Sorting):** 3D 공간의 2D 탑다운 뷰에서는 캐릭터나 오브젝트가 겹칠 때 Y축(또는 Z축) 위치에 따라 카메라 앞에 렌더링되어야 합니다. 관련 로직 작성 시 이를 항상 고려하세요.
-- **벡터 연산 주의:** 거리 계산이 필요할 때 `Vector3.Distance`나 `Vector3.Magnitude` 대신 연산이 가벼운 `Vector3.sqrMagnitude`를 우선적으로 고려하세요.
+- **물리 연산 (Physics):** `Rigidbody2D` + `Collider2D` 또는 `Rigidbody` + `Collider` 중 하나만 일관되게 사용하세요. 혼용 금지. 레이어는 `Player` / `Enemy` / `Projectile_P` / `Projectile_E` / `Obstacle` / `Wall`로 분리하고 Layer Collision Matrix에서 불필요한 충돌 연산을 차단하세요.
+- **Z축/Y축 깊이 정렬 (Depth Sorting):** 캐릭터나 오브젝트가 겹칠 때 Y축(또는 Z축) 위치에 따라 렌더링 순서를 결정하세요. 관련 로직 작성 시 항상 고려하세요.
+- **벡터 연산 주의:** 거리 비교 시 `sqrMagnitude` 우선. `Distance` / `Magnitude`는 루프 안에서 비용이 큽니다.
+- **MaterialPropertyBlock 사용:** 셰이더 프로퍼티 변경 시 `material` 직접 접근 금지. `MaterialPropertyBlock`으로 SRP Batching을 유지하세요.
+- **NonAlloc Physics:** 범위 판정 시 `OverlapCircleNonAlloc`, `RaycastNonAlloc` 등 NonAlloc API를 사용해 GC를 방지하세요.
+- **Update 루프 최소화:** 매 프레임 폴링 대신 상태 변화 시점에 `event` / `Action`으로 알리고 구독자가 처리하는 방식을 사용하세요.
 
 ## 4. 코드 스타일 및 응답 형식 (Code Style & Output Format)
 - **명명 규칙:** - 클래스 및 메서드: `PascalCase`
@@ -33,7 +36,12 @@
 - **설명과 주석:** 코드를 제공할 때 "왜 이렇게 작성하는 것이 성능에 좋은지" 핵심 이유를 짧게 주석이나 설명으로 덧붙여주세요. 쓸데없이 장황한 부연 설명은 생략하고, 코드 자체의 품질과 구조에 집중하세요.
 - **이상한 컴포넌트/플러그인 지양:** 기본 Unity API만으로 해결할 수 있는 문제에 대해 무거운 외부 라이브러리나 복잡한 우회 코드를 제안하지 마세요. 직관적이고 표준화된 방식을 최우선으로 합니다.
 
-## 5. 의존성 주입 및 컴포넌트 참조 (Dependency & Reference)
+## 5. 렌더링과 데이터의 분리 (Rendering & Data Separation)
+- **데이터 클래스는 순수 데이터만:** `ScriptableObject` 및 데이터 클래스(`ItemData` 등)는 수치·상태 값만 보유하세요. `Use()`, `Render()` 등 행동·출력 로직을 데이터 클래스 안에 작성하지 마세요.
+- **렌더링은 호출하는 쪽에서:** UI 갱신, 스프라이트 변경, 파티클 재생 등 시각 출력은 View 역할의 컴포넌트(`MonoBehaviour`)가 담당하세요. 데이터가 변하면 `event` / `Action`으로 알리고, 렌더링 쪽이 구독하여 처리하세요.
+- **MonoBehaviour도 동일:** 데이터 상태와 시각 효과를 한 클래스에 섞지 마세요. `HealthSystem`(데이터)과 스프라이트 플래시 제어(렌더링)처럼 책임을 분리하세요.
+
+## 6. 의존성 주입 및 컴포넌트 참조 (Dependency & Reference)
 - **Find 계열 함수 절대 사용 금지:** `GameObject.Find()`, `FindObjectOfType()`, `FindGameObjectWithTag()` 등 씬 전체를 순회하며 오브젝트를 찾는 메서드는 런타임은 물론이고 `Awake()`나 `Start()`에서도 최대한 사용을 피하세요.
 - **명시적 참조 (Explicit Reference) 우선:** 컴포넌트나 다른 클래스의 참조가 필요할 경우, 억지로 스크립트 안에서 찾으려 하지 말고 반드시 `[SerializeField]`를 사용하여 유니티 인스펙터(Inspector) 창에서 직접 할당(Drag & Drop)받도록 코드를 작성하세요.
 - **결합도 낮추기:** 서로 다른 게임 오브젝트 간의 통신이 필요할 때는 직접 참조를 엮기보다는 C# `event`, `Action`을 이용한 이벤트 기반 통신이나 `ScriptableObject`를 채널로 활용하는 방식을 우선적으로 제안하세요.

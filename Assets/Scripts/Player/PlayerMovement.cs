@@ -30,11 +30,12 @@ public class PlayerMovement : MonoBehaviour
 
     void Start()
     {
-        _rb          = GetComponent<Rigidbody2D>();
-        _anim        = GetComponent<Animator>();
-        _mainCamera  = Camera.main;
-        _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
-        _statSystem  = GetComponent<StatSystem>(); // nullable
+        _rb         = GetComponent<Rigidbody2D>();
+        _anim       = GetComponent<Animator>();
+        _mainCamera = Camera.main;
+        if (_mainCamera != null)
+            _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
+        _statSystem = GetComponent<StatSystem>(); // nullable
     }
 
     void Update()
@@ -47,6 +48,8 @@ public class PlayerMovement : MonoBehaviour
         if (_anim != null)
         {
             _anim.SetBool(HashIsMoving, MoveInput.sqrMagnitude > 0.001f);
+
+            if (_mainCamera == null) return;
 
             // 커서 방향 계산 (애니메이션 + FacingDirection 동기화)
             Vector3 mouseScreenPos = Input.mousePosition;
