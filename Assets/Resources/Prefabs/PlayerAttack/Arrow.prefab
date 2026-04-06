@@ -155,17 +155,17 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.03011477, y: 0.030004114}
+  m_Offset: {x: -0.05289626, y: 0.058209714}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 1}
+    oldSize: {x: 1.7777778, y: 1.7777778}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.68992925, y: 0.19146723}
+  m_Size: {x: 1.2345142, y: 0.34768277}
   m_EdgeRadius: 0
 --- !u!114 &9126688641181882818
 MonoBehaviour:
@@ -184,12 +184,8 @@ MonoBehaviour:
   _moveDirection: {x: 1, y: 0, z: 0}
   _damage: 10
   _hitVfxPrefabs:
-  - {fileID: 1269719350042245573, guid: 88c3589b303e1224c83b59a6f8301ea3, type: 3}
-  - {fileID: 4470203588049779849, guid: 23ebdc688fe69904a954ade9a759990c, type: 3}
   - {fileID: 4586780444957040233, guid: d68a28af35c43334fa81441ad9655a62, type: 3}
   - {fileID: 974570416307025816, guid: 7dcc41a6bab82c04fb7d541e24ffc54d, type: 3}
   - {fileID: 4132879545309861579, guid: 4e583d54e3952ba47bfcf4db015a4995, type: 3}
-  - {fileID: 6710669058026983593, guid: e8db9d59694409f46b00d2796b3833c9, type: 3}
   - {fileID: 861423291395358024, guid: e9fd3dac69f870b4381056a8e09f97d3, type: 3}
-  - {fileID: 1106605424311418122, guid: db9a3ee353e49564f818001eff289ba9, type: 3}
   _damageTextPrefab: {fileID: 1862679126408685501, guid: 95d233be8196c274fa3787f1224378e8, type: 3}

@@ -20,7 +20,22 @@
       "mcp__UnityMCP__manage_script",
       "mcp__UnityMCP__manage_material",
       "mcp__UnityMCP__manage_prefabs",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -B 30 \"m_TargetTexture: {fileID: 8400000, guid: 7b8507a6c8007ce44882d54021744bac\" \"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Scenes\\\\Unitro.unity\")",
+      "Bash(grep -B 30 \"m_TargetTexture: {fileID: 8400000, guid: 1f76cd9f41d247d4b90e6cce7282305f\" \"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Scenes\\\\Unitro.unity\")",
+      "Bash(grep -B 80 \"m_TargetTexture: {fileID: 8400000, guid: 7b8507a6c8007ce44882d54021744bac\" \"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Scenes\\\\Unitro.unity\")",
+      "Bash(grep -B 80 \"m_TargetTexture: {fileID: 8400000, guid: 1f76cd9f41d247d4b90e6cce7282305f\" \"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Scenes\\\\Unitro.unity\")",
+      "Bash(python3:*)",
+      "Bash(grep -B 100 \"m_TargetTexture: {fileID: 8400000, guid: 7b8507a6c8007ce44882d54021744bac\" \"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Scenes\\\\Unitro.unity\")",
+      "Bash(grep -B 100 \"m_TargetTexture: {fileID: 8400000, guid: 1f76cd9f41d247d4b90e6cce7282305f\" \"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Scenes\\\\Unitro.unity\")",
+      "Bash(grep -B 2 \"m_Layer: 6$\" \"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Scenes\\\\Unitro.unity\")",
+      "Bash(grep -B 5 \"m_TargetTexture: {fileID: 8400000, guid: 1f76cd9f\" \"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Scenes\\\\Unitro.unity\")",
+      "Bash(grep guid: 13ac7e6783f03234fa139d1842ab85ee\\\\|guid: 9dfc825aed78fcd4ba02077103263b40:*)",
+      "Bash(grep -E \"\\\\.\\(cs\\)$\")",
+      "Bash(grep -E \"\\\\.\\(prefab|anim|controller\\)$\")",
+      "mcp__UnityMCP__manage_shader",
+      "mcp__UnityMCP__manage_texture"
     ]
   }
 }

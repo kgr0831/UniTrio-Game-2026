@@ -36,8 +36,8 @@ public class SpearBehaviour : WeaponBehaviourBase
     public override float ComboWindow   => 0f;  // 콤보 없으므로 의미 없음
     public override int   MaxComboSteps => 1;   // 단타
 
-    private bool    _hitboxFired;
-    private SpriteRenderer _vfxRenderer;
+    private bool             _hitboxFired;
+    private SpriteRenderer[] _vfxRenderers; // 자식 포함 전체 렌더러 (GetComponent는 자식 미포함으로 null 위험)
 
     private void Awake()
     {
@@ -45,11 +45,19 @@ public class SpearBehaviour : WeaponBehaviourBase
 
         if (_vfxAnimator != null)
         {
-            _vfxRenderer = _vfxAnimator.GetComponent<SpriteRenderer>();
-            if (_vfxRenderer != null) _vfxRenderer.enabled = false;
+            // GetComponent 대신 GetComponentsInChildren으로 자식까지 탐색
+            _vfxRenderers = _vfxAnimator.GetComponentsInChildren<SpriteRenderer>(true);
+            SetVfxVisible(false);
         }
 
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
+    }
+
+    private void SetVfxVisible(bool visible)
+    {
+        if (_vfxRenderers == null) return;
+        for (int i = 0; i < _vfxRenderers.Length; i++)
+            _vfxRenderers[i].enabled = visible;
     }
 
     public override void BeginAttack(int comboStep)
@@ -58,7 +66,7 @@ public class SpearBehaviour : WeaponBehaviourBase
         _hitboxFired     = false;
         CurrentComboStep = 1; // 단타이므로 항상 1
 
-        if (_vfxRenderer != null) _vfxRenderer.enabled = true;
+        SetVfxVisible(true);
 
         _weaponAnimator.SetTrigger("Attack");
         if (_vfxAnimator != null) _vfxAnimator.SetTrigger("Attack");
@@ -86,14 +94,16 @@ public class SpearBehaviour : WeaponBehaviourBase
         if (!info.IsName("Attack") || info.normalizedTime >= 0.95f)
         {
             IsAttacking = false;
-            
-            if (_vfxRenderer != null) _vfxRenderer.enabled = false;
+            SetVfxVisible(false);
 
+            // 무기가 Attack 상태에 있을 때만 Idle로 강제 전환 (이미 전환된 경우 중복 호출 방지)
             if (info.IsName("Attack"))
-            {
                 _weaponAnimator.Play("Idle", 0, 0f);
-                if (_vfxAnimator != null) _vfxAnimator.Play("Idle", 0, 0f);
-            }
+
+            // VFX는 무기 전환 여부와 무관하게 항상 Idle로 복귀
+            if (_vfxAnimator != null)
+                _vfxAnimator.Play("Idle", 0, 0f);
+
             return true;
         }
         return false;
@@ -105,7 +115,7 @@ public class SpearBehaviour : WeaponBehaviourBase
         _hitboxFired = false;
         StopAllCoroutines();
 
-        if (_vfxRenderer != null) _vfxRenderer.enabled = false;
+        SetVfxVisible(false);
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
         if (_weaponAnimator  != null) 
         {

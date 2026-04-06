@@ -7,7 +7,7 @@ using UnityEngine;
 /// 1. SetStats()로 이동 방향(world-space Vector2)을 주입합니다.
 /// 2. FixedUpdate에서 World Space 기준으로 직진합니다.
 /// 3. 비행 중 SpriteGlow 셰이더와 Light로 펄스 글로우 효과를 냅니다.
-/// 4. Enemy와 충돌하면 ExplosionVFX를 스폰하고 소멸합니다.
+/// 4. Enemy와 충돌하면 HitVFX + ExplosionVFX를 스폰하고 소멸합니다.
 /// </summary>
 public class MagicProjectile : MonoBehaviour
 {
@@ -17,6 +17,10 @@ public class MagicProjectile : MonoBehaviour
 
     [Header("Damage")]
     [SerializeField] private float _damage = 15f;
+
+    [Header("Hit VFX (Optional)")]
+    [Tooltip("충돌 시 랜덤 재생할 HitVFX 프리팹 배열. HitVfxAutoReturn 컴포넌트가 부착되어 있어야 합니다.")]
+    [SerializeField] private GameObject[] _hitVfxPrefabs;
 
     [Header("Explosion VFX")]
     [Tooltip("ExplosionEffect + CircleCollider2D + Rigidbody2D 가 붙은 프리팹.\n" +
@@ -75,6 +79,8 @@ public class MagicProjectile : MonoBehaviour
     private void OnEnable()
     {
         _exploded = false;
+        // 충돌 시 숨겼던 렌더러를 복원
+        if (_glowRenderer != null) _glowRenderer.enabled = true;
         ApplyGlow(_glowIntensity);
         Invoke(nameof(ReturnToPool), _lifeTime);
     }
@@ -92,7 +98,7 @@ public class MagicProjectile : MonoBehaviour
 
     private void Update()
     {
-        float pulse     = 0.7f + 0.3f * Mathf.Sin(Time.time * _pulseCyclesPerSec * Mathf.PI * 2f);
+        float pulse = 0.7f + 0.3f * Mathf.Sin(Time.time * _pulseCyclesPerSec * Mathf.PI * 2f);
         ApplyGlow(_glowIntensity * pulse);
     }
 
@@ -108,9 +114,30 @@ public class MagicProjectile : MonoBehaviour
 
         _exploded = true;
         ApplyGlow(0f);
+        // 렌더러를 즉시 끄고 풀에 반환 → 시각적으로 충돌 순간 즉시 소멸
+        if (_glowRenderer != null) _glowRenderer.enabled = false;
+        SpawnHitVfx(collision);
         SpawnExplosion();
 
         SimpleObjectPool.Instance.Release(gameObject);
+    }
+
+    /// <summary>
+    /// 충돌 콜라이더의 ClosestPoint에 HitVFX를 풀링 생성합니다.
+    /// Rotation Z = 투사체 위치 → 충돌 지점 방향각.
+    /// </summary>
+    private void SpawnHitVfx(Collider2D hitCollider)
+    {
+        if (_hitVfxPrefabs == null || _hitVfxPrefabs.Length == 0) return;
+
+        Vector3 hitPoint = hitCollider.ClosestPoint(transform.position);
+        Vector2 dir      = (Vector2)(hitPoint - transform.position);
+        float   angleZ   = dir.sqrMagnitude > 0.0001f
+                           ? Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg
+                           : 0f;
+
+        GameObject prefab = _hitVfxPrefabs[Random.Range(0, _hitVfxPrefabs.Length)];
+        SimpleObjectPool.Instance.Get(prefab, hitPoint, Quaternion.Euler(0f, 0f, angleZ));
     }
 
     private void SpawnExplosion()

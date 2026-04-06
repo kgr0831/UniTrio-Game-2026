@@ -85,10 +85,14 @@ public class BowBehaviour : WeaponBehaviourBase
 
     // 참조
     private PlayerMovement _playerMovement;
-    private Transform      _weaponTransform;   // 떨림용 (활 스프라이트 자신의 Transform)
-    private Vector3        _weaponLocalOrigin; // 떨림 원점
+    private Transform      _weaponTransform;        // 떨림용 (활 스프라이트 자신의 Transform)
+    private Vector3        _weaponLocalOrigin;      // 떨림 원점
+    private Vector3        _weaponAnimatorScale;    // 애니메이터 자식의 원본 localScale (키프레임 덮어쓰기 방지)
     private GameObject     _aimUpVfx;          // 100% 차징 시 켜지는 VFX (Player의 자식)
+    private Animator       _aimUpVfxAnimator;  // Aim_UPVFX 애니메이터 (재시작용)
     private bool           _aimVfxTriggered;   // 이번 차징에서 이미 켰는지 방지용
+    private Coroutine      _aimVfxCoroutine;   // 진행 중인 VFX 비활성화 코루틴 참조
+    private WaitForSeconds _waitAimVfx;        // GC 방지용 캐시
 
     private SpriteRenderer       _spriteRenderer;
     private MaterialPropertyBlock _propBlock;
@@ -99,19 +103,25 @@ public class BowBehaviour : WeaponBehaviourBase
     private void Awake()
     {
         CurrentComboStep   = 1;
-        _playerMovement    = GetComponentInParent<PlayerMovement>();
-        _weaponTransform   = transform;
-        _weaponLocalOrigin = _weaponTransform.localPosition;
+        _playerMovement      = GetComponentInParent<PlayerMovement>();
+        _weaponTransform     = transform;
+        _weaponLocalOrigin   = _weaponTransform.localPosition;
+        // 애니메이터가 붙은 자식 오브젝트의 원본 scale 캐싱 (루트가 아닌 자식 기준)
+        _weaponAnimatorScale = _weaponAnimator != null
+                               ? _weaponAnimator.transform.localScale
+                               : Vector3.one;
 
         _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         _propBlock      = new MaterialPropertyBlock();
+        _waitAimVfx     = new WaitForSeconds(1.1f); // 코루틴용 캐시 (GC 방지)
 
         // Player의 자식에서 Aim_UPVFX 오브젝트를 이름으로 찾아 참조합니다.
         Transform root = GetComponentInParent<Transform>().root;
         Transform found = FindDeep(root, "Aim_UPVFX");
         if (found != null)
         {
-            _aimUpVfx = found.gameObject;
+            _aimUpVfx         = found.gameObject;
+            _aimUpVfxAnimator = _aimUpVfx.GetComponent<Animator>();
             _aimUpVfx.SetActive(false); // 시작 시 꺼둡니다.
         }
     }
@@ -133,6 +143,14 @@ public class BowBehaviour : WeaponBehaviourBase
         HandleCharge();
     }
 
+    private void LateUpdate()
+    {
+        // 애니메이션 클립에 Scale 키프레임이 있을 경우 자식(animator) 오브젝트의 scale을
+        // 원본으로 강제 복원합니다. SwordBehaviour의 localEulerAngles 리셋과 동일한 패턴.
+        if (_weaponAnimator != null)
+            _weaponAnimator.transform.localScale = _weaponAnimatorScale;
+    }
+
     // ─────────────────────────────────────────────────────────────
     // 차징 처리 (우클릭) - 매 프레임 직접 Update에서 폴링
     // ─────────────────────────────────────────────────────────────
@@ -142,6 +160,7 @@ public class BowBehaviour : WeaponBehaviourBase
         if (Input.GetMouseButtonDown(1) && _bowState == BowState.Idle)
         {
             _bowState        = BowState.Charging;
+            IsAttacking      = true;  // 차징 중 무기 교체 큐잉 차단
             _chargeStartTime = Time.time;
             _hasFired        = false;
             _aimVfxTriggered = false; // 새 차징 시작 시 초기화
@@ -180,8 +199,20 @@ public class BowBehaviour : WeaponBehaviourBase
                 _aimVfxTriggered = true;
                 if (_aimUpVfx != null)
                 {
+                    // 이전 코루틴이 남아있으면 먼저 취소
+                    if (_aimVfxCoroutine != null)
+                    {
+                        StopCoroutine(_aimVfxCoroutine);
+                        _aimVfxCoroutine = null;
+                    }
                     _aimUpVfx.SetActive(true);
-                    StartCoroutine(DisableAimVfxAfterDelay(1.1f));
+                    // Animator를 초기 상태로 리셋 → 매번 0프레임부터 재생 보장
+                    if (_aimUpVfxAnimator != null)
+                    {
+                        _aimUpVfxAnimator.Rebind();
+                        _aimUpVfxAnimator.Update(0f);
+                    }
+                    _aimVfxCoroutine = StartCoroutine(DisableAimVfxAfterDelay());
                 }
             }
 
@@ -253,12 +284,12 @@ public class BowBehaviour : WeaponBehaviourBase
         _hasFired   = true;
     }
 
-    /// <summary>차징 관련 부작용(속도 둔화, 떨림, 애니메이터 속도, 글로우)을 모두 초기화합니다.</summary>
+    /// <summary>차징 관련 부작용(속도 둔화, 떨림, 애니메이터 속도, 글로우, VFX)을 모두 초기화합니다.</summary>
     private void ResetChargeEffects()
     {
         if (_playerMovement != null) _playerMovement.SpeedMultiplier = 1f;
         _weaponTransform.localPosition = _weaponLocalOrigin;
-        
+
         if (_weaponAnimator != null) _weaponAnimator.speed = 1f;
 
         // 글로우 초기화
@@ -268,12 +299,21 @@ public class BowBehaviour : WeaponBehaviourBase
             _propBlock.SetFloat(_glowIntensityId, 0f);
             _spriteRenderer.SetPropertyBlock(_propBlock);
         }
+
+        // VFX 즉시 비활성화 + 대기 중인 코루틴 취소 (차징 해제 시 즉시 숨김)
+        if (_aimVfxCoroutine != null)
+        {
+            StopCoroutine(_aimVfxCoroutine);
+            _aimVfxCoroutine = null;
+        }
+        if (_aimUpVfx != null) _aimUpVfx.SetActive(false);
     }
 
-    private System.Collections.IEnumerator DisableAimVfxAfterDelay(float delay)
+    private System.Collections.IEnumerator DisableAimVfxAfterDelay()
     {
-        yield return new WaitForSeconds(delay);
+        yield return _waitAimVfx; // 캐시된 WaitForSeconds 재사용
         if (_aimUpVfx != null) _aimUpVfx.SetActive(false);
+        _aimVfxCoroutine = null;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -291,6 +331,8 @@ public class BowBehaviour : WeaponBehaviourBase
         if (_weaponAnimator != null)
         {
             _weaponAnimator.speed = 1f;
+            // 이전 공격에서 큐에 남은 트리거를 먼저 비워 중복 발화 방지
+            _weaponAnimator.ResetTrigger("Attack");
             _weaponAnimator.SetTrigger("Attack");
         }
     }
@@ -321,6 +363,8 @@ public class BowBehaviour : WeaponBehaviourBase
 
             if (_weaponAnimator != null)
             {
+                _weaponAnimator.speed = 1f;
+                _weaponAnimator.ResetTrigger("Attack"); // 큐 잔류 트리거 제거
                 _weaponAnimator.Play("Idle", 0, 0f);
                 _weaponAnimator.Update(0f);
             }
@@ -354,13 +398,16 @@ public class BowBehaviour : WeaponBehaviourBase
 
     public override void OnDeactivated()
     {
-        _bowState = BowState.Idle;
+        _bowState   = BowState.Idle;
         IsAttacking = false;
         _hasFired   = false;
         ResetChargeEffects();
 
         if (_weaponAnimator != null)
         {
+            // speed 복원 → ResetTrigger → Play 순서를 지켜야 Idle 0프레임이 확실히 평가됨
+            _weaponAnimator.speed = 1f;
+            _weaponAnimator.ResetTrigger("Attack");
             _weaponAnimator.Play("Idle", 0, 0f);
             _weaponAnimator.Update(0f);
         }

@@ -50,11 +50,11 @@ public class WeaponSlotManager : MonoBehaviour
 
     // ── Public API ──────────────────────────────────────────────────
 
-    /// <summary>활성 슬롯을 0 ↔ 1 토글합니다.</summary>
+    /// <summary>활성 슬롯을 0 ↔ 1 토글합니다. 공격 중이면 큐에 저장해 공격 종료 후 실행됩니다.</summary>
     public void SwapWeapon()
     {
         ActiveSlotIndex = 1 - ActiveSlotIndex;
-        _weaponCtrl.EquipWeapon(ActiveSlotIndex);
+        _weaponCtrl.TryEquipWeapon(ActiveSlotIndex);
         OnSlotChanged?.Invoke(ActiveSlotIndex, ActiveWeapon);
     }
 

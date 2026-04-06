@@ -204,7 +204,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6c4bbb4960e36b409a6250a52f298ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ItemDropSpawner
-  _itemPrefab: {fileID: 0}
+  _itemPrefab: {fileID: 8940660355580203892, guid: d2b207a3bfbcc4646b4c8446cbdc704c, type: 3}
   _dropCount: 1
   _minJumpForce: 3
   _maxJumpForce: 5

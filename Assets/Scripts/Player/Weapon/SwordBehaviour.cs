@@ -14,11 +14,17 @@ public class SwordBehaviour : WeaponBehaviourBase
     [Header("Hitbox")]
     [SerializeField] private Collider2D _hitboxCollider;
 
-    public override float ComboWindow    => 0.5f;
-    public override int   MaxComboSteps  => 2;
-    public override bool  FlipComboDirection => true; // 2타에 Y-scale 반전(올려치기)
+    public override float ComboWindow        => 0.5f;
+    public override int   MaxComboSteps      => 2;
+    // 콤보 flip은 이 클래스 내부(this.transform Y-scale)에서 처리하므로 컨트롤러 레벨 flip 불필요
+    public override bool  FlipComboDirection => false;
 
     private bool    _hitboxFired;
+
+    // this.transform(SwordWeapon 루트) 기준 캐싱
+    private Vector3 _restLocalScale;
+
+    // 자식 애니메이터 localPosition 캐싱 (애니메이터가 위치를 덮어쓰는 것 방지)
     private Vector3 _weaponRestLocalPos;
     private Vector3 _vfxRestLocalPos;
 
@@ -26,50 +32,50 @@ public class SwordBehaviour : WeaponBehaviourBase
     {
         CurrentComboStep = 1;
 
-        // 이전 버전에서 꼬인 플립 초기화
-        var swordRenderer = _weaponAnimator != null ? _weaponAnimator.GetComponent<SpriteRenderer>() : null;
-        if (swordRenderer != null) { swordRenderer.flipX = false; swordRenderer.flipY = false; }
+        // SwordWeapon 루트의 초기 스케일 저장
+        _restLocalScale = transform.localScale;
 
-        var vfxRenderer = _vfxAnimator != null ? _vfxAnimator.GetComponent<SpriteRenderer>() : null;
-        if (vfxRenderer != null) { vfxRenderer.flipX = false; vfxRenderer.flipY = false; }
-
-        // 애니메이터가 위치값을 덮어쓰지 못하도록 최초 로컬 위치를 캐싱
-        if (_weaponAnimator != null) _weaponRestLocalPos = _weaponAnimator.transform.localPosition;
-        if (_vfxAnimator    != null) _vfxRestLocalPos    = _vfxAnimator.transform.localPosition;
+        if (_weaponAnimator != null)
+            _weaponRestLocalPos = _weaponAnimator.transform.localPosition;
+        if (_vfxAnimator != null)
+            _vfxRestLocalPos = _vfxAnimator.transform.localPosition;
 
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
     }
 
     private void LateUpdate()
     {
+        // 애니메이터가 매 프레임 덮어쓰는 localPosition을 원래 값으로 복원
         if (_weaponAnimator != null)
-        {
             _weaponAnimator.transform.localPosition = _weaponRestLocalPos;
-            // 공격 중이 아닐 때: LateUpdate에서 매 프레임 rotation을 0으로 고정.
-            // Animator는 Play("Idle") 이후에도 LateUpdate에서 Attack의 마지막 rotation 값을
-            // 계속 적용할 수 있으므로, !IsAttacking 구간에서 강제로 눌러둡니다.
-            if (!IsAttacking) _weaponAnimator.transform.localEulerAngles = Vector3.zero;
-        }
         if (_vfxAnimator != null)
-        {
             _vfxAnimator.transform.localPosition = _vfxRestLocalPos;
-            if (!IsAttacking) _vfxAnimator.transform.localEulerAngles = Vector3.zero;
+
+        // 비공격 상태에서는 자식 회전도 원복
+        if (!IsAttacking)
+        {
+            if (_weaponAnimator != null)
+                _weaponAnimator.transform.localEulerAngles = Vector3.zero;
+            if (_vfxAnimator != null)
+                _vfxAnimator.transform.localEulerAngles = Vector3.zero;
         }
     }
 
-    /// <summary>Idle 전환 직후 애니메이터가 갱신되기 전에 rotation을 리셋합니다.</summary>
-    private void ResetChildRotations()
+    /// <summary>Idle 전환 직후 애니메이터가 갱신되기 전에 rotation과 루트 스케일을 리셋합니다.</summary>
+    private void ResetChildTransforms()
     {
+        // SwordWeapon 루트 스케일 복원 (콤보 flip 해제)
+        transform.localScale = _restLocalScale;
+
         if (_weaponAnimator != null)
         {
-             _weaponAnimator.transform.localEulerAngles = Vector3.zero;
-             // 애니메이터가 비활성화된 후에도 마지막 프레임이 남지 않도록 강제 업데이트
-             _weaponAnimator.Update(0f);
+            _weaponAnimator.transform.localEulerAngles = Vector3.zero;
+            _weaponAnimator.Update(0f);
         }
         if (_vfxAnimator != null)
         {
-             _vfxAnimator.transform.localEulerAngles = Vector3.zero;
-             _vfxAnimator.Update(0f);
+            _vfxAnimator.transform.localEulerAngles = Vector3.zero;
+            _vfxAnimator.Update(0f);
         }
     }
 
@@ -78,6 +84,14 @@ public class SwordBehaviour : WeaponBehaviourBase
         IsAttacking      = true;
         _hitboxFired     = false;
         CurrentComboStep = comboStep;
+
+        // 2타는 SwordWeapon 루트(this.transform)의 Y-scale을 반전해 스윙 방향을 뒤집습니다.
+        // - this.transform의 worldPosition은 변하지 않으므로 피봇 위치 이동 없음.
+        // - 자식(애니메이터, VFX, 히트박스)이 모두 일관되게 함께 뒤집힘.
+        // - 피봇의 Y-scale(커서 방향 미러)과는 독립적으로 곱해져 좌우 어느 방향이든 동작.
+        float flipY = (comboStep == 2) ? -1f : 1f;
+        transform.localScale = new Vector3(
+            _restLocalScale.x, _restLocalScale.y * flipY, _restLocalScale.z);
 
         _weaponAnimator.SetTrigger("Attack");
         if (_vfxAnimator != null) _vfxAnimator.SetTrigger("Attack");
@@ -110,10 +124,8 @@ public class SwordBehaviour : WeaponBehaviourBase
                 _weaponAnimator.Play("Idle", 0, 0f);
                 if (_vfxAnimator != null) _vfxAnimator.Play("Idle", 0, 0f);
             }
-            // Idle 전환 직후 animation 커브 갱신 전에 rotation을 리셋.
-            // CheckAttackFinished가 UpdateCursorDirection보다 먼저 실행되므로
-            // 같은 프레임에 피봇 회전도 즉시 갱신되어 이상한 각도가 보이지 않음.
-            ResetChildRotations();
+            // Idle 전환 직후 animation 커브 갱신 전에 rotation·scale을 리셋.
+            ResetChildTransforms();
             return true;
         }
         return false;
@@ -125,10 +137,11 @@ public class SwordBehaviour : WeaponBehaviourBase
         _hitboxFired = false;
         StopAllCoroutines();
 
+        transform.localScale = _restLocalScale;
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
         if (_weaponAnimator  != null) _weaponAnimator.Play("Idle", 0, 0f);
         if (_vfxAnimator     != null) _vfxAnimator.Play("Idle", 0, 0f);
-        ResetChildRotations();
+        ResetChildTransforms();
     }
 
     // 물리 사이클 2회 후 히트박스 비활성화 (1 physics frame 온전히 보장)

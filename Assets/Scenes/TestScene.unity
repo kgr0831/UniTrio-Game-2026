@@ -1346,6 +1346,7 @@ MonoBehaviour:
   _dashForce: 14
   _dashDuration: 0.18
   _cooldown: 1
+  _isUpgraded: 0
 --- !u!1 &989394696
 GameObject:
   m_ObjectHideFlags: 0
@@ -1596,10 +1597,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7364374970947197434, guid: bad213ee89bc10949ba14b9d3a4775df, type: 3}
-      propertyPath: _itemPrefab
-      value: 
-      objectReference: {fileID: 8940660355580203892, guid: d2b207a3bfbcc4646b4c8446cbdc704c, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -272,18 +272,26 @@ AfterimageGhost (MonoBehaviour)
 
 ---
 
-#### 선행 1. WeaponSlotManager — E키 2슬롯 스왑
-- `WeaponData` 2개 슬롯 보관
-- E키 입력 → 활성 슬롯 0↔1 토글, `PlayerWeaponController.EquipWeapon()` 호출
-- `OnSlotChanged` 이벤트로 UI(핫바 1번) 갱신 알림
-- `PlayerWeaponController.EquipWeapon()` public으로 변경
+#### 선행 1. WeaponSlotManager — E키 2슬롯 스왑 🔧
+코드 구현 완료. 씬 연결 작업 필요.
+- ~~숫자키(1~9) 무기 교체~~ → **E키 2슬롯 전용으로 변경** (`PlayerWeaponController.HandleWeaponSwitch()` 제거)
+- 무기 최대 2개 강제 (슬롯 A / B)
+- 씬 UI 배치 완료 → Editor 스크립트로 `WeaponSlotManager` 컴포넌트·Inspector 연결 필요
+- `OnSlotChanged` 이벤트로 핫바 1번 UI 갱신
 
-#### 선행 2. SkillSlotManager — Q키 스킬 시전
-- `SkillData` 1개 슬롯 보관
-- 인벤토리에서 드래그 앤 드롭으로 장착 → `EquipSkill(SkillData)` 호출
-- Q키 입력 → `StatSystem.HasEnoughMana` 체크 → `ConsumeMana` → 시전 로그
-- 쿨다운 타이머 (GC 없는 Update 방식)
-- `OnCooldownChanged` 이벤트로 UI 갱신
+#### 선행 2. SkillSlotManager — Q키 스킬 시전 🔧
+코드 구현 완료. 씬 배치 필요.
+- `SkillSlotManager` 컴포넌트를 Player에 부착, `StatSystem` 자동 참조
+- 인벤토리 `SkillData` 드래그 앤 드롭 → `EquipSkill()` 호출
+- Q키 → `HasEnoughMana` 체크 → `ConsumeMana` → 쿨다운 타이머
+- Editor 설정 스크립트 또는 배치 가이드 제공 예정
+
+#### 선행 3. HitState 개선 🔧
+현재 0.2초 스태거만 있음. 아래 항목 추가 필요:
+- **Cinemachine 카메라 셰이크** (피격 시 짧은 임펄스)
+- **플레이어 붉은 점멸** (기존 흰색 플래시 → 빨간색으로 변경)
+- **Animator.speed = 0** 프리즈 (대시와 동일, 점멸 동안 유지)
+- **점멸 중 공격 불가** (`WeaponCtrl.enabled = false`)
 
 ---
 
@@ -294,10 +302,11 @@ AfterimageGhost (MonoBehaviour)
 - 발사 좌표 저장 → `sqrMagnitude` 기반 10칸(worldUnit) 초과 시 풀 반환
 - `Instantiate` / `Destroy` 금지 → Object Pool 연동
 
-#### M3-2. 완드 마나 소모
-- `WandBehaviour.BeginAttack()` 에서 `StatSystem.HasEnoughMana(5)` 체크
+#### M3-2. 완드 마나 소모 🐛 (버그 확인됨)
+- **현재 버그:** 마나 0에서도 마법탄 발사 가능
+- `WandBehaviour.BeginAttack()` 에서 `StatSystem.HasEnoughMana(5)` 체크 추가
 - 통과 시 `StatSystem.ConsumeMana(5)` 호출 후 발사
-- 마나 부족 시 발사 불가 (UI 피드백 추후 연동)
+- 마나 부족 시 발사 불가
 
 #### M3-3. WeaponSlotManager — E키 무기 교체
 - `E` 키로 슬롯 1↔2 즉시 토글

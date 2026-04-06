@@ -8,20 +8,21 @@ using UnityEngine;
 public class ArrowProjectile : MonoBehaviour
 {
     [Header("Movement")]
-    [SerializeField] private float   _speed     = 15f;
-    [SerializeField] private float   _lifeTime  = 3f;
+    [SerializeField] private float   _speed         = 15f;
+    [SerializeField] private float   _lifeTime      = 3f;
     [SerializeField] private Vector3 _moveDirection = Vector3.right;
 
     [Header("Damage")]
     [SerializeField] private float _damage = 10f;
 
-    [Header("Hit VFX & Text (Optional)")]
+    [Header("Hit VFX (Optional)")]
+    [Tooltip("충돌 시 랜덤 재생할 HitVFX 프리팹 배열. HitVfxAutoReturn 컴포넌트가 부착되어 있어야 합니다.")]
     [SerializeField] private GameObject[] _hitVfxPrefabs;
-    [SerializeField] private GameObject   _damageTextPrefab;
 
-    /// <summary>
-    /// BowBehaviour에서 발사 시 차징 비율에 따른 속도/데미지를 주입합니다.
-    /// </summary>
+    [Header("Damage Text (Optional)")]
+    [SerializeField] private GameObject _damageTextPrefab;
+
+    /// <summary>BowBehaviour에서 발사 시 차징 비율에 따른 속도/데미지를 주입합니다.</summary>
     public void SetStats(float speed, float damage)
     {
         _speed  = speed;
@@ -47,7 +48,7 @@ public class ArrowProjectile : MonoBehaviour
             if (target != null && target.IsAlive)
             {
                 target.TakeDamage(_damage, gameObject);
-                SpawnHitVFX(collision);
+                SpawnHitVfx(collision);
                 SpawnDamageText(collision);
             }
             Destroy(gameObject);
@@ -58,30 +59,28 @@ public class ArrowProjectile : MonoBehaviour
         }
     }
 
-    private void SpawnHitVFX(Collider2D enemyCollider)
+    /// <summary>
+    /// 충돌 콜라이더의 ClosestPoint에 HitVFX를 풀링 생성합니다.
+    /// Rotation Z = 투사체 위치 → 충돌 지점 방향각.
+    /// </summary>
+    private void SpawnHitVfx(Collider2D hitCollider)
     {
         if (_hitVfxPrefabs == null || _hitVfxPrefabs.Length == 0) return;
 
-        Vector3    closestHitPoint = enemyCollider.ClosestPoint(transform.position);
-        GameObject vfxObj          = Instantiate(
-            _hitVfxPrefabs[Random.Range(0, _hitVfxPrefabs.Length)],
-            closestHitPoint,
-            Quaternion.Euler(0f, 0f, Random.Range(0f, 360f)));
+        Vector3 hitPoint = hitCollider.ClosestPoint(transform.position);
+        Vector2 dir      = (Vector2)(hitPoint - transform.position);
+        float   angleZ   = dir.sqrMagnitude > 0.0001f
+                           ? Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg
+                           : 0f;
 
-        float autoLifetime = 0.5f;
-        Animator anim = vfxObj.GetComponent<Animator>();
-        if (anim != null)
-        {
-            anim.Update(0f);
-            autoLifetime = anim.GetCurrentAnimatorStateInfo(0).length;
-        }
-        Destroy(vfxObj, autoLifetime);
+        GameObject prefab = _hitVfxPrefabs[Random.Range(0, _hitVfxPrefabs.Length)];
+        SimpleObjectPool.Instance.Get(prefab, hitPoint, Quaternion.Euler(0f, 0f, angleZ));
     }
 
-    private void SpawnDamageText(Collider2D enemyCollider)
+    private void SpawnDamageText(Collider2D hitCollider)
     {
         if (_damageTextPrefab == null) return;
-        Vector3    spawnPos = enemyCollider.bounds.center + Vector3.up * 0.5f;
+        Vector3    spawnPos = hitCollider.bounds.center + Vector3.up * 0.5f;
         GameObject textObj  = Instantiate(_damageTextPrefab, spawnPos, Quaternion.identity);
         DamageText dmgText  = textObj.GetComponent<DamageText>();
         if (dmgText != null) dmgText.Setup(Mathf.RoundToInt(_damage));

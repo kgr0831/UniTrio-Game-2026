@@ -129,8 +129,8 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0.015, y: -0.08}
-  m_Radius: 0.09
+  m_Offset: {x: 0.014999996, y: -0.12415882}
+  m_Radius: 0.114140116
 --- !u!114 &7799251222051369326
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -146,8 +146,10 @@ MonoBehaviour:
   _speed: 12
   _lifeTime: 3
   _damage: 15
+  _hitVfxPrefabs: []
   _explosionVfxPrefab: {fileID: 7404956689840607511, guid: 3d836cfdeda0679468e8a9e91f027b41, type: 3}
   _damageTextPrefab: {fileID: 1862679126408685501, guid: 95d233be8196c274fa3787f1224378e8, type: 3}
+  _spinSpeed: 0
   _glowRenderer: {fileID: 1702163004974280389}
   _glowColor: {r: 0.2, g: 0.5, b: 1, a: 1}
   _glowIntensity: 5

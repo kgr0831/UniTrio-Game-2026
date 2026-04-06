@@ -26,6 +26,7 @@ public class PlayerWeaponController : MonoBehaviour
 
     private Camera _mainCamera;
     private float  _camToWorldZ;
+    private float  _cursorDx; // UpdateCursorDirection에서 캐싱 → HandleAttackInput에서 콤보 flip에 재사용
     // ── 콤보 엔진 ─────────────────────────────────────────
     // _comboStep : 다음 번에 실행될 공격의 타수(step).
     // BeginAttack 호출 후 즉시 증가하므로, UpdateCursorDirection이
@@ -39,8 +40,12 @@ public class PlayerWeaponController : MonoBehaviour
     private float _attackStartTime;
 
     // 현재 활성 무기
-    private int                _currentSlotIndex = 0;
+    private int                 _currentSlotIndex = 0;
     private WeaponBehaviourBase _activeBehaviour;
+
+    // 공격 중 스왑 요청을 저장해두는 큐 (-1 = 없음)
+    // 공격이 끝난 첫 프레임에 자동 실행되어 피봇 트랜스폼 오염을 방지합니다.
+    private int _pendingSlotIndex = -1;
 
     private void Awake()
     {
@@ -56,6 +61,7 @@ public class PlayerWeaponController : MonoBehaviour
     {
         HandleWeaponSwitch();
         CheckAttackFinished();    // UpdateCursorDirection 전에 실행해야 공격 종료 프레임에서
+        FlushPendingSwap();       // 공격이 끝난 직후 대기 중인 스왑을 실행
         UpdateCursorDirection();  // 즉시 피봇 회전이 갱신되어 이상한 각도가 1프레임도 보이지 않음
         HandleAttackInput();
     }
@@ -64,18 +70,47 @@ public class PlayerWeaponController : MonoBehaviour
 
     private void HandleWeaponSwitch()
     {
-        // 숫자키 1~9번을 눌렀을 때 배열 길이에 맞게 무기를 교체합니다.
+        // 숫자키 1~9번: 공격 중이면 큐에 저장, 아니면 즉시 교체
         for (int i = 0; i < _weaponBehaviours.Length; i++)
         {
             if (i < 9 && Input.GetKeyDown(KeyCode.Alpha1 + i))
             {
-                EquipWeapon(i);
+                TryEquipWeapon(i);
                 break;
             }
         }
     }
 
-    /// <summary>지정 슬롯 인덱스의 무기를 장착합니다. WeaponSlotManager에서 E키 스왑 시 호출합니다.</summary>
+    /// <summary>
+    /// 무기 장착 요청. 공격 중이면 큐에 저장해 공격 종료 직후 실행합니다.
+    /// WeaponSlotManager(E키), HandleWeaponSwitch(숫자키) 양쪽에서 호출됩니다.
+    /// </summary>
+    public void TryEquipWeapon(int index)
+    {
+        if (_activeBehaviour != null && _activeBehaviour.IsAttacking)
+        {
+            // 공격 중 → 큐에 저장 (가장 마지막 요청만 유효)
+            _pendingSlotIndex = index;
+        }
+        else
+        {
+            _pendingSlotIndex = -1;
+            EquipWeapon(index);
+        }
+    }
+
+    /// <summary>공격이 끝난 프레임에 대기 중인 스왑을 실행합니다.</summary>
+    private void FlushPendingSwap()
+    {
+        if (_pendingSlotIndex < 0) return;
+        if (_activeBehaviour != null && _activeBehaviour.IsAttacking) return;
+
+        int idx = _pendingSlotIndex;
+        _pendingSlotIndex = -1;
+        EquipWeapon(idx);
+    }
+
+    /// <summary>지정 슬롯 인덱스의 무기를 즉시 장착합니다. 직접 호출 시 공격 중단에 주의하세요.</summary>
     public void EquipWeapon(int index)
     {
         if (index < 0 || index >= _weaponBehaviours.Length) return;
@@ -127,6 +162,9 @@ public class PlayerWeaponController : MonoBehaviour
             dy *= inv;
         }
 
+        // 공격 시작 시 콤보 flip 즉시 적용을 위해 정규화된 커서 X 방향을 캐싱합니다.
+        _cursorDx = dx;
+
         // - 캐릭터 바라보는 방향 파라미터(DirX, DirY)는 이제 PlayerMovement.cs에서 설정함 -
 
         // 공격 중에는 피봇 각도를 고정 (주로 근접 무기). 설정에 따라 활처럼 조준을 유지할 수도 있습니다.
@@ -138,17 +176,11 @@ public class PlayerWeaponController : MonoBehaviour
         _weaponPivot.localEulerAngles = new Vector3(0f, 0f, angle + rotOffset);
 
         // UseYScaleFlip=false 인 무기(창 등)는 항상 scale (1,1,1) — 반전 없음
+        // 콤보 flip은 ApplyAttackStartScale에서 공격 시작 시점에 적용됩니다.
+        // 여기서는 비공격 상태(idle/ComboWindow)의 cursor 방향 flip만 처리합니다.
         float baseScaleY = 1f;
         if (_activeBehaviour == null || _activeBehaviour.UseYScaleFlip)
-        {
-            // _comboStep 은 "다음 공격의 타수"를 가리키므로
-            // 현재 비어있는 프레임에서 이미 다음 공격의 방향 프리뷰가 맞게 적용됩니다.
-            bool flipY = _activeBehaviour != null
-                         && _activeBehaviour.FlipComboDirection
-                         && _comboStep == 2;
             baseScaleY = (dx < 0f) ? -1f : 1f;
-            if (flipY) baseScaleY *= -1f;
-        }
 
         _weaponPivot.localScale = new Vector3(1f, baseScaleY, 1f);
 
@@ -204,11 +236,32 @@ public class PlayerWeaponController : MonoBehaviour
             _attackQueued    = false;
             _attackStartTime = Time.time;
 
+            // LockRotationDuringAttack 무기는 BeginAttack 이후 UpdateCursorDirection이 early return하므로
+            // 공격 시작 직전에 콤보 flip scale을 미리 세팅합니다.
+            ApplyAttackStartScale(_comboStep);
+
             _activeBehaviour.BeginAttack(_comboStep);
 
             // 다음 클릭/연사를 위해 스텝 순환
             _comboStep = (_comboStep % _activeBehaviour.MaxComboSteps) + 1;
         }
+    }
+
+    /// <summary>
+    /// 공격 시작 시 콤보 flip을 포함한 피봇 Y-scale을 즉시 적용합니다.
+    /// LockRotationDuringAttack 무기는 이후 UpdateCursorDirection이 early return하므로
+    /// 이 시점에 미리 설정해야 공격 애니메이션 전체에서 올바른 방향이 유지됩니다.
+    /// </summary>
+    private void ApplyAttackStartScale(int comboStep)
+    {
+        if (_activeBehaviour == null || !_activeBehaviour.LockRotationDuringAttack) return;
+        if (!_activeBehaviour.UseYScaleFlip) return;
+
+        bool   flipY     = _activeBehaviour.FlipComboDirection && comboStep == 2;
+        float  scaleY    = (_cursorDx < 0f) ? -1f : 1f;
+        if (flipY) scaleY *= -1f;
+
+        _weaponPivot.localScale = new Vector3(1f, scaleY, 1f);
     }
 
     // ── 공격 종료 감시 ────────────────────────────────────
