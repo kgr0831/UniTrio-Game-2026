@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__UnityMCP__create_script",
+      "mcp__UnityMCP__set_active_instance",
+      "mcp__UnityMCP__manage_scene",
+      "mcp__UnityMCP__find_gameobjects",
+      "mcp__UnityMCP__manage_gameobject",
+      "mcp__UnityMCP__manage_components",
+      "Bash(grep -l \"4cb705a8f5c800648851b4f310e901f1\" \"C:/Users/kimga/UniTrio-Game-2026/Assets/Resources/Sprites/VFX/Attack/\"*.meta)",
+      "mcp__UnityMCP__read_console",
+      "Read(//fileID: 253526776/{found=1} found && /m_Name/**)",
+      "Read(//fileID: 426957083/{found=1} found && /m_Name/**)",
+      "mcp__UnityMCP__batch_execute",
+      "mcp__UnityMCP__execute_menu_item",
+      "mcp__UnityMCP__refresh_unity",
+      "mcp__UnityMCP__manage_editor",
+      "mcp__UnityMCP__manage_asset",
+      "mcp__UnityMCP__validate_script",
+      "mcp__UnityMCP__manage_script",
+      "mcp__UnityMCP__manage_material",
+      "mcp__UnityMCP__manage_prefabs"
+    ]
+  }
+}
