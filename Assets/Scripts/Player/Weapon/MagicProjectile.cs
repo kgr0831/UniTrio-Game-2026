@@ -14,6 +14,9 @@ public class MagicProjectile : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float _speed    = 12f;
     [SerializeField] private float _lifeTime = 3f;
+    [SerializeField] private float _maxDistance = 10f;
+    
+    private Vector3 _spawnPos;
 
     [Header("Damage")]
     [SerializeField] private float _damage = 15f;
@@ -78,6 +81,7 @@ public class MagicProjectile : MonoBehaviour
 
     private void OnEnable()
     {
+        _spawnPos = transform.position;
         _exploded = false;
         // 충돌 시 숨겼던 렌더러를 복원
         if (_glowRenderer != null) _glowRenderer.enabled = true;
@@ -105,6 +109,12 @@ public class MagicProjectile : MonoBehaviour
     private void FixedUpdate()
     {
         transform.Translate((Vector3)_moveDirection * _speed * Time.fixedDeltaTime, Space.World);
+
+        // 비거리 제한 체크 (10칸)
+        if (Vector3.Distance(_spawnPos, transform.position) >= _maxDistance)
+        {
+            ReturnToPool();
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)

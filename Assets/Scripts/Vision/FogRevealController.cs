@@ -37,7 +37,7 @@ public class FogRevealController : MonoBehaviour
     [Tooltip("이동 경로 Trail 활성 여부.\n" +
              "true : 지나간 경로가 미니맵에 영구 표시 (기존 동작).\n" +
              "false: 현재 위치 원형만 안개 제거 (기본값).")]
-    [SerializeField] private bool _enableTrailReveal = false;
+    [SerializeField] private bool _enableTrailReveal = true;
     // ── 되돌리기: _enableTrailReveal = true ── (기존 동작 복원)
 
     // ══════════════════════════════════════════════════════════════════════
@@ -53,8 +53,7 @@ public class FogRevealController : MonoBehaviour
 
     private void Awake()
     {
-        _spriteRenderer = GetComponent<SpriteRenderer>();
-        _trailRenderer  = GetComponent<TrailRenderer>();
+        FindComponents();
         ApplySettings();
     }
 
@@ -62,17 +61,25 @@ public class FogRevealController : MonoBehaviour
     // 에디터에서 인스펙터 값을 바꿀 때 즉시 미리보기
     private void OnValidate()
     {
-        _spriteRenderer = GetComponent<SpriteRenderer>();
-        _trailRenderer  = GetComponent<TrailRenderer>();
+        FindComponents();
         ApplySettings();
     }
 #endif
 
+    private void FindComponents()
+    {
+        if (_spriteRenderer == null) _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (_trailRenderer  == null) _trailRenderer  = GetComponentInChildren<TrailRenderer>();
+    }
+
     private void ApplySettings()
     {
+        // ── 레이어 강제 (Vision Layer = 6) ────────────────────────────────
+        // 가끔 부모만 바뀔 수 있으므로 자식들도 함께 바꿉니다.
+        gameObject.layer = 6;
+        foreach (Transform child in transform) { child.gameObject.layer = 6; }
+
         // ── 원형 시야 스케일 적용 ────────────────────────────────────────
-        // 반경 → 스프라이트 배율: visionRadius / SPRITE_BASE_RADIUS
-        // 기존 복원: transform.localScale = Vector3.one (반경 1.28)
         if (_visionRadius > 0f)
         {
             float s = _visionRadius / SPRITE_BASE_RADIUS;
@@ -81,12 +88,33 @@ public class FogRevealController : MonoBehaviour
 
         // ── 원형 SpriteRenderer 켜고 끄기 ───────────────────────────────
         if (_spriteRenderer != null)
+        {
             _spriteRenderer.enabled = _enableCircleReveal;
+            // 미니맵 전용 시야 오브젝트는 하얀색이어야 안개를 뚫습니다 (RT 캡처용)
+            _spriteRenderer.color = Color.white;
+        }
 
-        // ── Trail 켜고 끄기 ──────────────────────────────────────────────
-        // 기존 Trail: width=30, time=10000s — 대단히 넓고 긴 궤적 기록.
-        // false로 두면 현재 위치 원형만 안개가 걷힙니다.
+        // ── Trail 켜고 끄기 및 파라미터 강제 ──────────────────────────────
         if (_trailRenderer != null)
+        {
             _trailRenderer.enabled = _enableTrailReveal;
+            if (_enableTrailReveal)
+            {
+                _trailRenderer.startWidth = 25f; 
+                _trailRenderer.endWidth   = 25f;
+                _trailRenderer.time       = 10000f; // 영구 기록
+                _trailRenderer.minVertexDistance = 0.5f; 
+                
+                // 트레일도 하얀색이어야 안개를 뚫습니다
+                _trailRenderer.startColor = Color.white;
+                _trailRenderer.endColor   = Color.white;
+
+                // 머티리얼이 없는 경우 기본 스프라이트 머티리얼이라도 할당 (안그럼 분홍색)
+                if (_trailRenderer.sharedMaterial == null)
+                {
+                    _trailRenderer.material = new Material(Shader.Find("Sprites/Default"));
+                }
+            }
+        }
     }
 }

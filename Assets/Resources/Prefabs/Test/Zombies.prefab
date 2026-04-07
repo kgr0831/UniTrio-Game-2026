@@ -624,7 +624,7 @@ Transform:
   m_GameObject: {fileID: 4008959096482823201}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2.0153155, y: -0.23380849, z: 0}
+  m_LocalPosition: {x: 1.73, y: -0.56, z: 0}
   m_LocalScale: {x: 3.35, y: 3.35, z: 3.35}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -1240,6 +1240,7 @@ GameObject:
   - component: {fileID: 7297195786597841406}
   - component: {fileID: 2566486178488809785}
   - component: {fileID: 2199447146863829089}
+  - component: {fileID: 1784606439516908612}
   m_Layer: 8
   m_Name: zombie
   m_TagString: Enemy
@@ -1256,7 +1257,7 @@ Transform:
   m_GameObject: {fileID: 7651519052673556857}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2.14279, y: 1.13297, z: 0}
+  m_LocalPosition: {x: 1.95, y: 1.24, z: 0}
   m_LocalScale: {x: 3.35, y: 3.35, z: 3.35}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -1424,3 +1425,25 @@ MonoBehaviour:
   _flashDuration: 0.15
   _currentHealth: 0
   _isAlive: 0
+--- !u!95 &1784606439516908612
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7651519052673556857}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 4bbebaec1266d1c45bbd21409083bde4, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0

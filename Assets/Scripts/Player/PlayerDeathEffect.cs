@@ -180,6 +180,17 @@ public class PlayerDeathEffect : MonoBehaviour
             Time.timeScale = 1f;
     }
 
+    /// <summary>
+    /// 부활 시 이 컴포넌트의 상태를 초기화합니다. DeathCutsceneController.OnCutsceneEnd()에서 호출하세요.
+    /// 스프라이트 재활성화는 PlayerReverseDissolveController.PlayReverseDissolve()에서 처리합니다.
+    /// </summary>
+    public void ResetForResurrection()
+    {
+        _effectStarted = false;
+        if (_weaponPivot != null)
+            _weaponPivot.SetActive(true);
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // 포스트 프로세싱 초기화
     // ══════════════════════════════════════════════════════════════════════

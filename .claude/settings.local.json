@@ -35,7 +35,8 @@
       "Bash(grep -E \"\\\\.\\(cs\\)$\")",
       "Bash(grep -E \"\\\\.\\(prefab|anim|controller\\)$\")",
       "mcp__UnityMCP__manage_shader",
-      "mcp__UnityMCP__manage_texture"
+      "mcp__UnityMCP__manage_texture",
+      "Bash(xargs cat:*)"
     ]
   }
 }

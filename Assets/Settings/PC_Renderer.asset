@@ -26,7 +26,9 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 7200000, guid: b9a23f869c4fd45f19c5ada54dd82176, type: 3}
   m_RendererFeatures:
   - {fileID: 7833122117494664109}
-  m_RendererFeatureMap: ad6b866f10d7b46c
+  - {fileID: 3550809197465266494}
+  - {fileID: 7173730964300189013}
+  m_RendererFeatureMap: ad6b866f10d7b46c3e691bf026024731554d55d14d368e63
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -55,6 +57,34 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+--- !u!114 &3550809197465266494
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21990e58bb5002944a0434629094ca84, type: 3}
+  m_Name: ColorInvertRendererFeature
+  m_EditorClassIdentifier: Assembly-CSharp::ColorInvertRendererFeature
+  m_Active: 1
+  Intensity: 0
+--- !u!114 &7173730964300189013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4aa59ceebc6fc8f41978ac69b8b1fef7, type: 3}
+  m_Name: RedScreenAfterimageRendererFeature
+  m_EditorClassIdentifier: Assembly-CSharp::RedScreenAfterimageRendererFeature
+  m_Active: 1
+  Intensity: 0
 --- !u!114 &7833122117494664109
 MonoBehaviour:
   m_ObjectHideFlags: 0

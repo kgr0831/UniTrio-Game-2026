@@ -275,4 +275,20 @@ public class PlayerWeaponController : MonoBehaviour
             _lastAttackEndTime = Time.time;
         }
     }
+
+    /// <summary>
+    /// 부활 시 무기 상태를 완전히 초기화합니다.
+    /// </summary>
+    public void ResetState()
+    {
+        _comboStep         = 1;
+        _attackQueued      = false;
+        _lastAttackEndTime = 0f;
+        _pendingSlotIndex  = -1;
+        
+        // 현재 활성 무기의 공격 상태를 강제 중지
+        _activeBehaviour?.OnDeactivated();
+        
+        // 무기 피봇 재활성화는 연출이 모두 끝난 후 OnCutsceneEnd()에서 수행하도록 합니다.
+    }
 }

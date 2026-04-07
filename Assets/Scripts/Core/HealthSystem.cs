@@ -23,6 +23,9 @@ public sealed class HealthSystem : MonoBehaviour
     public float CurrentHp => _currentHealth;
     public bool  IsAlive   => _isAlive;
 
+    /// <summary>무적 상태 여부. true일 경우 ApplyDamage가 무시됩니다.</summary>
+    public bool  IsInvulnerable { get; set; }
+
     // 이벤트 기반 갱신 → UI·외부 로직은 구독만 하면 됨 (폴링 불필요)
     public event Action<float, float> OnHpChanged; // (currentHp, maxHp)
     public event Action OnDied;
@@ -37,6 +40,7 @@ public sealed class HealthSystem : MonoBehaviour
     {
         _currentHealth  = _maxHp;
         _isAlive        = true;
+        IsInvulnerable  = false;
         _spriteRenderer = GetComponent<SpriteRenderer>();
 
         // SpriteRenderer가 없는 엔티티(비가시 트리거 등)도 허용 – null 체크로 방어
@@ -59,7 +63,7 @@ public sealed class HealthSystem : MonoBehaviour
 
     public void ApplyDamage(float damage)
     {
-        if (!IsAlive) return;
+        if (!IsAlive || IsInvulnerable) return;
 
         _currentHealth = Mathf.Max(0f, _currentHealth - damage);
         _isAlive       = _currentHealth > 0f;
@@ -79,6 +83,14 @@ public sealed class HealthSystem : MonoBehaviour
     {
         if (!IsAlive) return;
         _currentHealth = Mathf.Min(_currentHealth + amount, _maxHp);
+        OnHpChanged?.Invoke(_currentHealth, _maxHp);
+    }
+
+    /// <summary>죽은 상태에서 HP를 회복시킵니다. amount < 0 이면 MaxHp로 전체 회복.</summary>
+    public void Resurrect(float amount = -1f)
+    {
+        _isAlive       = true;
+        _currentHealth = amount < 0f ? _maxHp : Mathf.Clamp(amount, 0.01f, _maxHp);
         OnHpChanged?.Invoke(_currentHealth, _maxHp);
     }
 

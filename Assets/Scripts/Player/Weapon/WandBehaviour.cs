@@ -206,6 +206,18 @@ public class WandBehaviour : WeaponBehaviourBase
     {
         if (_projectilePrefab == null) return;
 
+        // ── 마나 소모 체크 ───────────────────────────────────────────
+        const float manaCost = 5f;
+        if (_playerEntity != null && _playerEntity.Stats != null)
+        {
+            if (!_playerEntity.Stats.HasEnoughMana(manaCost))
+            {
+                Debug.Log($"[Wand] 마나 부족 (필요: {manaCost})");
+                return;
+            }
+            _playerEntity.Stats.ConsumeMana(manaCost);
+        }
+
         Vector2 fireDir  = GetCurrentCursorDirection();
         Vector3 spawnPos = _muzzlePoint != null ? _muzzlePoint.position : transform.position;
 

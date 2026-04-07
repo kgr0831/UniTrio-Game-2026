@@ -11,6 +11,9 @@ public class ArrowProjectile : MonoBehaviour
     [SerializeField] private float   _speed         = 15f;
     [SerializeField] private float   _lifeTime      = 3f;
     [SerializeField] private Vector3 _moveDirection = Vector3.right;
+    [SerializeField] private float   _maxDistance   = 10f;
+
+    private Vector3 _spawnPos;
 
     [Header("Damage")]
     [SerializeField] private float _damage = 10f;
@@ -31,6 +34,7 @@ public class ArrowProjectile : MonoBehaviour
 
     private void Start()
     {
+        _spawnPos = transform.position;
         Destroy(gameObject, _lifeTime);
     }
 
@@ -38,6 +42,12 @@ public class ArrowProjectile : MonoBehaviour
     {
         // 로컬 방향(Space.Self) 직진 – 생성 시 ArrowPos rotation을 물려받아 커서 방향으로 나아감
         transform.Translate(_moveDirection * _speed * Time.fixedDeltaTime, Space.Self);
+
+        // 비거리 제한 체크 (10칸 이상 시 소멸)
+        if (Vector3.Distance(_spawnPos, transform.position) >= _maxDistance)
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)

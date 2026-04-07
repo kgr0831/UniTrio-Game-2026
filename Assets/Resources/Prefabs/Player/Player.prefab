@@ -998,7 +998,7 @@ TrailRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5058874269455978912}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -1049,7 +1049,16 @@ TrailRenderer:
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 1
+        value: 0.8333333
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 0.8333333
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -1096,7 +1105,7 @@ TrailRenderer:
     textureScale: {x: 1, y: 1}
     shadowBias: 0.5
     generateLightingData: 0
-  m_MinVertexDistance: 0.1
+  m_MinVertexDistance: 0.5
   m_Autodestruct: 0
   m_Emitting: 1
   m_ApplyActiveColorSpace: 1
@@ -1114,7 +1123,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FogRevealController
   _visionRadius: 15
   _enableCircleReveal: 1
-  _enableTrailReveal: 0
+  _enableTrailReveal: 1
 --- !u!1 &5870199048715973731
 GameObject:
   m_ObjectHideFlags: 0
@@ -1567,6 +1576,9 @@ GameObject:
   - component: {fileID: 4463476247798924237}
   - component: {fileID: 8584782806760247388}
   - component: {fileID: 4055230016509395758}
+  - component: {fileID: 3666809469102148546}
+  - component: {fileID: 3455611401367997205}
+  - component: {fileID: 7377758244409759325}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1903,9 +1915,11 @@ MonoBehaviour:
   _spriteRenderer: {fileID: 0}
   _livingEntity: {fileID: 0}
   _weaponPivot: {fileID: 3476307061200893711}
-  _dissolveMaterial: {fileID: 2100000, guid: 3656143a4a594154d93511154c614eb7, type: 2}
-  _freezeDuration: 0.4
-  _dissolveDuration: 2
+  _dissolveMaterial: {fileID: 2100000, guid: ff02bf9a777cbd24884ea1b1da0b3379, type: 2}
+  _slowMoScale: 0.2
+  _slowMoDuration: 0.2
+  _freezeHoldDuration: 0.15
+  _dissolveDuration: 1
   _dissolveCurve:
     serializedVersion: 2
     m_Curve:
@@ -1940,12 +1954,107 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   _particleMaterial: {fileID: 2100000, guid: 5ae2c716d55278c429fe28d8a99299c5, type: 2}
-  _particlesPerFrame: 18
+  _emitRate: 120
   _particleLifetime: {x: 0.6, y: 1.4}
-  _particleSize: {x: 0.04, y: 0.1}
-  _particleColorA: {r: 3, g: 2, b: 0.4, a: 1}
-  _particleColorB: {r: 2, g: 0.8, b: 2.5, a: 1}
-  _particleSpeedX: {x: -1.5, y: 1.5}
-  _particleSpeedY: {x: 0.5, y: 3.5}
-  _gravityModifier: 0.8
-  _emitBandRatio: 0.12
+  _particleSize: {x: 0.12, y: 0.28}
+  _particleColorA: {r: 1, g: 0.55, b: 0, a: 1}
+  _particleColorB: {r: 1, g: 0.85, b: 0.15, a: 1}
+  _particleSpeedX: {x: -0.5, y: 0.5}
+  _particleSpeedY: {x: 3.5, y: 7}
+  _gravityModifier: -0.4
+  _emitBandRatio: 0.06
+  _postProcessVolume: {fileID: 0}
+  _targetSaturation: -65
+  _desatDuration: 1.5
+--- !u!114 &3666809469102148546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8850823021916702358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41a9f2241c280e844b6d74ce7f4e0aa4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeathCutsceneController
+  _deathScreenUI: {fileID: 0}
+  _playerDeathEffect: {fileID: 4055230016509395758}
+  _karmaHandler: {fileID: 3955967279642289493}
+  _livingEntity: {fileID: 2284942576725933104}
+  _weaponController: {fileID: 0}
+  _stateMachine: {fileID: 0}
+  _playerInput: {fileID: 7685771378868690100}
+  _impulseSource: {fileID: 0}
+  _impulseForce: 1.8
+  _invertHoldDuration: 0.12
+  _maxChromaticAberration: 0.9
+  _fxVolume: {fileID: 0}
+  _reverseDissolveCtrl: {fileID: 3455611401367997205}
+  _maxVignetteIntensity: 0.55
+  _phase1Duration: 0.6
+  _phase2Duration: 1.8
+  _phase3Duration: 1.5
+  _respawnPoint: {fileID: 0}
+  _invulnDurationAfterResurrect: 1.2
+  _karmaNotifyText: {fileID: 0}
+  _karmaTextDuration: 2
+  _saturationDrop: -80
+  _maxFilmGrain: 0.55
+  _trailPool: {fileID: 7377758244409759325}
+--- !u!114 &3455611401367997205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8850823021916702358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1e5f2e9288d09943996236b6134eed8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerReverseDissolveController
+  _spriteRenderer: {fileID: 9062955646089067132}
+  _resurrectMaterial: {fileID: 2100000, guid: 376a1f7cf2cafc448b14783c377f4cee, type: 2}
+  _thresholdCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: -1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &7377758244409759325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8850823021916702358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e5188fbdc2773a46815317a5d66bc9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ResurrectionTrailPool
+  _playerSprite: {fileID: 9062955646089067132}
+  _poolSize: 20
+  _emitInterval: 0.06
+  _ghostLifetime: 0.38
+  _activeDuration: 2
+  _ghostColor: {r: 0.55, g: 0, b: 0, a: 0.7}
