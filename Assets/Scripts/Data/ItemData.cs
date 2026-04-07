@@ -30,37 +30,9 @@ public abstract class ItemData : ScriptableObject
     protected virtual void OnEnable() { }
 
     /// <summary>파생 클래스에서 스탯 설명 문자열을 반환합니다.</summary>
+    public virtual void Use()
+    {
+        Debug.Log(Id + "아이템 사용");
+    }
     public abstract string GetStatDescription();
-}
-
-/// <summary>
-/// 무기 전용 데이터
-/// </summary>
-[CreateAssetMenu(fileName = "NewWeaponData", menuName = "Data/Items/Weapon")]
-public class WeaponData : ItemData
-{
-    public float Damage;
-    public float AttackSpeed;
-
-    public override string GetStatDescription() => $"데미지: {Damage} | 공격속도: {AttackSpeed}";
-}
-
-/// <summary>
-/// 소모품(음식 등) 데이터
-/// </summary>
-[CreateAssetMenu(fileName = "NewConsumableData", menuName = "Data/Items/Consumable")]
-public class ConsumableData : ItemData
-{
-    public float HealAmount;
-
-    public override string GetStatDescription() => $"회복량: {HealAmount}";
-}
-
-/// <summary>
-/// 일반 재료 데이터 (스탯 없음)
-/// </summary>
-[CreateAssetMenu(fileName = "NewIngredientData", menuName = "Data/Items/Ingredient")]
-public class IngredientData : ItemData
-{
-    public override string GetStatDescription() => "재료 아이템입니다.";
 }
