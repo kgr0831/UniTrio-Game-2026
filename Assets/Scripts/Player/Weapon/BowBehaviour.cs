@@ -389,8 +389,9 @@ public class BowBehaviour : WeaponBehaviourBase
         float statAtk     = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
         float damage      = DamageCalculator.CalcOutgoingDamage(statAtk, weaponDmg);
 
-        GameObject arrowObj = Instantiate(_arrowPrefab, _arrowPos.position, _arrowPos.rotation);
-
+        // 최적화: Instantiate 대신 SimpleObjectPool에서 가져옵니다.
+        GameObject arrowObj = SimpleObjectPool.Instance.Get(_arrowPrefab, _arrowPos.position, _arrowPos.rotation);
+        
         // ArrowProjectile에 차징 값 전달
         ArrowProjectile ap = arrowObj.GetComponent<ArrowProjectile>();
         if (ap != null) ap.SetStats(speed, damage);

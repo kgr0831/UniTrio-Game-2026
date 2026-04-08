@@ -102,7 +102,7 @@ public class ExplosionEffect : MonoBehaviour
         SetGlow(intensity);
 
         if (_elapsed >= _duration)
-            gameObject.SetActive(false);
+            SimpleObjectPool.Instance.Release(gameObject);
     }
 
     private void ApplyAreaDamage()
@@ -131,7 +131,9 @@ public class ExplosionEffect : MonoBehaviour
     {
         if (_damageTextPrefab == null) return;
         Vector3    spawnPos = position + Vector3.up * 0.5f;
-        GameObject textObj  = Instantiate(_damageTextPrefab, spawnPos, Quaternion.identity);
+        
+        // 최적화: Instantiate 대신 SimpleObjectPool에서 가져옵니다.
+        GameObject textObj  = SimpleObjectPool.Instance.Get(_damageTextPrefab, spawnPos, Quaternion.identity);
         DamageText dmgText  = textObj.GetComponent<DamageText>();
         if (dmgText != null) dmgText.Setup(Mathf.RoundToInt(_damage));
     }

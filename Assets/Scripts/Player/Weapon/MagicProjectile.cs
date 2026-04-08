@@ -83,8 +83,11 @@ public class MagicProjectile : MonoBehaviour
     {
         _spawnPos = transform.position;
         _exploded = false;
-        // 충돌 시 숨겼던 렌더러를 복원
+
+        // 충돌 시 숨겼던 렌더러 및 빛 복원
         if (_glowRenderer != null) _glowRenderer.enabled = true;
+        if (_light != null) _light.enabled = true;
+        
         ApplyGlow(_glowIntensity);
         Invoke(nameof(ReturnToPool), _lifeTime);
     }
@@ -120,13 +123,30 @@ public class MagicProjectile : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (_exploded) return;
-        if (!collision.CompareTag("Enemy")) return;
 
+        // 적, 벽, 또는 장애물에 충돌 시 폭발
+        if (collision.CompareTag("Enemy") || collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
+        {
+            Explode(collision);
+        }
+    }
+
+    private void Explode(Collider2D collision)
+    {
         _exploded = true;
         ApplyGlow(0f);
+
         // 렌더러를 즉시 끄고 풀에 반환 → 시각적으로 충돌 순간 즉시 소멸
         if (_glowRenderer != null) _glowRenderer.enabled = false;
-        SpawnHitVfx(collision);
+        if (_light != null) _light.enabled = false;
+
+        // 적일 경우에만 히트 이펙트(피격 이펙트)를 추가로 생성
+        if (collision.CompareTag("Enemy"))
+        {
+            SpawnHitVfx(collision);
+        }
+
+        // 공통 폭발 처리
         SpawnExplosion();
 
         SimpleObjectPool.Instance.Release(gameObject);

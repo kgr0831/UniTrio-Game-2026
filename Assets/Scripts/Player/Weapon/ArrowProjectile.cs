@@ -32,10 +32,25 @@ public class ArrowProjectile : MonoBehaviour
         _damage = damage;
     }
 
-    private void Start()
+    private void OnEnable()
     {
         _spawnPos = transform.position;
-        Destroy(gameObject, _lifeTime);
+        // 풀링 사용 시 이전의 Destroy 타이머가 남아있을 수 있으므로 CancelInvoke를 권장하지만,
+        // 여기서는 Invoke/Cancel 대신 코루틴이나 타이머 변수 방식을 고려할 수도 있습니다.
+        // 하지만 기존 구조를 최대한 유지하면서 풀 반환으로만 바꿉니다.
+        CancelInvoke(nameof(ReturnToPool));
+        Invoke(nameof(ReturnToPool), _lifeTime);
+    }
+
+    private void OnDisable()
+    {
+        CancelInvoke(nameof(ReturnToPool));
+    }
+
+    private void ReturnToPool()
+    {
+        if (gameObject.activeSelf)
+            SimpleObjectPool.Instance.Release(gameObject);
     }
 
     private void FixedUpdate()
@@ -46,7 +61,7 @@ public class ArrowProjectile : MonoBehaviour
         // 비거리 제한 체크 (10칸 이상 시 소멸)
         if (Vector3.Distance(_spawnPos, transform.position) >= _maxDistance)
         {
-            Destroy(gameObject);
+            ReturnToPool();
         }
     }
 
@@ -61,11 +76,11 @@ public class ArrowProjectile : MonoBehaviour
                 SpawnHitVfx(collision);
                 SpawnDamageText(collision);
             }
-            Destroy(gameObject);
+            ReturnToPool();
         }
         else if (collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
         {
-            Destroy(gameObject);
+            ReturnToPool();
         }
     }
 
@@ -91,7 +106,9 @@ public class ArrowProjectile : MonoBehaviour
     {
         if (_damageTextPrefab == null) return;
         Vector3    spawnPos = hitCollider.bounds.center + Vector3.up * 0.5f;
-        GameObject textObj  = Instantiate(_damageTextPrefab, spawnPos, Quaternion.identity);
+        
+        // 최적화: Instantiate 대신 SimpleObjectPool에서 가져옵니다.
+        GameObject textObj  = SimpleObjectPool.Instance.Get(_damageTextPrefab, spawnPos, Quaternion.identity);
         DamageText dmgText  = textObj.GetComponent<DamageText>();
         if (dmgText != null) dmgText.Setup(Mathf.RoundToInt(_damage));
     }

@@ -67,28 +67,22 @@ public class SwordHitbox : MonoBehaviour
         float   actualOffset = Mathf.Min(_vfxOffsetTowardsEnemy, maxDist * 0.5f);
         Vector3 spawnPos     = closestHitPoint + dirToCenter * actualOffset;
 
-        GameObject vfxObj = Instantiate(
-            _hitVfxPrefabs[Random.Range(0, _hitVfxPrefabs.Length)],
-            spawnPos,
-            Quaternion.Euler(0f, 0f, Random.Range(0f, 360f)));
-
-        float autoLifetime = 0.5f;
-        Animator anim = vfxObj.GetComponent<Animator>();
-        if (anim != null)
-        {
-            anim.Update(0f);
-            autoLifetime = anim.GetCurrentAnimatorStateInfo(0).length;
-        }
-        Destroy(vfxObj, autoLifetime);
+        // 최적화: Instantiate 대신 SimpleObjectPool에서 가져옵니다.
+        // 자식에 붙은 HitVfxAutoReturn.cs가 애니메이션 후 자동으로 Release를 호출합니다.
+        GameObject prefab = _hitVfxPrefabs[Random.Range(0, _hitVfxPrefabs.Length)];
+        SimpleObjectPool.Instance.Get(prefab, spawnPos, Quaternion.Euler(0f, 0f, Random.Range(0f, 360f)));
     }
 
     private void SpawnDamageText(Collider2D enemyCollider, float damageAmount)
     {
         if (_damageTextPrefab == null) return;
 
-        Vector3    spawnPos = enemyCollider.bounds.center + Vector3.up * 0.5f;
-        GameObject textObj  = Instantiate(_damageTextPrefab, spawnPos, Quaternion.identity);
-        DamageText dmgText  = textObj.GetComponent<DamageText>();
+        Vector3 spawnPos = enemyCollider.bounds.center + Vector3.up * 0.5f;
+
+        // 최적화: Instantiate 대신 SimpleObjectPool에서 가져옵니다.
+        // DamageText.cs 에도 자동 풀 반환 로직이 추가될 예정입니다.
+        GameObject textObj = SimpleObjectPool.Instance.Get(_damageTextPrefab, spawnPos, Quaternion.identity);
+        DamageText dmgText = textObj.GetComponent<DamageText>();
         if (dmgText != null) dmgText.Setup(Mathf.RoundToInt(damageAmount));
     }
 }

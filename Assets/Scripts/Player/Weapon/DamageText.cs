@@ -18,13 +18,18 @@ public class DamageText : MonoBehaviour
 
     public void Setup(int damage)
     {
-        _textMesh = GetComponent<TextMeshPro>();
+        if (_textMesh == null) _textMesh = GetComponent<TextMeshPro>();
         
         if (_textMesh != null)
         {
             // TMP는 SortingOrder 설정이 컴포넌트 내부에 직관적으로 들어있습니다.
             _textMesh.sortingLayerID = SortingLayer.NameToID("Default");
             _textMesh.sortingOrder = 9999; // Z-가림 완벽 방지
+            
+            _textMesh.text = damage.ToString();
+            _originalColor = _textMesh.color;
+            _originalColor.a = 1f; // 풀링 재사용 시 알파값 초기화
+            _textMesh.color = _originalColor;
         }
 
         // 생성 시 약간 무작위로 위치 비틀어주기
@@ -34,13 +39,22 @@ public class DamageText : MonoBehaviour
             -2f // Z축을 앞으로 당겨 충돌 방지
         );
 
-        if (_textMesh != null)
-        {
-            _textMesh.text = damage.ToString();
-            _originalColor = _textMesh.color;
-        }
+        // 이전 예약 취소 후 새로 예약
+        CancelInvoke(nameof(ReturnToPool));
+        Invoke(nameof(ReturnToPool), _lifetime);
+    }
 
-        Destroy(gameObject, _lifetime);
+    private void OnDisable()
+    {
+        CancelInvoke(nameof(ReturnToPool));
+    }
+
+    private void ReturnToPool()
+    {
+        if (gameObject.activeSelf)
+        {
+            SimpleObjectPool.Instance.Release(gameObject);
+        }
     }
 
     private void Update()
