@@ -1,0 +1,113 @@
+﻿
+    m_ObjectHideFlags: 0
+    m_CorrespondingSourceObjec
+t: {fileID: 0}
+    m_PrefabInstance: {fileID:
+ 0}
+    m_PrefabAsset: {fileID: 0}
+    serializedVersion: 6
+    m_Component:
+    - component: {fileID: 6907
+1314}
+    - component: {fileID: 6907
+1313}
+    - component: {fileID: 6907
+1315}
+    m_Layer: 0
+>   m_Name: InventoryPanel
+    m_TagString: Untagged
+    m_Icon: {fileID: 0}
+    m_NavMeshLayer: 0
+    m_StaticEditorFlags: 0
+    m_IsActive: 1
+  --- !u!114 &69071313
+  MonoBehaviour:
+    m_ObjectHideFlags: 0
+    m_CorrespondingSourceObjec
+t: {fileID: 0}
+    m_PrefabInstance: {fileID:
+ 0}
+    m_ObjectHideFlags: 0
+    m_CorrespondingSourceObjec
+t: {fileID: 0}
+    m_PrefabInstance: {fileID:
+ 0}
+    m_PrefabAsset: {fileID: 0}
+    serializedVersion: 6
+    m_Component:
+    - component: {fileID: 1071
+29188}
+    - component: {fileID: 1071
+29187}
+    - component: {fileID: 1071
+29186}
+    m_Layer: 0
+>   m_Name: EventSystem
+    m_TagString: Untagged
+    m_Icon: {fileID: 0}
+    m_NavMeshLayer: 0
+    m_StaticEditorFlags: 0
+    m_IsActive: 1
+  --- !u!114 &107129186
+  MonoBehaviour:
+    m_ObjectHideFlags: 0
+    m_CorrespondingSourceObjec
+t: {fileID: 0}
+    m_PrefabInstance: {fileID:
+ 0}
+  GameObject:
+    m_ObjectHideFlags: 0
+    m_CorrespondingSourceObjec
+t: {fileID: 0}
+    m_PrefabInstance: {fileID:
+ 0}
+    m_PrefabAsset: {fileID: 0}
+    serializedVersion: 6
+    m_Component:
+    - component: {fileID: 8563
+08691}
+    - component: {fileID: 8563
+08690}
+    m_Layer: 0
+>   m_Name: DragManager
+    m_TagString: Untagged
+    m_Icon: {fileID: 0}
+    m_NavMeshLayer: 0
+    m_StaticEditorFlags: 0
+    m_IsActive: 1
+  --- !u!114 &856308690
+  MonoBehaviour:
+    m_ObjectHideFlags: 0
+    m_CorrespondingSourceObjec
+t: {fileID: 0}
+    m_PrefabInstance: {fileID:
+ 0}
+  GameObject:
+    m_ObjectHideFlags: 0
+    m_CorrespondingSourceObjec
+t: {fileID: 0}
+    m_PrefabInstance: {fileID:
+ 0}
+    m_PrefabAsset: {fileID: 0}
+    serializedVersion: 6
+    m_Component:
+    - component: {fileID: 1530
+210930}
+    - component: {fileID: 1530
+210929}
+    m_Layer: 0
+>   m_Name: QuickSlotManager
+    m_TagString: Untagged
+    m_Icon: {fileID: 0}
+    m_NavMeshLayer: 0
+    m_StaticEditorFlags: 0
+    m_IsActive: 1
+  --- !u!114 &1530210929
+  MonoBehaviour:
+    m_ObjectHideFlags: 0
+    m_CorrespondingSourceObjec
+t: {fileID: 0}
+    m_PrefabInstance: {fileID:
+ 0}
+
+

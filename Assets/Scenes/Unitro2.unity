@@ -4977,7 +4977,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &69071313
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11969,7 +11969,7 @@ GameObject:
   m_Component:
   - component: {fileID: 856308691}
   - component: {fileID: 856308690}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: DragManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -13474,6 +13474,7 @@ RectTransform:
   - {fileID: 1930110841}
   - {fileID: 69071314}
   - {fileID: 2012955173}
+  - {fileID: 1530210930}
   m_Father: {fileID: 1341333186}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -14495,3 +14496,147 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 282768773}
+
+
+
+--- !u!1 &1530210928
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1530210930}
+  - component: {fileID: 1530210929}
+  m_Layer: 5
+  m_Name: QuickSlotManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1530210929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1530210928}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 220b6266af1abc1408f740a21dd0c76f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuickSlotManager
+  quickSlots:
+  - {fileID: 1732515844}
+  - {fileID: 2018348923}
+  - {fileID: 740226020}
+  - {fileID: 1763866057}
+  - {fileID: 1136699461}
+  - {fileID: 1759815806}
+  - {fileID: 321523035}
+  - {fileID: 1879057685}
+--- !u!4 &1530210930
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1530210928}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1092.2562, y: 607.15875, z: -12.6974}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1732515844 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2814023477388444962, guid: 0fa811f04c28d9049ac3f04b4044b7a4, type: 3}
+  m_PrefabInstance: {fileID: 1670516025}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd9c519f6d3e194887e17a3fbd61c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
+--- !u!114 &2018348923 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2814023477388444962, guid: 0fa811f04c28d9049ac3f04b4044b7a4, type: 3}
+  m_PrefabInstance: {fileID: 1250848073}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd9c519f6d3e194887e17a3fbd61c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
+--- !u!114 &740226020 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2814023477388444962, guid: 0fa811f04c28d9049ac3f04b4044b7a4, type: 3}
+  m_PrefabInstance: {fileID: 81941217}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd9c519f6d3e194887e17a3fbd61c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
+--- !u!114 &1763866057 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2814023477388444962, guid: 0fa811f04c28d9049ac3f04b4044b7a4, type: 3}
+  m_PrefabInstance: {fileID: 1296774865}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd9c519f6d3e194887e17a3fbd61c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
+--- !u!114 &1136699461 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2814023477388444962, guid: 0fa811f04c28d9049ac3f04b4044b7a4, type: 3}
+  m_PrefabInstance: {fileID: 1016243437}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd9c519f6d3e194887e17a3fbd61c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
+--- !u!114 &1759815806 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2814023477388444962, guid: 0fa811f04c28d9049ac3f04b4044b7a4, type: 3}
+  m_PrefabInstance: {fileID: 269206841}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd9c519f6d3e194887e17a3fbd61c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
+--- !u!114 &321523035 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2814023477388444962, guid: 0fa811f04c28d9049ac3f04b4044b7a4, type: 3}
+  m_PrefabInstance: {fileID: 201899268}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd9c519f6d3e194887e17a3fbd61c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
+--- !u!114 &1879057685 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2814023477388444962, guid: 0fa811f04c28d9049ac3f04b4044b7a4, type: 3}
+  m_PrefabInstance: {fileID: 1879057683}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd9c519f6d3e194887e17a3fbd61c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
