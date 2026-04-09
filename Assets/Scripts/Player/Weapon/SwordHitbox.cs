@@ -25,11 +25,11 @@ public class SwordHitbox : MonoBehaviour
     [Header("Damage Text")]
     [SerializeField] private GameObject _damageTextPrefab;
 
-    private SwordBehaviour _swordBehaviour;
+    private WeaponBehaviourBase _weaponBehaviour;
 
     private void Awake()
     {
-        _swordBehaviour = GetComponentInParent<SwordBehaviour>();
+        _weaponBehaviour = GetComponentInParent<WeaponBehaviourBase>();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -57,13 +57,115 @@ public class SwordHitbox : MonoBehaviour
         float damage = DamageCalculator.CalcOutgoingDamage(atk, _baseDamage);
         
         // 강타(Bash) 배율 적용 — 스윙 시작 시 이미 소모된 배율을 읽음
-        if (_swordBehaviour != null)
-            damage *= _swordBehaviour.CurrentSwingBashMultiplier;
+        bool isBashActive = false;
+        if (_weaponBehaviour != null)
+        {
+            float bashMult = _weaponBehaviour.CurrentSwingBashMultiplier;
+            damage *= bashMult;
+            if (bashMult > 1.0f) isBashActive = true;
+        }
 
         target.TakeDamage(damage, gameObject);
 
+        // 강타 이펙트 (히트 스톱 및 카메라 쉐이크)
+        if (isBashActive)
+        {
+            if (CameraShakeController.Instance != null)
+            {
+                // 일반 공격보다 더 강한 흔들림 연출 (기간: 0.2초, 강도: 0.4f)
+                CameraShakeController.Instance.Shake(0.2f, 0.4f);
+            }
+            if (HitStopManager.Instance != null)
+            {
+                // 0.25초 동안 타격 정지 연출로 극강의 묵직함 부여
+                HitStopManager.Instance.TriggerHitStop(0.25f);
+            }
+
+            // 강타 전용 3종 이펙트(왜곡/충격파, 크레이터, 파편) 생성
+            SpawnBashImpactVFX(other);
+        }
+
         SpawnHitVFX(other);
         SpawnDamageText(other, damage);
+    }
+
+    private void SpawnBashImpactVFX(Collider2D enemyCollider)
+    {
+        Vector3 hitPoint = enemyCollider.ClosestPoint(transform.position);
+
+        GameObject bashVfxObj = new GameObject("BashImpactVFX");
+        bashVfxObj.transform.position = hitPoint;
+        Destroy(bashVfxObj, 2f);
+
+        Material glowMat = new Material(Shader.Find("Custom/SpriteGlow"));
+        glowMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
+        glowMat.SetFloat("_GlowIntensity", 4f);
+        glowMat.SetColor("_GlowColor", new Color(1f, 0.2f, 0.1f, 1f));
+
+        // 1. Shockwave (원형 충격파)
+        GameObject shockObj = new GameObject("Shockwave");
+        shockObj.transform.SetParent(bashVfxObj.transform);
+        shockObj.transform.localPosition = Vector3.zero;
+        ParticleSystem shockPs = shockObj.AddComponent<ParticleSystem>();
+        var smain = shockPs.main;
+        smain.duration = 0.5f; smain.loop = false;
+        smain.startLifetime = 0.3f;
+        smain.startSpeed = 0f;
+        smain.startSize = 0.2f; // 크기 대폭 축소
+        smain.startColor = new Color(1f, 0.4f, 0.2f, 0.8f);
+        smain.playOnAwake = false;
+        
+        var semission = shockPs.emission;
+        semission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, 1) });
+        
+        var sSize = shockPs.sizeOverLifetime;
+        sSize.enabled = true;
+        sSize.size = new ParticleSystem.MinMaxCurve(1f, 2f); // 확장도 절반으로 축소
+
+        var sColor = shockPs.colorOverLifetime;
+        sColor.enabled = true;
+        Gradient sg = new Gradient();
+        sg.SetKeys(
+            new GradientColorKey[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
+        );
+        sColor.color = sg;
+
+        var sRen = shockPs.GetComponent<ParticleSystemRenderer>();
+        sRen.material = glowMat;
+        sRen.sortingLayerName = "Weapons";
+        sRen.sortingOrder = 15;
+        shockPs.Play();
+
+        // 3. 파편 (Heavy Debris) - 크기 더 대폭 축소
+        GameObject debrisObj = new GameObject("HeavyDebris");
+        debrisObj.transform.SetParent(bashVfxObj.transform);
+        debrisObj.transform.localPosition = Vector3.zero;
+        ParticleSystem debrisPs = debrisObj.AddComponent<ParticleSystem>();
+        var dmain = debrisPs.main;
+        dmain.duration = 1f; dmain.loop = false;
+        dmain.startLifetime = new ParticleSystem.MinMaxCurve(0.4f, 0.8f);
+        dmain.startSpeed = new ParticleSystem.MinMaxCurve(5f, 15f);
+        dmain.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.08f); // 픽셀 크기로 대폭 확 줄임
+        dmain.startColor = new Color(1f, 0.7f, 0.2f, 1f);
+        dmain.playOnAwake = false;
+
+        var dEmission = debrisPs.emission;
+        dEmission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, 25) });
+
+        var dShape = debrisPs.shape;
+        dShape.shapeType = ParticleSystemShapeType.Sphere;
+
+        var dDrag = debrisPs.limitVelocityOverLifetime;
+        dDrag.enabled = true;
+        dDrag.limit = 0f;
+        dDrag.dampen = 0.18f; // 살짝 더 묵직하게 감쇠
+
+        var dRen = debrisPs.GetComponent<ParticleSystemRenderer>();
+        dRen.material = glowMat;
+        dRen.sortingLayerName = "Weapons";
+        dRen.sortingOrder = 16;
+        debrisPs.Play();
     }
 
     private void SpawnHitVFX(Collider2D enemyCollider)

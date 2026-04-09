@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3df4a1d243a58fe4391161c47ddd7467, type: 3}
+  m_Name: WoodBat
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  Id: 2001
+  Name: "\uB098\uBB34 \uBABD\uB465\uC774"
+  Description: "\uB9DE\uC73C\uBA74 \uC544\uD504\uB2E4."
+  Type: 1
+  Icon: {fileID: -164313812, guid: 47584fdd57edff54aa710dfb4bddb993, type: 3}
+  IngredientList:
+  - ItemId: 1001
+    Count: 5
+  - ItemId: 1003
+    Count: 2
+  WeaponType: 1
+  AttackBonus: 10
+  MagicAttackBonus: 0
+  DefenseBonus: 0
+  MoveSpeedBonus: 0
+  ManaBonus: 0
+  MaxHPBonus: 0
+  AttackSpeedBonus: 0

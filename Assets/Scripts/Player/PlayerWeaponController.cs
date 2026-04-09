@@ -11,12 +11,12 @@ public class PlayerWeaponController : MonoBehaviour
     [SerializeField] private Transform _weaponPivot;
     [SerializeField] private Animator  _playerAnimator;
 
-    [Header("Weapon Slots (Index = WeaponType Enum Value)")]
-    [Tooltip("0:None, 1:Sword, 2:Spear, 3:Bow, 4:Staff 순서대로 할당하세요.")]
-    [SerializeField] private WeaponBehaviourBase[] _weaponBehaviours = new WeaponBehaviourBase[5];
+    [Header("Weapon Slots (Index = WeaponType - 1)")]
+    [Tooltip("0:Sword, 1:Spear, 2:Bow, 3:Staff 순서대로 할당하세요. (None은 제외)")]
+    [SerializeField] private WeaponBehaviourBase[] _weaponBehaviours = new WeaponBehaviourBase[4];
 
     [Tooltip("위와 동일한 순서대로 각 무기의 루트 GameObject를 할당하세요.")]
-    [SerializeField] private GameObject[] _weaponObjects = new GameObject[5];
+    [SerializeField] private GameObject[] _weaponObjects = new GameObject[4];
 
 
     [Header("Hand Position (손 위치 보정)")]
@@ -74,6 +74,9 @@ public class PlayerWeaponController : MonoBehaviour
 
     private void Update()
     {
+        // 패널이 열려있으면 무기 조작 차단
+        if (InventoryToggle.Instance != null && InventoryToggle.Instance.IsAnyPanelOpen()) return;
+
         CheckAttackFinished();
         FlushPendingSwap();
         UpdateCursorDirection();
@@ -121,8 +124,9 @@ public class PlayerWeaponController : MonoBehaviour
         // 보너스 업데이트 (장착 시점에 즉시 반영)
         UpdateWeaponBonus(data);
 
-        // WeaponType (None=0, Sword=1, Spear=2, Bow=3, Staff=4)을 인덱스로 직접 사용
-        int index = (int)data.WeaponType;
+        // WeaponType (None=0, Sword=1, Spear=2, Bow=3, Staff=4) → 배열 인덱스는 -1
+        // 배열: [0:Sword, 1:Spear, 2:Bow, 3:Staff]
+        int index = (int)data.WeaponType - 1;
         TryEquipWeapon(index);
     }
 

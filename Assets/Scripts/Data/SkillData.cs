@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// 스킬 데이터. ItemData 계층에 편입되어 인벤토리·드래그앤드롭 시스템과 통합됩니다.
-/// SkillSlotManager에 드래그 앤 드롭으로 장착하며, Q키로 시전합니다.
+/// 스킬 트리 패널에서 QuickSlot으로 드래그 앤 드롭하여 배치하며, 해당 숫자키로 시전합니다.
 /// </summary>
 [CreateAssetMenu(fileName = "NewSkillData", menuName = "Data/Items/Skill")]
 public class SkillData : ItemData

@@ -35,28 +35,26 @@ public class ManaSpearSkillData : SkillData
         // 투사체 발사 (WandBehaviour의 MuzzlePoint를 찾으면 좋겠지만, 
         // 여기서는 플레이어 위치에서 약간 오프셋을 주어 발사합니다.)
         Vector3 spawnPos = player.transform.position + (Vector3)dir * 0.5f;
+
+        Debug.Log($"[ManaSpearSkillData] SO 로직 실행: 마나 창 발사! (계산된 데미지: {damage})");
         
         if (_spearPrefab != null)
         {
             GameObject proj = SimpleObjectPool.Instance.Get(_spearPrefab, spawnPos, Quaternion.identity);
             
-            // MagicProjectile 또는 ArrowProjectile 컴포넌트를 기대함
-            var mp = proj.GetComponent<MagicProjectile>();
-            if (mp != null)
+            var msp = proj.GetComponent<ManaSpearProjectile>();
+            if (msp != null)
             {
-                mp.SetStats(_speed, damage, dir);
+                msp.Initialize(player, damage, _speed);
             }
             else
             {
-                var ap = proj.GetComponent<ArrowProjectile>();
-                if (ap != null)
-                {
-                    // ArrowProjectile은 direction을 SetStats으로 받지 않고 
-                    // rotation을 따라가므로 rotation 설정 필요
-                    proj.transform.right = dir;
-                    ap.SetStats(_speed, damage);
-                }
+                Debug.LogWarning("[ManaSpearSkillData] _spearPrefab에 ManaSpearProjectile 컴포넌트가 없습니다!");
             }
+        }
+        else
+        {
+            Debug.LogWarning("[ManaSpearSkillData] _spearPrefab이 할당되지 않아 투사체를 생성하지 않고 로그만 출력합니다.");
         }
     }
 

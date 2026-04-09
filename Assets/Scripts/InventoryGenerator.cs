@@ -17,6 +17,9 @@ public class InventoryGenerator : MonoBehaviour
     [Tooltip("게임 시작 시 지급할 기본 무기들")]
     public List<WeaponData> starterWeapons;
 
+    [Tooltip("게임 시작 시 지급할 기본 아이템들 (소모품 등)")]
+    public List<ItemData> starterItems;
+
 
     void Start()
     {
@@ -52,13 +55,28 @@ public class InventoryGenerator : MonoBehaviour
         Debug.Log($"{columns}x{rows} 인벤토리 생성 완료!");
 
         // 시작 무기 지급
+        int slotIndex = 0;
         if (starterWeapons != null)
         {
             for (int i = 0; i < starterWeapons.Count; i++)
             {
-                if (i < allSlots.Count && starterWeapons[i] != null)
+                if (slotIndex < allSlots.Count && starterWeapons[i] != null)
                 {
-                    allSlots[i].RefreshSlot(starterWeapons[i], 1);
+                    allSlots[slotIndex].RefreshSlot(starterWeapons[i], 1);
+                    slotIndex++;
+                }
+            }
+        }
+
+        // 시작 아이템 지급 (소모품 등)
+        if (starterItems != null)
+        {
+            for (int i = 0; i < starterItems.Count; i++)
+            {
+                if (slotIndex < allSlots.Count && starterItems[i] != null)
+                {
+                    allSlots[slotIndex].RefreshSlot(starterItems[i], 3);
+                    slotIndex++;
                 }
             }
         }

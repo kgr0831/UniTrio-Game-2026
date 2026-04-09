@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: BashSkill
   m_EditorClassIdentifier: Assembly-CSharp::BashSkillData
   Id: 1001
-  Name: "\uAC15\uD0C0"
-  Description: "\uB2E4\uC74C 3\uBC88\uC758 \uAE30\uBCF8 \uACF5\uACA9\uC774 2\uBC30\uC758
-    \uD53C\uD574\uB97C \uC785\uD799\uB2C8\uB2E4.\n\uACC4\uC218: \uACF5\uACA9\uB825
-    2.0 | \uCFE8\uD0C0\uC784: 10\uCD08 | \uB9C8\uB098: -20"
+  Name: "\uAC15\uD0C0 (Bash)"
+  Description: "\uC801\uC744 \uAC15\uB825\uD558\uAC8C \uD0C0\uACA9\uD558\uC5EC \uAE30\uC808\uC2DC\uD0A4\uACE0
+    \uD53C\uD574\uB97C \uC785\uD799\uB2C8\uB2E4."
   Type: 8
-  Icon: {fileID: 21300000, guid: 68ea2a7c04e3c3b41ab21a469843b739, type: 3}
+  Icon: {fileID: 21300000, guid: 3a16d2565b2149347919ce5e111ebf64, type: 3}
   IngredientList: []
-  SkillPrefab: {fileID: 0}
+  SkillPrefab: {fileID: 2968237275326018000, guid: 82f7ad860d5ae0b458c651af2c93e833, type: 3}
   ManaCost: 20
   Cooldown: 10
   RequiredWeapon: 1
+  _bashBuffPrefab: {fileID: 2968237275326018000, guid: 82f7ad860d5ae0b458c651af2c93e833, type: 3}
   BashStackCount: 3

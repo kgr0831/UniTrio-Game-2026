@@ -1,20 +1,20 @@
 using UnityEngine;
 
 /// <summary>
-/// 무기 슬롯(핫바 1번)과 보조 슬롯(SubWeaponSlot)을 관리하고 E키로 스왑하는 컴포넌트.
-/// - 핫바 1번 슬롯의 무기가 현재 장착된 무기로 간주됩니다.
-/// - E키 입력 시 핫바 1번 ↔ 보조 무기 슬롯 아이템 스왑.
-/// - 상시 감시를 통해 핫바 1번의 아이템이 바뀌면 PlayerWeaponController에 장착 요청.
+/// 두 개의 SubWeaponSlot(Primary, Secondary)을 관리하고 E키로 스왑하는 컴포넌트.
+/// - Primary Slot의 무기가 현재 장착된 무기로 간주됩니다.
+/// - E키 입력 시 Primary ↔ Secondary 슬롯 아이템 스왑.
+/// - 상시 감시를 통해 Primary 슬롯의 아이템이 바뀌면 PlayerWeaponController에 장착 요청.
 /// </summary>
 [RequireComponent(typeof(PlayerWeaponController))]
 public class WeaponSlotManager : MonoBehaviour
 {
     [Header("Slot References")]
-    [Tooltip("핫바 1번 슬롯 (Alpha 1에 대응하는 슬롯)")]
-    [SerializeField] private InventorySlot _activeSlot;
+    [Tooltip("주무기 슬롯")]
+    [SerializeField] private InventorySlot _primarySlot;
     
-    [Tooltip("보조 무기 슬롯 (E키로 스왑할 대상)")]
-    [SerializeField] private InventorySlot _subWeaponSlot;
+    [Tooltip("보조 무기 슬롯")]
+    [SerializeField] private InventorySlot _secondarySlot;
 
     [Header("Settings")]
     [SerializeField] private KeyCode _swapKey = KeyCode.E;
@@ -35,6 +35,9 @@ public class WeaponSlotManager : MonoBehaviour
 
     private void Update()
     {
+        // 패널이 열려있으면 E키 스왑 차단
+        if (InventoryToggle.Instance != null && InventoryToggle.Instance.IsAnyPanelOpen()) return;
+
         if (Input.GetKeyDown(_swapKey))
             SwapWeapon();
     }
@@ -42,7 +45,7 @@ public class WeaponSlotManager : MonoBehaviour
     private void LateUpdate()
     {
         // 핫바 1번 슬롯의 데이터 변화 감지 (드래그앤드롭 등으로 바뀌었을 때)
-        if (_activeSlot != null && _activeSlot.currentData != _lastEquippedData)
+        if (_primarySlot != null && _primarySlot.currentData != _lastEquippedData)
         {
             SyncWeaponWithActiveSlot();
         }
@@ -53,16 +56,18 @@ public class WeaponSlotManager : MonoBehaviour
     /// <summary>핫바 1번 슬롯과 보조 슬롯의 아이템을 서로 교체합니다.</summary>
     public void SwapWeapon()
     {
-        if (_activeSlot == null || _subWeaponSlot == null) return;
+        if (_primarySlot == null || _secondarySlot == null) return;
+        
+        if (_secondarySlot.currentData == null) return;
 
-        ItemData oldActiveData  = _activeSlot.currentData;
-        int      oldActiveCount = _activeSlot.currentCount;
+        ItemData oldActiveData  = _primarySlot.currentData;
+        int      oldActiveCount = _primarySlot.currentCount;
 
         // 보조 슬롯 데이터 -> 활성 슬롯
-        _activeSlot.RefreshSlot(_subWeaponSlot.currentData, _subWeaponSlot.currentCount);
+        _primarySlot.RefreshSlot(_secondarySlot.currentData, _secondarySlot.currentCount);
         
         // 이전 활성 데이터 -> 보조 슬롯
-        _subWeaponSlot.RefreshSlot(oldActiveData, oldActiveCount);
+        _secondarySlot.RefreshSlot(oldActiveData, oldActiveCount);
 
         Debug.Log("[WeaponSlot] 무기 스왑 완료");
         
@@ -73,9 +78,9 @@ public class WeaponSlotManager : MonoBehaviour
     /// <summary>현재 활성 슬롯의 데이터를 기반으로 실제 무기 모델을 장착/해제합니다.</summary>
     public void SyncWeaponWithActiveSlot()
     {
-        if (_activeSlot == null || _weaponCtrl == null) return;
+        if (_primarySlot == null || _weaponCtrl == null) return;
 
-        ItemData current = _activeSlot.currentData;
+        ItemData current = _primarySlot.currentData;
         _lastEquippedData = current;
 
         if (current is WeaponData weapon)

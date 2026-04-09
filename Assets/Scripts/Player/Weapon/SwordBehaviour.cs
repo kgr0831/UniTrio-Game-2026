@@ -51,13 +51,10 @@ public class SwordBehaviour : WeaponBehaviourBase
     private Color      _originalVfxColor;
     private Sprite     _originalVfxSprite;
     private bool       _bashEffectActive;
+    private TrailRenderer _bashTrail;
 
 
-    /// <summary>
-    /// 이번 스윙에 적용할 강타 배율.
-    /// BeginAttack() 시점에 스택을 소모하고 저장하며, SwordHitbox가 읽어 데미지에 적용합니다.
-    /// </summary>
-    public float CurrentSwingBashMultiplier { get; private set; } = 1f;
+
 
     private void Awake()
     {
@@ -78,6 +75,42 @@ public class SwordBehaviour : WeaponBehaviourBase
         _originalSwordColor = _swordRenderer != null ? _swordRenderer.color : Color.white;
         _originalVfxColor   = _vfxRenderer   != null ? _vfxRenderer.color   : Color.white;
         _originalVfxSprite  = _vfxRenderer   != null ? _vfxRenderer.sprite  : null;
+
+        CreateBashTrail();
+    }
+
+    private void CreateBashTrail()
+    {
+        if (_swordRenderer == null) return;
+
+        GameObject trailObj = new GameObject("BashTrail");
+        trailObj.transform.SetParent(_swordRenderer.transform);
+        trailObj.transform.localPosition = new Vector3(0, 1.2f, 0); // 검 끝부분 대략치
+
+        _bashTrail = trailObj.AddComponent<TrailRenderer>();
+        _bashTrail.time = 0.25f;
+        _bashTrail.minVertexDistance = 0.05f;
+        
+        _bashTrail.startWidth = 1.0f;
+        _bashTrail.endWidth = 0.0f;
+        
+        Material glowMat = new Material(Shader.Find("Custom/SpriteGlow"));
+        glowMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
+        glowMat.SetFloat("_GlowIntensity", 4f);
+        glowMat.SetColor("_GlowColor", _bashSwordColor);
+        _bashTrail.material = glowMat;
+        
+        _bashTrail.sortingLayerName = "Weapons";
+        _bashTrail.sortingOrder = 5;
+
+        Gradient g = new Gradient();
+        g.SetKeys(
+            new GradientColorKey[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
+        );
+        _bashTrail.colorGradient = g;
+        
+        _bashTrail.emitting = false;
     }
 
 
@@ -100,16 +133,26 @@ public class SwordBehaviour : WeaponBehaviourBase
 
         // 강타 스택 변화 감지 및 비주얼 효과 동기화
         SyncBashEffect();
+
+        // 궤적(Trail) 방출 동기화
+        if (_bashTrail != null)
+        {
+            _bashTrail.emitting = _bashEffectActive && IsAttacking;
+        }
     }
 
     /// <summary>
     /// 강타(Bash) 스택이 남아있는 동안 검 스프라이트에 붉은 HDR 블룸 색조를 적용합니다.
-    /// BashCount가 0으로 돌아오면(공격 소진) 자동으로 원래 색으로 복원됩니다.
+    /// 공격 로직 분리: 타격하는 순간(충돌) 스택이 차감되더라도 공격 모션이 완전히 끝날 때까지 비주얼을 유지합니다.
     /// </summary>
     private void SyncBashEffect()
     {
         if (_statSystem == null) return;
-        bool shouldBeActive = _statSystem.BashCount > 0;
+        
+        bool hasStack = _statSystem.BashCount > 0;
+        // 스택이 남아있거나, 현재 이펙트가 켜진 채로 공격 중이면 이펙트 유지 (도중 꺼짐 방지)
+        bool shouldBeActive = hasStack || (_bashEffectActive && IsAttacking);
+        
         if (shouldBeActive == _bashEffectActive) return;
 
         ApplyBashVisual(shouldBeActive);
@@ -124,6 +167,14 @@ public class SwordBehaviour : WeaponBehaviourBase
 
         if (_vfxRenderer != null)
         {
+            // SpriteAnimator가 _vfxRenderer.color를 매 프레임 덮어씌워서 무효화시키는 문제를 회피하기 위해,
+            // 인스턴스화된 Material 자체의 컬러 속성을 변경해 강제로 붉은 기운(블룸)을 덧입힙니다.
+            if (_vfxRenderer.material.HasProperty("_BaseColor"))
+                _vfxRenderer.material.SetColor("_BaseColor", active ? _bashSwordColor : _originalVfxColor);
+            else if (_vfxRenderer.material.HasProperty("_Color"))
+                _vfxRenderer.material.SetColor("_Color", active ? _bashSwordColor : _originalVfxColor);
+                
+            // 혹시 몰라 기존 fallback도 유지
             _vfxRenderer.color = active ? _bashSwordColor : _originalVfxColor;
 
             // 스프라이트 교체 로직
@@ -142,7 +193,7 @@ public class SwordBehaviour : WeaponBehaviourBase
     }
 
     /// <summary>BashSkillData.Execute()에서 호출 — 강타 효과를 즉시 활성화합니다.</summary>
-    public void SetBashEffectActive(bool active)
+    public override void SetBashEffectActive(bool active)
     {
         ApplyBashVisual(active);
     }

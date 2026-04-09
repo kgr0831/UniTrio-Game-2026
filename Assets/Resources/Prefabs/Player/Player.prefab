@@ -1836,6 +1836,7 @@ MonoBehaviour:
   _baseDef: 0
   _baseMoveSpeed: 5
   _baseMana: 100
+  _baseMaxHP: 100
   _manaRegen: 1
   _currentMana: 0
 --- !u!114 &3955967279642289493

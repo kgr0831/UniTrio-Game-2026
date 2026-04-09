@@ -18,7 +18,7 @@ MonoBehaviour:
   Type: 1
   Icon: {fileID: -1614185723, guid: dcdcd32b07f7f784083c3c11765a905b, type: 3}
   IngredientList: []
-  WeaponType: 2
+  WeaponType: 4
   AttackBonus: 0
   MagicAttackBonus: 10
   DefenseBonus: 0

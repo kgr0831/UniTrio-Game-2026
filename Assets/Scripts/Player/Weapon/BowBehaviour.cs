@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 /// <summary>
 /// 활(Bow) 무기의 공격 로직 및 투사체(화살) 생성을 담당합니다.
@@ -63,6 +64,12 @@ public class BowBehaviour : WeaponBehaviourBase
     [ColorUsage(true, true)]
     [SerializeField] private Color _glowColor = new Color(0.7f, 0f, 1f, 1f); // 보랏빛 기본값
 
+    [Header("조준 사격 (Aimed Shot) 스킬")]
+    [Tooltip("스킬 차징 시 표시할 AimedShot_Bow 프리팹")]
+    [SerializeField] private GameObject _aimedShotBowPrefab;
+    [Tooltip("발사할 AimShootArrow(관통 화살) 프리팹")]
+    [SerializeField] private GameObject _aimShootArrowPrefab;
+
 
     // ── WeaponBehaviourBase 오버라이드 ───────────────────────────
     public override WeaponType WeaponType          => WeaponType.Bow;
@@ -77,7 +84,7 @@ public class BowBehaviour : WeaponBehaviourBase
     public override int   MaxComboSteps            => 1;
 
     // ── 내부 상태 ────────────────────────────────────────────────
-    private enum BowState { Idle, NormalAttack, Charging }
+    private enum BowState { Idle, NormalAttack, Charging, AimedShot }
     private BowState _bowState = BowState.Idle;
 
     private bool  _hasFired;
@@ -99,6 +106,25 @@ public class BowBehaviour : WeaponBehaviourBase
     private MaterialPropertyBlock _propBlock;
     private static readonly int  _glowIntensityId = Shader.PropertyToID("_GlowIntensity");
     private static readonly int  _glowColorId     = Shader.PropertyToID("_GlowColor");
+
+    // ── 조준 사격 상태 ────────────────────────────────────────────
+    private GameObject     _aimedShotBowInstance;
+    private Animator       _aimedShotBowAnimator;
+    private SpriteRenderer _aimedShotBowRendererMain; // AimedShot_Bow 자체의 렌더러
+    private MaterialPropertyBlock _aimedShotBowPropBlock;
+    private ParticleSystem _aimedShotGatherParticle;  // 기 모으는 파티클
+    private SpriteRenderer _aimedShotArrowRenderer;
+    private Transform      _aimedShotArrowPos;
+    private float          _aimedShotChargeTime;
+    private float          _aimedShotDamageMult;
+    private float          _aimedShotChargeStartTime;
+    private float          _aimedShotMinCoeff = 0.5f;
+    private bool           _aimedShotReleased;       // ReleaseAimedShot 후 페이드 중 HandleAimedShot 갱신 방지
+    private bool           _aimedShotArrowSpawned;   // AImArrow가 생성되었는지
+    private bool           _aimedShotVfxTriggered;   // Aim_UPVFX가 트리거되었는지
+    private GameObject     _aimedShotArrowInstance;  // 대기 중인 AImArrow 인스턴스
+    private AimedShotArrow _aimedShotArrowScript;    // AImArrow의 스크립트 참조
+    private float          _aimedShotArrowSpawnTime; // AImArrow 생성 시간 (블룸 램프용)
 
 
     private void Awake()
@@ -142,6 +168,7 @@ public class BowBehaviour : WeaponBehaviourBase
     private void Update()
     {
         HandleCharge();
+        HandleAimedShot();
     }
 
     private void LateUpdate()
@@ -175,13 +202,437 @@ public class BowBehaviour : WeaponBehaviourBase
         }
     }
 
+    /// <summary>
+    /// 조준 사격 차징을 시작합니다. AimedShotSkillData.Execute()에서 호출됩니다.
+    /// </summary>
+    public void StartAimedShot(float chargeTime, float damageMult)
+    {
+        if (_bowState != BowState.Idle) return;
+
+        _bowState                 = BowState.AimedShot;
+        IsAttacking               = true;
+        _aimedShotChargeTime      = chargeTime;
+        _aimedShotDamageMult      = damageMult;
+        _aimedShotChargeStartTime = Time.time;
+        _aimedShotReleased        = false;
+        _aimedShotArrowSpawned    = false;
+        _aimedShotVfxTriggered    = false;
+        _aimedShotArrowInstance   = null;
+        _aimedShotArrowScript     = null;
+
+        // 기존 활 스프라이트 숨기기
+        if (_spriteRenderer != null) _spriteRenderer.enabled = false;
+
+        // AimedShot_Bow를 WeaponPivot 자식으로 인스턴스화
+        if (_aimedShotBowPrefab != null)
+        {
+            Transform pivot = transform.parent; // WeaponPivot
+            _aimedShotBowInstance = Instantiate(_aimedShotBowPrefab, pivot);
+            _aimedShotBowInstance.transform.localPosition = transform.localPosition;
+            _aimedShotBowInstance.transform.localRotation = Quaternion.identity;
+            _aimedShotBowInstance.transform.localScale    = Vector3.one;
+
+            // 참조 캐싱
+            _aimedShotBowAnimator     = _aimedShotBowInstance.GetComponent<Animator>();
+            _aimedShotBowRendererMain = _aimedShotBowInstance.GetComponent<SpriteRenderer>();
+            _aimedShotBowPropBlock    = new MaterialPropertyBlock();
+
+            // AimedShot_Bow 자체에 보랏빛 블룸 셰이더 적용
+            if (_aimedShotBowRendererMain != null)
+            {
+                Material glowMat = new Material(Shader.Find("Custom/SpriteGlow"));
+                glowMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
+                _aimedShotBowRendererMain.material = glowMat;
+            }
+
+            Transform arrowChild  = _aimedShotBowInstance.transform.Find("AimedShot_Arrow");
+            if (arrowChild != null)
+                _aimedShotArrowRenderer = arrowChild.GetComponent<SpriteRenderer>();
+            Transform arrowPosChild = _aimedShotBowInstance.transform.Find("ArrowPos");
+            if (arrowPosChild != null)
+            {
+                _aimedShotArrowPos = arrowPosChild;
+
+                // ── 에너지가 모이는 (Gathering) 파티클 동적 생성 ──
+                GameObject vfxObj = new GameObject("AimedShotGatherVFX");
+                vfxObj.transform.SetParent(_aimedShotArrowPos);
+                vfxObj.transform.localPosition = Vector3.zero;
+                vfxObj.transform.localRotation = Quaternion.identity;
+
+                _aimedShotGatherParticle = vfxObj.AddComponent<ParticleSystem>();
+                var main = _aimedShotGatherParticle.main;
+                main.duration = 3f;
+                main.startLifetime = 0.35f;
+                main.startSpeed = -8f; // 중앙으로 빠르게 수렴
+                main.startSize = 0.15f;
+                main.startColor = _glowColor;
+                main.simulationSpace = ParticleSystemSimulationSpace.Local;
+                main.playOnAwake = false;
+
+                var emission = _aimedShotGatherParticle.emission;
+                emission.rateOverTime = 0f;
+
+                var shape = _aimedShotGatherParticle.shape;
+                shape.shapeType = ParticleSystemShapeType.Sphere;
+                shape.radius = 2.5f;
+                shape.radiusThickness = 0.1f; // 표면에서 발생
+
+                var psRenderer = _aimedShotGatherParticle.GetComponent<ParticleSystemRenderer>();
+                Material gatherMat = new Material(Shader.Find("Custom/SpriteGlow"));
+                gatherMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
+                gatherMat.SetFloat("_GlowIntensity", 3f);
+                gatherMat.SetColor("_GlowColor", _glowColor);
+                psRenderer.material = gatherMat;
+                psRenderer.sortingLayerName = "Weapons";
+                psRenderer.sortingOrder = 15;
+            }
+
+            // 화살 alpha 0에서 시작
+            if (_aimedShotArrowRenderer != null)
+            {
+                Color c = _aimedShotArrowRenderer.color;
+                c.a = 0f;
+                _aimedShotArrowRenderer.color = c;
+            }
+
+            // 차징 시작 애니메이션 재생
+            if (_aimedShotBowAnimator != null)
+            {
+                _aimedShotBowAnimator.Play("AimedShotChargeStart", 0, 0f);
+            }
+        }
+
+        Debug.Log($"[BowBehaviour] 조준 사격 차징 시작! (차징 시간: {chargeTime:F1}s, 최대 계수: {damageMult:F1}x)");
+    }
+
+    /// <summary>
+    /// 매 프레임 조준 사격 상태를 갱신합니다 (alpha 페이드, 블룸, 이동속도 둔화, Aim_UPVFX).
+    /// </summary>
+    private void HandleAimedShot()
+    {
+        if (_bowState != BowState.AimedShot || _aimedShotReleased) return;
+
+        float elapsed     = Time.time - _aimedShotChargeStartTime;
+        float chargeRatio = Mathf.Clamp01(elapsed / _aimedShotChargeTime);
+
+        // AimedShot_Arrow alpha: 0 → 1 (차징 비례)
+        if (_aimedShotArrowRenderer != null)
+        {
+            Color c = _aimedShotArrowRenderer.color;
+            c.a = chargeRatio;
+            _aimedShotArrowRenderer.color = c;
+        }
+
+        // 이동속도 둔화: 차징 0% → 30% 감소(0.7배), 100% → 70% 감소(0.3배)
+        if (_playerMovement != null)
+        {
+            float speedMult = Mathf.Lerp(0.7f, 0.3f, chargeRatio);
+            _playerMovement.SpeedMultiplier = speedMult;
+        }
+
+        // ── AimedShot_Bow 블룸 효과 & 파티클 ──
+        if (_aimedShotBowRendererMain != null && _aimedShotBowPropBlock != null)
+        {
+            float bowGlow = chargeRatio * _maxGlowIntensity * 0.7f; // 화살보다 살짝 낮게(0.7배)
+            if (chargeRatio >= 1f)
+            {
+                bowGlow += Mathf.PingPong(Time.time * 5f, _pulseAmplitude * 0.7f);
+            }
+            
+            _aimedShotBowRendererMain.GetPropertyBlock(_aimedShotBowPropBlock);
+            _aimedShotBowPropBlock.SetFloat("_GlowIntensity", bowGlow);
+            _aimedShotBowPropBlock.SetColor("_GlowColor", _glowColor);
+            _aimedShotBowRendererMain.SetPropertyBlock(_aimedShotBowPropBlock);
+        }
+
+        if (_aimedShotGatherParticle != null)
+        {
+            var em = _aimedShotGatherParticle.emission;
+            // 차징 0% -> rate 0, 100% -> rate 60
+            em.rateOverTime = Mathf.Lerp(0f, 60f, chargeRatio);
+            if (!_aimedShotGatherParticle.isPlaying && chargeRatio > 0.05f)
+            {
+                _aimedShotGatherParticle.Play();
+            }
+        }
+
+        // ── ChargeStart 애니메이션 종료 감지 → AImArrow 생성 ──
+        if (!_aimedShotArrowSpawned && _aimedShotBowAnimator != null)
+        {
+            AnimatorStateInfo stateInfo = _aimedShotBowAnimator.GetCurrentAnimatorStateInfo(0);
+            // ChargeStart가 끝났거나, 차징이 100%에 도달하면 AImArrow 생성
+            bool chargeStartFinished = stateInfo.IsName("AimedShotChargeStart") && stateInfo.normalizedTime >= 0.95f;
+            bool chargeComplete      = chargeRatio >= 1f;
+            if (chargeStartFinished || chargeComplete)
+            {
+                SpawnAimedShotArrowAtPos();
+            }
+        }
+
+        // ── AImArrow 블룸 효과: 생성 시점부터 0에서 점진적으로 증가 ──
+        if (_aimedShotArrowSpawned && _aimedShotArrowScript != null)
+        {
+            // 생성 시점부터 차징 완료까지의 남은 시간 비례로 블룸 증가
+            float timeSinceSpawn = Time.time - _aimedShotArrowSpawnTime;
+            float remainChargeTime = _aimedShotChargeTime * (1f - Mathf.Clamp01((_aimedShotArrowSpawnTime - _aimedShotChargeStartTime) / _aimedShotChargeTime));
+            float bloomRatio = remainChargeTime > 0.01f ? Mathf.Clamp01(timeSinceSpawn / remainChargeTime) : 1f;
+
+            float glowIntensity = bloomRatio * _maxGlowIntensity;
+            // 최대 차징 시 맥동 효과
+            if (chargeRatio >= 1f)
+            {
+                glowIntensity += Mathf.PingPong(Time.time * 5f, _pulseAmplitude);
+            }
+            _aimedShotArrowScript.SetGlowIntensity(glowIntensity, _glowColor);
+        }
+
+        // ── 100% 차징 시 Aim_UPVFX 활성화 (활 우클릭과 동일한 시스템) ──
+        if (chargeRatio >= 1f && !_aimedShotVfxTriggered)
+        {
+            _aimedShotVfxTriggered = true;
+            if (_aimUpVfx != null)
+            {
+                if (_aimVfxCoroutine != null)
+                {
+                    StopCoroutine(_aimVfxCoroutine);
+                    _aimVfxCoroutine = null;
+                }
+                _aimUpVfx.SetActive(true);
+                if (_aimUpVfxAnimator != null)
+                {
+                    _aimUpVfxAnimator.Rebind();
+                    _aimUpVfxAnimator.Update(0f);
+                }
+                _aimVfxCoroutine = StartCoroutine(DisableAimVfxAfterDelay());
+            }
+        }
+
+        // ── 최대 차징 시 떨림 효과 ──
+        if (chargeRatio >= 1f && _aimedShotBowInstance != null)
+        {
+            float shakeX = Mathf.Sin(Time.time * _shakeFrequency)         * _shakeAmplitude;
+            float shakeY = Mathf.Sin(Time.time * _shakeFrequency * 1.3f)  * _shakeAmplitude;
+            _aimedShotBowInstance.transform.localPosition = transform.localPosition + new Vector3(shakeX, shakeY, 0f);
+        }
+    }
+
+    /// <summary>
+    /// AimedShotChargeStart 종료 시 AImArrow를 ArrowPos에 생성합니다 (발사 대기 상태).
+    /// </summary>
+    private void SpawnAimedShotArrowAtPos()
+    {
+        if (_aimShootArrowPrefab == null || _aimedShotArrowPos == null) return;
+
+        _aimedShotArrowSpawned = true;
+        _aimedShotArrowSpawnTime = Time.time;
+
+        _aimedShotArrowInstance = Instantiate(
+            _aimShootArrowPrefab,
+            _aimedShotArrowPos.position,
+            _aimedShotArrowPos.rotation,
+            _aimedShotArrowPos);  // ArrowPos의 자식으로 부착 (위치/회전 자동 추적)
+
+        _aimedShotArrowInstance.transform.localPosition = Vector3.zero;
+        _aimedShotArrowInstance.transform.localRotation = Quaternion.identity;
+
+        _aimedShotArrowScript = _aimedShotArrowInstance.GetComponent<AimedShotArrow>();
+
+        // SpriteGlow 셸이더 적용 (투명 배경 제외 부분에 블룸)
+        SpriteRenderer arrowRenderer = _aimedShotArrowInstance.GetComponent<SpriteRenderer>();
+        if (arrowRenderer != null)
+        {
+            Material glowMat = new Material(Shader.Find("Custom/SpriteGlow"));
+            glowMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
+            arrowRenderer.material = glowMat;
+        }
+
+        Debug.Log("[BowBehaviour] AImArrow 생성 완료! (발사 대기 중)");
+    }
+
+    /// <summary>
+    /// 조준 사격 차징을 종료하고 화살을 발사합니다. QuickSlotManager에서 키 릴리즈 시 호출됩니다.
+    /// </summary>
+    public void ReleaseAimedShot()
+    {
+        if (_bowState != BowState.AimedShot) return;
+
+        _aimedShotReleased = true;
+
+        float elapsed     = Time.time - _aimedShotChargeStartTime;
+        float chargeRatio = Mathf.Clamp01(elapsed / _aimedShotChargeTime);
+
+        // AimedShot_Arrow alpha 즉시 0
+        if (_aimedShotArrowRenderer != null)
+        {
+            Color c = _aimedShotArrowRenderer.color;
+            c.a = 0f;
+            _aimedShotArrowRenderer.color = c;
+        }
+
+        // AimedShotChargeEnd 애니메이션 재생
+        if (_aimedShotBowAnimator != null)
+        {
+            _aimedShotBowAnimator.Play("AimedShotChargeEnd", 0, 0f);
+        }
+
+        // 이동속도 즉시 복원
+        if (_playerMovement != null) _playerMovement.SpeedMultiplier = 1f;
+
+        // Aim_UPVFX 즉시 비활성화
+        if (_aimVfxCoroutine != null)
+        {
+            StopCoroutine(_aimVfxCoroutine);
+            _aimVfxCoroutine = null;
+        }
+        if (_aimUpVfx != null) _aimUpVfx.SetActive(false);
+
+        // 관통 화살 발사 (AImArrow가 이미 생성된 경우 Launch(), 아니면 새로 생성)
+        LaunchAimedShotArrow(chargeRatio);
+
+        // 카메라 쉐이킹: 차징 비례 강도 (0.1 ~ 0.35)
+        if (CameraShakeController.Instance != null)
+        {
+            float shakeForce = Mathf.Lerp(0.1f, 0.35f, chargeRatio);
+            CameraShakeController.Instance.Shake(0.2f, shakeForce);
+        }
+
+        // 파티클 즉시 제거
+        if (_aimedShotGatherParticle != null)
+            _aimedShotGatherParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        // 플레이어 넉백 (발사 반동) - 강도를 대폭 상향
+        if (_playerMovement != null)
+        {
+            float recoilForce = Mathf.Lerp(5f, 35f, chargeRatio);
+            Vector2 dir = _playerMovement.FacingDirection; // 커서 방향 재활용
+            _playerMovement.ApplyRecoil(-dir * recoilForce);
+        }
+
+        // 찰나의 타임 슬로우 (풀 차징에 가까울수록 효과, 50% 이상부터)
+        if (chargeRatio >= 0.5f)
+        {
+            StartCoroutine(HitStopRoutine(0.1f, 0.2f)); // 0.1초 동안 0.2배속
+        }
+
+        Debug.Log($"[BowBehaviour] 조준 사격 발사! (차징: {chargeRatio * 100f:F0}%)");
+
+        // AimedShot_Bow를 0.3초 동안 alpha 페이드 후 정리
+        StartCoroutine(CleanupAimedShot());
+    }
+
+    /// <summary>대기 중인 AImArrow를 발사합니다. 아직 생성되지 않았다면 새로 만들어 발사합니다.</summary>
+    private void LaunchAimedShotArrow(float chargeRatio)
+    {
+        float speed     = Mathf.Lerp(_minArrowSpeed, _maxArrowSpeed, chargeRatio);
+        float statAtk   = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
+        float damageMul = Mathf.Lerp(_aimedShotMinCoeff, _aimedShotDamageMult, chargeRatio);
+        float damage    = statAtk * damageMul;
+
+        if (_aimedShotArrowSpawned && _aimedShotArrowInstance != null)
+        {
+            // 이미 생성된 AImArrow를 Launch
+            _aimedShotArrowScript.SetStats(speed, damage);
+            _aimedShotArrowScript.Launch();
+        }
+        else if (_aimShootArrowPrefab != null && _aimedShotArrowPos != null)
+        {
+            // ChargeStart가 아직 끝나기 전에 키를 놓은 경우: 새로 생성 후 즉시 발사
+            GameObject arrowObj = Instantiate(
+                _aimShootArrowPrefab,
+                _aimedShotArrowPos.position,
+                _aimedShotArrowPos.rotation);
+
+            AimedShotArrow arrow = arrowObj.GetComponent<AimedShotArrow>();
+            if (arrow != null)
+            {
+                arrow.SetStats(speed, damage);
+                arrow.Launch();
+            }
+        }
+
+        // 인스턴스 참조 해제 (발사 후에는 AImArrow가 독립적으로 검)
+        _aimedShotArrowInstance = null;
+        _aimedShotArrowScript  = null;
+    }
+
+    /// <summary>AimedShot_Bow의 alpha를 0.3초에 걸쳐 페이드아웃한 뒤 정리합니다.</summary>
+    private IEnumerator CleanupAimedShot()
+    {
+        SpriteRenderer bowRenderer = _aimedShotBowInstance != null
+            ? _aimedShotBowInstance.GetComponent<SpriteRenderer>()
+            : null;
+
+        float fadeDuration = 0.3f;
+        float elapsed = 0f;
+
+        if (bowRenderer != null)
+        {
+            Color startColor = bowRenderer.color;
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / fadeDuration);
+                Color c = bowRenderer.color;
+                c.a = Mathf.Lerp(startColor.a, 0f, t);
+                bowRenderer.color = c;
+                yield return null;
+            }
+        }
+        else
+        {
+            yield return new WaitForSeconds(fadeDuration);
+        }
+
+        FinishAimedShot();
+    }
+
+    /// <summary>조준 사격 상태를 완전히 정리합니다.</summary>
+    private void FinishAimedShot()
+    {
+        // 대기 중인 AImArrow가 남아있으면 파괴
+        if (_aimedShotArrowInstance != null)
+        {
+            Destroy(_aimedShotArrowInstance);
+            _aimedShotArrowInstance = null;
+            _aimedShotArrowScript  = null;
+        }
+
+        // AimedShot_Bow 인스턴스 파괴
+        if (_aimedShotBowInstance != null)
+        {
+            Destroy(_aimedShotBowInstance);
+            _aimedShotBowInstance = null;
+        }
+
+        _aimedShotBowAnimator   = null;
+        _aimedShotArrowRenderer = null;
+        _aimedShotArrowPos      = null;
+
+        // 기존 활 스프라이트 복원
+        if (_spriteRenderer != null) _spriteRenderer.enabled = true;
+
+        // 이동속도 복원
+        if (_playerMovement != null) _playerMovement.SpeedMultiplier = 1f;
+
+        // Aim_UPVFX 정리
+        if (_aimVfxCoroutine != null)
+        {
+            StopCoroutine(_aimVfxCoroutine);
+            _aimVfxCoroutine = null;
+        }
+        if (_aimUpVfx != null) _aimUpVfx.SetActive(false);
+
+        _bowState   = BowState.Idle;
+        IsAttacking = false;
+    }
+
     // ─────────────────────────────────────────────────────────────
     // 차징 처리 (우클릭) - 매 프레임 직접 Update에서 폴링
     // ─────────────────────────────────────────────────────────────
     private void HandleCharge()
     {
         // 우클릭 시작
-        if (Input.GetMouseButtonDown(1) && _bowState == BowState.Idle)
+        if (Input.GetMouseButtonDown(1) && _bowState == BowState.Idle && _bowState != BowState.AimedShot)
         {
             _bowState        = BowState.Charging;
             IsAttacking      = true;  // 차징 중 무기 교체 큐잉 차단
@@ -346,7 +797,7 @@ public class BowBehaviour : WeaponBehaviourBase
     // ─────────────────────────────────────────────────────────────
     public override void BeginAttack(int comboStep)
     {
-        if (_bowState == BowState.Charging) return; // 차징 중 좌클릭은 무시
+        if (_bowState == BowState.Charging || _bowState == BowState.AimedShot) return; // 차징/조준사격 중 좌클릭 무시
 
         IsAttacking      = true;
         _hasFired        = false;
@@ -365,6 +816,7 @@ public class BowBehaviour : WeaponBehaviourBase
     public override bool PollFinished(float attackStartTime)
     {
         if (_bowState == BowState.Charging) return false;
+        if (_bowState == BowState.AimedShot) return false;  // 조준 사격 중에는 PollFinished 무시
         if (Time.time - attackStartTime < 0.05f) return false;
 
         AnimatorStateInfo info = _weaponAnimator.GetCurrentAnimatorStateInfo(0);
@@ -424,6 +876,13 @@ public class BowBehaviour : WeaponBehaviourBase
 
     public override void OnDeactivated()
     {
+        // 조준 사격 중이면 즉시 정리
+        if (_bowState == BowState.AimedShot)
+        {
+            StopAllCoroutines();
+            FinishAimedShot();
+        }
+
         _bowState   = BowState.Idle;
         IsAttacking = false;
         _hasFired   = false;
@@ -437,5 +896,18 @@ public class BowBehaviour : WeaponBehaviourBase
             _weaponAnimator.Play("Idle", 0, 0f);
             _weaponAnimator.Update(0f);
         }
+    }
+
+    /// <summary>현재 조준 사격 차징 중인지 반환합니다.</summary>
+    public bool IsAimedShotCharging => _bowState == BowState.AimedShot;
+
+    /// <summary>
+    /// 매우 짧은 시간 동안 게임 내 시간을 강제로 늦춰(Hit Stop) 타격감을 극대화합니다.
+    /// </summary>
+    private System.Collections.IEnumerator HitStopRoutine(float durationSec, float timeScale)
+    {
+        Time.timeScale = timeScale;
+        yield return new WaitForSecondsRealtime(durationSec);
+        Time.timeScale = 1f;
     }
 }

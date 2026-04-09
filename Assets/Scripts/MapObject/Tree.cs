@@ -43,6 +43,6 @@ public class Tree : BaseMapObject
 
     public void Update()
     {
-        if (Input.GetKey(KeyCode.E)) StartCoroutine(Gimic());
+        if (Input.GetKey(KeyCode.R)) StartCoroutine(Gimic());
     }
 }

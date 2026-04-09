@@ -12,12 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3df4a1d243a58fe4391161c47ddd7467, type: 3}
   m_Name: Bow
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
-  Id: 0
-  Name: 
+  Id: 2003
+  Name: "\uB098\uBB34 \uD65C"
   Description: 
-  Type: 0
-  Icon: {fileID: 0}
+  Type: 1
+  Icon: {fileID: -1574109931, guid: 7d356853c929c954a8e7f0e0ecca14a7, type: 3}
   IngredientList: []
-  Damage: 0
-  AttackSpeed: 0
-  WeaponType: 0
+  WeaponType: 3
+  AttackBonus: 8
+  MagicAttackBonus: 0
+  DefenseBonus: 0
+  MoveSpeedBonus: 0
+  ManaBonus: 0
+  MaxHPBonus: 0
+  AttackSpeedBonus: 0.1
