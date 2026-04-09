@@ -13,6 +13,11 @@ public class InventoryGenerator : MonoBehaviour
     // 슬롯들을 관리하기 위한 리스트
     private List<InventorySlot> allSlots = new List<InventorySlot>();
 
+    [Header("Starter Items")]
+    [Tooltip("게임 시작 시 지급할 기본 무기들")]
+    public List<WeaponData> starterWeapons;
+
+
     void Start()
     {
         GenerateEmptySlots();
@@ -45,5 +50,17 @@ public class InventoryGenerator : MonoBehaviour
         }
 
         Debug.Log($"{columns}x{rows} 인벤토리 생성 완료!");
+
+        // 시작 무기 지급
+        if (starterWeapons != null)
+        {
+            for (int i = 0; i < starterWeapons.Count; i++)
+            {
+                if (i < allSlots.Count && starterWeapons[i] != null)
+                {
+                    allSlots[i].RefreshSlot(starterWeapons[i], 1);
+                }
+            }
+        }
     }
-}
+}

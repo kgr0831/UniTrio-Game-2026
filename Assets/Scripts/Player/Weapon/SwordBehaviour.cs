@@ -4,6 +4,7 @@ using UnityEngine;
 /// <summary>
 /// 검(Sword) 무기의 공격 로직, 애니메이션, 히트박스를 전담합니다.
 /// 2-콤보 좌우 교번 스윙, 슬래시 VFX, 히트박스 타이밍을 포함합니다.
+/// 강타(Bash) 스킬 활성화 시 검 스프라이트에 붉은 HDR 블룸 색조를 입히고 VFX 스프라이트를 교체합니다.
 /// </summary>
 public class SwordBehaviour : WeaponBehaviourBase
 {
@@ -13,6 +14,22 @@ public class SwordBehaviour : WeaponBehaviourBase
 
     [Header("Hitbox")]
     [SerializeField] private Collider2D _hitboxCollider;
+
+    [Header("Bash Effect")]
+    [Tooltip("검 스프라이트의 SpriteRenderer (강타 발동 시 붉은 블룸 색조 적용)")]
+    [SerializeField] private SpriteRenderer _swordRenderer;
+    [Tooltip("강타 발동 시 붉은 HDR 블룸 색조. 값이 1을 초과하면 URP 블룸이 발생합니다.")]
+    [ColorUsage(true, true)]
+    [SerializeField] private Color _bashSwordColor = new Color(1.5f, 0.1f, 0.1f, 1f);
+    [Tooltip("VFX 자식 오브젝트의 SpriteRenderer (강타 활성화 시 검과 동일한 블룸 색조 적용)")]
+    [SerializeField] private SpriteRenderer _vfxRenderer;
+    [Tooltip("강타 활성 중 VFX Animator에서 재생할 스테이트 이름 (Animator Controller에 해당 스테이트가 있어야 합니다)")]
+    [SerializeField] private string _bashVfxStateName = "BashIdle";
+    [Tooltip("강타 활성 중 VFX에 사용할 스프라이트 (빈 칸으로 두면 스프라이트를 교체하지 않습니다)")]
+    [SerializeField] private Sprite _bashVfxSprite;
+
+
+    public override WeaponType WeaponType => WeaponType.Sword;
 
     public override float ComboWindow        => 0.5f;
     public override int   MaxComboSteps      => 2;
@@ -28,6 +45,20 @@ public class SwordBehaviour : WeaponBehaviourBase
     private Vector3 _weaponRestLocalPos;
     private Vector3 _vfxRestLocalPos;
 
+    // ── 강타 효과 상태 ────────────────────────────────────────────────
+    private StatSystem _statSystem;
+    private Color      _originalSwordColor;
+    private Color      _originalVfxColor;
+    private Sprite     _originalVfxSprite;
+    private bool       _bashEffectActive;
+
+
+    /// <summary>
+    /// 이번 스윙에 적용할 강타 배율.
+    /// BeginAttack() 시점에 스택을 소모하고 저장하며, SwordHitbox가 읽어 데미지에 적용합니다.
+    /// </summary>
+    public float CurrentSwingBashMultiplier { get; private set; } = 1f;
+
     private void Awake()
     {
         CurrentComboStep = 1;
@@ -41,7 +72,14 @@ public class SwordBehaviour : WeaponBehaviourBase
             _vfxRestLocalPos = _vfxAnimator.transform.localPosition;
 
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
+
+        // 강타 효과용 원본값 캐싱
+        _statSystem         = GetComponentInParent<StatSystem>();
+        _originalSwordColor = _swordRenderer != null ? _swordRenderer.color : Color.white;
+        _originalVfxColor   = _vfxRenderer   != null ? _vfxRenderer.color   : Color.white;
+        _originalVfxSprite  = _vfxRenderer   != null ? _vfxRenderer.sprite  : null;
     }
+
 
     private void LateUpdate()
     {
@@ -59,6 +97,54 @@ public class SwordBehaviour : WeaponBehaviourBase
             if (_vfxAnimator != null)
                 _vfxAnimator.transform.localEulerAngles = Vector3.zero;
         }
+
+        // 강타 스택 변화 감지 및 비주얼 효과 동기화
+        SyncBashEffect();
+    }
+
+    /// <summary>
+    /// 강타(Bash) 스택이 남아있는 동안 검 스프라이트에 붉은 HDR 블룸 색조를 적용합니다.
+    /// BashCount가 0으로 돌아오면(공격 소진) 자동으로 원래 색으로 복원됩니다.
+    /// </summary>
+    private void SyncBashEffect()
+    {
+        if (_statSystem == null) return;
+        bool shouldBeActive = _statSystem.BashCount > 0;
+        if (shouldBeActive == _bashEffectActive) return;
+
+        ApplyBashVisual(shouldBeActive);
+    }
+
+    private void ApplyBashVisual(bool active)
+    {
+        _bashEffectActive = active;
+
+        if (_swordRenderer != null)
+            _swordRenderer.color = active ? _bashSwordColor : _originalSwordColor;
+
+        if (_vfxRenderer != null)
+        {
+            _vfxRenderer.color = active ? _bashSwordColor : _originalVfxColor;
+
+            // 스프라이트 교체 로직
+            if (_bashVfxSprite != null)
+                _vfxRenderer.sprite = active ? _bashVfxSprite : _originalVfxSprite;
+        }
+
+
+        // 공격 중이 아닐 때만 VFX 애니메이션 스테이트 전환 (공격 중엔 Attack 재생 유지)
+        if (!IsAttacking && _vfxAnimator != null)
+        {
+            string state = active && !string.IsNullOrEmpty(_bashVfxStateName) ? _bashVfxStateName : "Idle";
+            if (_vfxAnimator.HasState(0, Animator.StringToHash(state)))
+                _vfxAnimator.Play(state, 0, 0f);
+        }
+    }
+
+    /// <summary>BashSkillData.Execute()에서 호출 — 강타 효과를 즉시 활성화합니다.</summary>
+    public void SetBashEffectActive(bool active)
+    {
+        ApplyBashVisual(active);
     }
 
     /// <summary>Idle 전환 직후 애니메이터가 갱신되기 전에 rotation과 루트 스케일을 리셋합니다.</summary>
@@ -85,6 +171,9 @@ public class SwordBehaviour : WeaponBehaviourBase
         _hitboxFired     = false;
         CurrentComboStep = comboStep;
 
+        // 스윙 시작 시 강타 스택 소모 (적중 여부 무관하게 1회 차감)
+        CurrentSwingBashMultiplier = _statSystem != null ? _statSystem.UseBashStack() : 1f;
+
         // 2타는 SwordWeapon 루트(this.transform)의 Y-scale을 반전해 스윙 방향을 뒤집습니다.
         // - this.transform의 worldPosition은 변하지 않으므로 피봇 위치 이동 없음.
         // - 자식(애니메이터, VFX, 히트박스)이 모두 일관되게 함께 뒤집힘.
@@ -94,8 +183,19 @@ public class SwordBehaviour : WeaponBehaviourBase
             _restLocalScale.x, _restLocalScale.y * flipY, _restLocalScale.z);
 
         _weaponAnimator.SetTrigger("Attack");
-        if (_vfxAnimator != null) _vfxAnimator.SetTrigger("Attack");
+        
+        // 공격 속도 연동 (StatSystem의 합연산 수치 반영)
+        float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
+        if (speed <= 0) speed = 1f; 
+        _weaponAnimator.speed = speed;
+
+        if (_vfxAnimator != null)
+        {
+            _vfxAnimator.SetTrigger("Attack");
+            _vfxAnimator.speed = speed;
+        }
     }
+
 
     public override bool PollFinished(float attackStartTime)
     {
@@ -122,7 +222,14 @@ public class SwordBehaviour : WeaponBehaviourBase
             if (info.IsName("Attack"))
             {
                 _weaponAnimator.Play("Idle", 0, 0f);
-                if (_vfxAnimator != null) _vfxAnimator.Play("Idle", 0, 0f);
+                // 강타 활성 중이면 BashIdle로, 아니면 Idle로 복귀
+                if (_vfxAnimator != null)
+                {
+                    string vfxState = _bashEffectActive && !string.IsNullOrEmpty(_bashVfxStateName)
+                        ? _bashVfxStateName : "Idle";
+                    if (!_vfxAnimator.HasState(0, Animator.StringToHash(vfxState))) vfxState = "Idle";
+                    _vfxAnimator.Play(vfxState, 0, 0f);
+                }
             }
             // Idle 전환 직후 animation 커브 갱신 전에 rotation·scale을 리셋.
             ResetChildTransforms();
@@ -142,6 +249,9 @@ public class SwordBehaviour : WeaponBehaviourBase
         if (_weaponAnimator  != null) _weaponAnimator.Play("Idle", 0, 0f);
         if (_vfxAnimator     != null) _vfxAnimator.Play("Idle", 0, 0f);
         ResetChildTransforms();
+
+        // 무기 교체 시 강타 비주얼도 원복 (BashCount는 StatSystem에 남아 다른 무기에서는 적용 안 됨)
+        ApplyBashVisual(false);
     }
 
     // 물리 사이클 2회 후 히트박스 비활성화 (1 physics frame 온전히 보장)

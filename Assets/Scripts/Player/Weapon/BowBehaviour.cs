@@ -65,6 +65,7 @@ public class BowBehaviour : WeaponBehaviourBase
 
 
     // ── WeaponBehaviourBase 오버라이드 ───────────────────────────
+    public override WeaponType WeaponType          => WeaponType.Bow;
     public override float PivotRotationOffset      => 0f;
     // 왼쪽을 향할 때 피봇 Y-scale을 -1로 반전해 스프라이트를 mirror 처리.
     // false(순수 회전)이면 180° 뒤집혀 비대칭하게 보여 좌측에서 크기가 달라 보임.
@@ -149,6 +150,29 @@ public class BowBehaviour : WeaponBehaviourBase
         // 원본으로 강제 복원합니다. SwordBehaviour의 localEulerAngles 리셋과 동일한 패턴.
         if (_weaponAnimator != null)
             _weaponAnimator.transform.localScale = _weaponAnimatorScale;
+    }
+
+    // ── Skill Logic ─────────────────────────────────────────────
+    private float _skillDamageMult = 1f;
+
+    public void StartSkillCharge(float chargeTime, float damageMult)
+    {
+        if (_bowState != BowState.Idle) return;
+
+        _bowState        = BowState.Charging;
+        IsAttacking      = true;
+        _chargeStartTime = Time.time;
+        _hasFired        = false;
+        _aimVfxTriggered = false;
+        
+        _maxChargeTime   = chargeTime;
+        _skillDamageMult = damageMult;
+
+        if (_weaponAnimator != null)
+        {
+            _weaponAnimator.Play("Attack", 0, 0f);
+            _weaponAnimator.speed = 0f;
+        }
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -287,6 +311,7 @@ public class BowBehaviour : WeaponBehaviourBase
     /// <summary>차징 관련 부작용(속도 둔화, 떨림, 애니메이터 속도, 글로우, VFX)을 모두 초기화합니다.</summary>
     private void ResetChargeEffects()
     {
+        _skillDamageMult = 1.0f;
         if (_playerMovement != null) _playerMovement.SpeedMultiplier = 1f;
         _weaponTransform.localPosition = _weaponLocalOrigin;
 
@@ -387,7 +412,7 @@ public class BowBehaviour : WeaponBehaviourBase
         float speed       = Mathf.Lerp(_minArrowSpeed, _maxArrowSpeed, chargeRatio);
         float weaponDmg   = Mathf.Lerp(_minArrowDamage, _maxArrowDamage, chargeRatio);
         float statAtk     = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
-        float damage      = DamageCalculator.CalcOutgoingDamage(statAtk, weaponDmg);
+        float damage      = DamageCalculator.CalcOutgoingDamage(statAtk, weaponDmg) * _skillDamageMult;
 
         // 최적화: Instantiate 대신 SimpleObjectPool에서 가져옵니다.
         GameObject arrowObj = SimpleObjectPool.Instance.Get(_arrowPrefab, _arrowPos.position, _arrowPos.rotation);

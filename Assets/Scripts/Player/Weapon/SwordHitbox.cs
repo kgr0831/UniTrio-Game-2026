@@ -12,8 +12,8 @@ public class SwordHitbox : MonoBehaviour
     [Header("Stats")]
     [Tooltip("Player 루트 오브젝트의 PlayerEntity 컴포넌트를 인스펙터에서 연결하세요.")]
     [SerializeField] private PlayerEntity _playerEntity;
-    [Tooltip("이 무기 고유의 기본 데미지 (무기 스탯). WeaponData 도입 전 임시값.")]
-    [SerializeField] private float _baseDamage = 5f;
+    [Tooltip("기능 무기 고유의 추가 데미지. (WeaponData에 값이 있다면 이 값은 0으로 두는 것을 권장합니다.)")]
+    [SerializeField] private float _baseDamage = 0f;
 
     [Tooltip("이 무기가 공격할 수 있는 대상의 태그 목록. 기본값은 'Enemy'.")]
     [SerializeField] private string[] _targetTags = new string[] { "Enemy", "Tree" };
@@ -24,6 +24,13 @@ public class SwordHitbox : MonoBehaviour
 
     [Header("Damage Text")]
     [SerializeField] private GameObject _damageTextPrefab;
+
+    private SwordBehaviour _swordBehaviour;
+
+    private void Awake()
+    {
+        _swordBehaviour = GetComponentInParent<SwordBehaviour>();
+    }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
@@ -45,9 +52,13 @@ public class SwordHitbox : MonoBehaviour
         IDamageable target = other.GetComponentInParent<IDamageable>();
         if (target == null || !target.IsAlive) return;
 
-        // (StatAtk + WeaponBaseDmg) * 1.0
+        // (StatAtk + WeaponBaseDmg) * 1.0 * (BashMultiplier)
         float atk    = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
         float damage = DamageCalculator.CalcOutgoingDamage(atk, _baseDamage);
+        
+        // 강타(Bash) 배율 적용 — 스윙 시작 시 이미 소모된 배율을 읽음
+        if (_swordBehaviour != null)
+            damage *= _swordBehaviour.CurrentSwingBashMultiplier;
 
         target.TakeDamage(damage, gameObject);
 

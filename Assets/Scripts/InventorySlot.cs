@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems; // UI 이벤트를 처리하기 위한 필수 임포트
 
-public enum SlotType { Inventory, QuickSlot ,SkillSlot }
+public enum SlotType { Inventory, QuickSlot, SkillSlot, SubWeaponSlot }
 
 public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler {
     [Header("Slot Settings")]
@@ -105,5 +105,28 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
             
             Debug.Log($"{draggedData.Name}이(가) 퀵슬롯에 등록/교체되었습니다.");
         }
+        // 3. 내가 보조 무기 슬롯일 때
+        else if (this.slotType == SlotType.SubWeaponSlot)
+        {
+            // 무기만 허용
+            if (!(draggedData is WeaponData))
+            {
+                Debug.LogWarning("보조 무기 슬롯에는 무기만 등록할 수 있습니다!");
+                return;
+            }
+
+            ItemData myOldData = this.currentData;
+            int myOldCount = this.currentCount;
+
+            RefreshSlot(draggedData, dm.draggingCount);
+
+            if (fromSlot.slotType != SlotType.SkillSlot)
+            {
+                fromSlot.RefreshSlot(myOldData, myOldCount);
+            }
+
+            Debug.Log($"{draggedData.Name}이(가) 보조 무기 슬롯에 장착되었습니다.");
+        }
     }
 }
+

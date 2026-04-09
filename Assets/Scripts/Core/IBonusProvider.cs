@@ -5,7 +5,11 @@
 public interface IBonusProvider
 {
     float GetAttackBonus();
+    float GetMagicAttackBonus();
     float GetDefenseBonus();
     float GetSpeedBonus();
     float GetManaBonus();
+    float GetMaxHPBonus();
+    float GetAttackSpeedBonus();
 }
+

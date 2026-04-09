@@ -1,34 +1,26 @@
-using System;
 using UnityEngine;
 
 /// <summary>
-/// 무기 슬롯 A / B를 관리하고 E키로 활성 슬롯을 스왑하는 컴포넌트.
-/// - 슬롯 0 ↔ 슬롯 1 토글
-/// - 스왑 시 PlayerWeaponController.EquipWeapon() 호출
-/// - OnSlotChanged 이벤트로 UI(핫바 1번) 갱신 알림
+/// 무기 슬롯(핫바 1번)과 보조 슬롯(SubWeaponSlot)을 관리하고 E키로 스왑하는 컴포넌트.
+/// - 핫바 1번 슬롯의 무기가 현재 장착된 무기로 간주됩니다.
+/// - E키 입력 시 핫바 1번 ↔ 보조 무기 슬롯 아이템 스왑.
+/// - 상시 감시를 통해 핫바 1번의 아이템이 바뀌면 PlayerWeaponController에 장착 요청.
 /// </summary>
 [RequireComponent(typeof(PlayerWeaponController))]
 public class WeaponSlotManager : MonoBehaviour
 {
-    [Header("Weapon Slot Data")]
-    [Tooltip("슬롯 0번(기본 장착) WeaponData")]
-    [SerializeField] private WeaponData _slotA;
-    [Tooltip("슬롯 1번 WeaponData")]
-    [SerializeField] private WeaponData _slotB;
+    [Header("Slot References")]
+    [Tooltip("핫바 1번 슬롯 (Alpha 1에 대응하는 슬롯)")]
+    [SerializeField] private InventorySlot _activeSlot;
+    
+    [Tooltip("보조 무기 슬롯 (E키로 스왑할 대상)")]
+    [SerializeField] private InventorySlot _subWeaponSlot;
 
     [Header("Settings")]
     [SerializeField] private KeyCode _swapKey = KeyCode.E;
 
-    /// <summary>현재 활성 슬롯 인덱스 (0 또는 1).</summary>
-    public int ActiveSlotIndex { get; private set; } = 0;
-
-    /// <summary>현재 활성 무기 데이터.</summary>
-    public WeaponData ActiveWeapon => ActiveSlotIndex == 0 ? _slotA : _slotB;
-
-    /// <summary>슬롯이 변경될 때 발생. (activeIndex, newWeaponData) 전달.</summary>
-    public event Action<int, WeaponData> OnSlotChanged;
-
     private PlayerWeaponController _weaponCtrl;
+    private ItemData               _lastEquippedData;
 
     private void Awake()
     {
@@ -37,9 +29,8 @@ public class WeaponSlotManager : MonoBehaviour
 
     private void Start()
     {
-        // 시작 시 슬롯 0 장착
-        _weaponCtrl.EquipWeapon(0);
-        OnSlotChanged?.Invoke(0, _slotA);
+        // 시작 시 현재 슬롯 상태 확인
+        SyncWeaponWithActiveSlot();
     }
 
     private void Update()
@@ -48,30 +39,55 @@ public class WeaponSlotManager : MonoBehaviour
             SwapWeapon();
     }
 
+    private void LateUpdate()
+    {
+        // 핫바 1번 슬롯의 데이터 변화 감지 (드래그앤드롭 등으로 바뀌었을 때)
+        if (_activeSlot != null && _activeSlot.currentData != _lastEquippedData)
+        {
+            SyncWeaponWithActiveSlot();
+        }
+    }
+
     // ── Public API ──────────────────────────────────────────────────
 
-    /// <summary>활성 슬롯을 0 ↔ 1 토글합니다. 공격 중이면 큐에 저장해 공격 종료 후 실행됩니다.</summary>
+    /// <summary>핫바 1번 슬롯과 보조 슬롯의 아이템을 서로 교체합니다.</summary>
     public void SwapWeapon()
     {
-        ActiveSlotIndex = 1 - ActiveSlotIndex;
-        _weaponCtrl.TryEquipWeapon(ActiveSlotIndex);
-        OnSlotChanged?.Invoke(ActiveSlotIndex, ActiveWeapon);
+        if (_activeSlot == null || _subWeaponSlot == null) return;
+
+        ItemData oldActiveData  = _activeSlot.currentData;
+        int      oldActiveCount = _activeSlot.currentCount;
+
+        // 보조 슬롯 데이터 -> 활성 슬롯
+        _activeSlot.RefreshSlot(_subWeaponSlot.currentData, _subWeaponSlot.currentCount);
+        
+        // 이전 활성 데이터 -> 보조 슬롯
+        _subWeaponSlot.RefreshSlot(oldActiveData, oldActiveCount);
+
+        Debug.Log("[WeaponSlot] 무기 스왑 완료");
+        
+        // 데이터가 바뀌었으므로 즉시 동기화
+        SyncWeaponWithActiveSlot();
     }
 
-    /// <summary>
-    /// 인벤토리 드래그 앤 드롭으로 특정 슬롯에 무기 데이터를 배치합니다.
-    /// </summary>
-    public void SetSlot(int slotIndex, WeaponData data)
+    /// <summary>현재 활성 슬롯의 데이터를 기반으로 실제 무기 모델을 장착/해제합니다.</summary>
+    public void SyncWeaponWithActiveSlot()
     {
-        if (slotIndex == 0) _slotA = data;
-        else if (slotIndex == 1) _slotB = data;
+        if (_activeSlot == null || _weaponCtrl == null) return;
 
-        // 현재 활성 슬롯이 교체되면 즉시 UI 갱신
-        if (slotIndex == ActiveSlotIndex)
-            OnSlotChanged?.Invoke(ActiveSlotIndex, ActiveWeapon);
+        ItemData current = _activeSlot.currentData;
+        _lastEquippedData = current;
+
+        if (current is WeaponData weapon)
+        {
+            _weaponCtrl.EquipWeaponByData(weapon);
+            Debug.Log($"[WeaponSlot] '{weapon.Name}' 장착됨");
+        }
+        else
+        {
+            // 무기가 아니거나 빈 칸이면 해제
+            _weaponCtrl.UnequipAll();
+        }
     }
-
-    /// <summary>슬롯 인덱스의 WeaponData를 반환합니다.</summary>
-    public WeaponData GetSlot(int slotIndex) =>
-        slotIndex == 0 ? _slotA : _slotB;
 }
+

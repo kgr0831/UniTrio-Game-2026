@@ -5,7 +5,23 @@ public class QuickSlotManager : MonoBehaviour
     // 인스펙터에서 하이어라키에 있는 8개 슬롯을 순서대로 드래그해서 넣으세요.
     public InventorySlot[] quickSlots; 
 
+    private void Start()
+    {
+        ClearAllSlots();
+    }
+
+    public void ClearAllSlots()
+    {
+        if (quickSlots == null) return;
+        foreach (var slot in quickSlots)
+        {
+            if (slot != null) slot.RefreshSlot(null, 0);
+        }
+        Debug.Log("[QuickSlot] 모든 슬롯 초기화 완료");
+    }
+
     private void UseItem(InventorySlot slot)
+
     {
         ItemData data = slot.currentData;
 
@@ -18,9 +34,10 @@ public class QuickSlotManager : MonoBehaviour
         }
         else if (data is WeaponData weapon)
         {
-            Debug.Log($"{weapon.Name} 장착 (공격력: {weapon.Damage})");
+            Debug.Log($"{weapon.Name} 장착 (공격력: {weapon.AttackBonus})");
             // 장비는 보통 소모되지 않으므로 수량 차감 없음
         }
+
         else if (data is SkillData skill)
         {
             Debug.Log($"{skill.Name} 스킬 발동!");

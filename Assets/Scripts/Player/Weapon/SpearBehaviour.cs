@@ -16,6 +16,8 @@ public class SpearBehaviour : WeaponBehaviourBase
     [Header("Hitbox")]
     [SerializeField] private Collider2D _hitboxCollider;
 
+    public override WeaponType WeaponType => WeaponType.Spear;
+
     [Header("Orbit Settings (공전)")]
     [Tooltip("캐릭터를 중심으로 얼마나 띄울지 결정합니다.")]
     [SerializeField] private float _orbitRadius = 0.5f;

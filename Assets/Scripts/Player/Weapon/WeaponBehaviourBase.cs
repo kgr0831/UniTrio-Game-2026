@@ -7,6 +7,9 @@ using UnityEngine;
 /// </summary>
 public abstract class WeaponBehaviourBase : MonoBehaviour
 {
+    /// <summary>이 무기의 종류 (검, 창, 활, 지팡이 등).</summary>
+    public abstract WeaponType WeaponType { get; }
+
     /// <summary>현재 공격 애니메이션이 재생 중인지 여부.</summary>
     public bool IsAttacking { get; protected set; }
 

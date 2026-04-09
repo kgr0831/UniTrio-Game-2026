@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e36e3e7c22164d342ad28d175eb6dc03, type: 3}
+  m_Name: BashSkill
+  m_EditorClassIdentifier: Assembly-CSharp::BashSkillData
+  Id: 1001
+  Name: "\uAC15\uD0C0"
+  Description: "\uB2E4\uC74C 3\uBC88\uC758 \uAE30\uBCF8 \uACF5\uACA9\uC774 2\uBC30\uC758
+    \uD53C\uD574\uB97C \uC785\uD799\uB2C8\uB2E4.\n\uACC4\uC218: \uACF5\uACA9\uB825
+    2.0 | \uCFE8\uD0C0\uC784: 10\uCD08 | \uB9C8\uB098: -20"
+  Type: 8
+  Icon: {fileID: 21300000, guid: 68ea2a7c04e3c3b41ab21a469843b739, type: 3}
+  IngredientList: []
+  SkillPrefab: {fileID: 0}
+  ManaCost: 20
+  Cooldown: 10
+  RequiredWeapon: 1
+  BashStackCount: 3
