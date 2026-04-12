@@ -23,6 +23,21 @@ public sealed class InventoryManager : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        Core.ItemEvents.OnItemCollected += HandleItemCollected;
+    }
+
+    private void OnDisable()
+    {
+        Core.ItemEvents.OnItemCollected -= HandleItemCollected;
+    }
+
+    private void HandleItemCollected(ItemData item, int count)
+    {
+        AddItem(item, count);
+    }
+
     public void RegisterGenerator(InventoryGenerator generator)
     {
         _inventoryGenerator = generator;
