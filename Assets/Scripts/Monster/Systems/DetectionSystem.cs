@@ -22,6 +22,9 @@ public sealed class DetectionSystem : MonoBehaviour
     [Tooltip("시야가 차단된 후 추격을 해제하기까지의 시간 (초)")]
     [SerializeField] private float _losBreakDuration = 4f;
     private float _losBlockedTimer;
+    
+    // GC 조절을 위한 캐싱 버퍼 (성능 가이드라인 준수)
+    private readonly Collider2D[] _colliderBuffer = new Collider2D[16];
 
     public bool      HasTarget      => _runtime.DetectedPlayer != null;
     public Transform DetectedTarget => _runtime.DetectedPlayer;
@@ -46,14 +49,16 @@ public sealed class DetectionSystem : MonoBehaviour
         
         float radius = _runtime.Data.DetectionRadius;
 
-        // 1. 범위 내 플레이어 검출 (가비지 없는 배열 오버로드거나 여러개 중 진짜 플레이어 찾기)
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius, _playerMask);
+        // 1. 범위 내 플레이어 검출 (NonAlloc API 사용하여 가비지 프리 구현)
+        int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, radius, _colliderBuffer, _playerMask);
         Collider2D playerHit = null;
-        for (int i = 0; i < hits.Length; i++)
+        for (int i = 0; i < hitCount; i++)
         {
-            if (hits[i].CompareTag("Player"))
+            // 콜라이더가 자식 오브젝트에 있는 경우를 대비해 루트 오브젝트의 태그도 확인 (Robustness)
+            Transform root = _colliderBuffer[i].transform.root;
+            if (_colliderBuffer[i].CompareTag("Player") || root.CompareTag("Player"))
             {
-                playerHit = hits[i];
+                playerHit = _colliderBuffer[i];
                 break;
             }
         }
@@ -63,6 +68,12 @@ public sealed class DetectionSystem : MonoBehaviour
             // 범위 밖 → 적대적 몹은 타이머 카운트
             HandleOutOfRange();
             return;
+        }
+
+        // 디버깅: 처음 감지했을 때만 로그 출력
+        if (_runtime.DetectedPlayer == null)
+        {
+            Debug.Log($"[DetectionSystem] {gameObject.name} found Player! Fleeing logic should trigger.");
         }
 
         // 2. LoS (Line of Sight) 체크 — 장애물 레이캐스트

@@ -70,7 +70,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 9dfc825aed78fcd4ba02077103263b40, type: 2}
+  - {fileID: 2100000, guid: e874dd0cac54ea94987184128e68feaa, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -256,10 +256,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DetectionSystem
   _obstacleMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 1
   _playerMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 1
   _checkInterval: 0.15
   _losBreakDuration: 4
 --- !u!114 &8229075593959029453
@@ -276,7 +276,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MonsterNavigator
   _obstacleMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 1
   _avoidanceRayLength: 1.5
   _avoidanceAngle: 45
 --- !u!114 &6940807242602123746

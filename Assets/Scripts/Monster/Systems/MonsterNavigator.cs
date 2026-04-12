@@ -64,8 +64,11 @@ public sealed class MonsterNavigator : MonoBehaviour
     /// </summary>
     private Vector2 ApplyAvoidance(Vector2 desiredDir)
     {
+        // 최적화: 자기 자신과의 충돌 방지를 위해 약간의 오프셋 추가
+        Vector2 origin = (Vector2)transform.position + (desiredDir * 0.1f);
+
         // 정면 체크
-        if (!Physics2D.Raycast(transform.position, desiredDir,
+        if (!Physics2D.Raycast(origin, desiredDir,
                                _avoidanceRayLength, _obstacleMask))
         {
             return desiredDir; // 장애물 없음 → 직진

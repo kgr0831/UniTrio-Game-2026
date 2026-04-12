@@ -9,54 +9,38 @@ public abstract class BTNode
     public abstract BTStatus Execute();
 }
 
-/// <summary>자식을 왼쪽부터 순서대로 실행. 실패 시 즉시 중단.</summary>
+/// <summary>자식을 왼쪽부터 순서대로 실행. 하나라도 실패/진행 중이면 중단. (반응형)</summary>
 public class BTSequence : BTNode
 {
     private readonly BTNode[] _children;
-    private int _currentIndex = 0;
 
     public BTSequence(BTNode[] children) => _children = children;
 
     public override BTStatus Execute()
     {
-        while (_currentIndex < _children.Length)
+        foreach (var child in _children)
         {
-            BTStatus status = _children[_currentIndex].Execute();
-            if (status == BTStatus.Running) return BTStatus.Running;
-            if (status == BTStatus.Failure)
-            {
-                _currentIndex = 0;
-                return BTStatus.Failure;
-            }
-            _currentIndex++;
+            BTStatus status = child.Execute();
+            if (status != BTStatus.Success) return status;
         }
-        _currentIndex = 0;
         return BTStatus.Success;
     }
 }
 
-/// <summary>자식 중 하나라도 성공하면 즉시 반환.</summary>
+/// <summary>자식 중 우선순위가 높은 것(왼쪽)부터 실행. 하나라도 성공/진행 중이면 즉시 반환. (반응형 우선순위 선택기)</summary>
 public class BTSelector : BTNode
 {
     private readonly BTNode[] _children;
-    private int _currentIndex = 0;
 
     public BTSelector(BTNode[] children) => _children = children;
 
     public override BTStatus Execute()
     {
-        while (_currentIndex < _children.Length)
+        foreach (var child in _children)
         {
-            BTStatus status = _children[_currentIndex].Execute();
-            if (status == BTStatus.Running) return BTStatus.Running;
-            if (status == BTStatus.Success)
-            {
-                _currentIndex = 0;
-                return BTStatus.Success;
-            }
-            _currentIndex++;
+            BTStatus status = child.Execute();
+            if (status != BTStatus.Failure) return status;
         }
-        _currentIndex = 0;
         return BTStatus.Failure;
     }
 }
