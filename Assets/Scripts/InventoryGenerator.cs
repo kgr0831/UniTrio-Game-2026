@@ -13,6 +13,8 @@ public class InventoryGenerator : MonoBehaviour
     // 슬롯들을 관리하기 위한 리스트
     private List<InventorySlot> allSlots = new List<InventorySlot>();
 
+    public IReadOnlyList<InventorySlot> AllSlots => allSlots;
+
     [Header("Starter Items")]
     [Tooltip("게임 시작 시 지급할 기본 무기들")]
     public List<WeaponData> starterWeapons;
@@ -21,14 +23,21 @@ public class InventoryGenerator : MonoBehaviour
     public List<ItemData> starterItems;
 
 
-    void Start()
+    private void Awake()
     {
         GenerateEmptySlots();
+        // InventoryManager가 씬의 엉뚱한 Generator를 잡는 것을 방지하기 위해, 진짜 UI의 Generator가 스스로 등록
+        if (InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.RegisterGenerator(this);
+        }
     }
 
     [ContextMenu("Generate Inventory")] // 인스펙터 우클릭 메뉴로 테스트 가능
     public void GenerateEmptySlots()
     {
+        // 핫픽스: 이미 슬롯이 생성되어 있다면 (비활성화 상태에서 먼저 호출된 경우 등) 중복 생성 및 덮어쓰기 방지!
+        if (allSlots != null && allSlots.Count > 0) return;
         // 기존에 생성된 슬롯이 있다면 제거
         foreach (Transform child in container)
         {

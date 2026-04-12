@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: image-Photoroom_0
+      name: Wood
       rect:
         serializedVersion: 2
         x: 26
@@ -132,7 +132,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: image-Photoroom_1
+      name: Stone
       rect:
         serializedVersion: 2
         x: 192
@@ -154,7 +154,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: image-Photoroom_2
+      name: Umbrage
       rect:
         serializedVersion: 2
         x: 352
@@ -176,11 +176,11 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: image-Photoroom_3
+      name: Leather
       rect:
         serializedVersion: 2
-        x: 501
-        y: 221
+        x: 502
+        y: 222
         width: 143
         height: 154
       alignment: 0
@@ -198,7 +198,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: image-Photoroom_4
+      name: Bone
       rect:
         serializedVersion: 2
         x: 46
@@ -220,7 +220,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: image-Photoroom_5
+      name: Fleece
       rect:
         serializedVersion: 2
         x: 256
@@ -242,7 +242,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: image-Photoroom_6
+      name: WolfTeeth
       rect:
         serializedVersion: 2
         x: 481
@@ -279,13 +279,13 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":0,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      image-Photoroom_0: -1650188191
-      image-Photoroom_1: -1417723018
-      image-Photoroom_2: -409386906
-      image-Photoroom_3: 1833383202
-      image-Photoroom_4: -984005320
-      image-Photoroom_5: 620166419
-      image-Photoroom_6: 1815586285
+      Bone: -984005320
+      Fleece: 620166419
+      Leather: 1833383202
+      Stone: -1417723018
+      Umbrage: -409386906
+      WolfTeeth: 1815586285
+      Wood: -1650188191
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

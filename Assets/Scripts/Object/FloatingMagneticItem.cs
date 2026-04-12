@@ -42,6 +42,13 @@ public class FloatingMagneticItem : MonoBehaviour
         _currentState = State.Dropping;
     }
 
+    private void OnEnable()
+    {
+        // 최적화: 풀링에서 꺼내어질 때마다 초기 상태 강제
+        _currentState = State.Dropping;
+        _currentMagneticSpeed = 0f;
+    }
+
     private void Update()
     {
         // 플레이어를 매번 찾지 않고 한 번 캐싱해둠
@@ -128,7 +135,33 @@ public class FloatingMagneticItem : MonoBehaviour
 
     private void CollectItem()
     {
-        // TODO: 향후 플레이어의 인벤토리에 나무를 더하는 로직 등을 이곳에 연결할 수 있습니다.
-        Destroy(gameObject);
+        var identity = GetComponent<DroppedItemIdentity>();
+        if (identity != null && identity.ItemData != null)
+        {
+            // InventoryManager.Instance가 널일 수 있음 (UI 패널이 아직 한 번도 활성화되지 않아 Awake가 안 탔을 때)
+            InventoryManager invManager = InventoryManager.Instance;
+            if (invManager == null)
+            {
+                invManager = FindObjectOfType<InventoryManager>(true); // 비활성화된 오브젝트 포함해서 찾기
+                if (invManager != null)
+                {
+                    // 수동으로 한 번 깨워주거나(Awake 대용) 혹은 해당 스크립트를 참조하여 넣음
+                    // 억지로라도 인스턴스를 찾아 추가 시키기 위해 시도
+                    invManager.AddItem(identity.ItemData, identity.ItemCount);
+                }
+                else
+                {
+                    Debug.LogError("[FloatingMagneticItem] 씬 내에 InventoryManager가 존재하지 않습니다! 아이템이 공중분해됩니다.");
+                }
+            }
+            else
+            {
+                invManager.AddItem(identity.ItemData, identity.ItemCount);
+            }
+        }
+        
+        // 풀에 반납 가능성이 높으므로 비활성화 hoặc 파괴
+        // (SimpleObjectPool 구조에 따라 Release 호출이 정석이지만 범용적으로 SetActive(false) 사용)
+        gameObject.SetActive(false);
     }
 }

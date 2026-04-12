@@ -77,7 +77,10 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
                 Color c = iconImage.color;
                 c.a = 1f;
                 iconImage.color = c;
+            } else {
+                Debug.LogWarning($"[InventorySlot] {gameObject.name}에 iconImage 컴포넌트 참조가 없습니다!");
             }
+
             if (countText != null) {
                 countText.text = currentCount > 1 ? currentCount.ToString() : ""; 
                 countText.enabled = true;

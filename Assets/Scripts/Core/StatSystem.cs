@@ -21,6 +21,10 @@ public sealed class StatSystem : MonoBehaviour
     /// <summary>스탯이 변경되었을 때(장비 교체 등) 발생하는 이벤트.</summary>
     public event System.Action OnStatsChanged;
 
+    [Header("Permanent First Kill Bonuses")]
+    [SerializeField] private float _permMaxHP;
+    [SerializeField] private float _permAtk;
+    [SerializeField] private float _permMagicAtk;
 
     // Play 모드 Inspector에서 실시간 확인용 (Normal/Debug 모드 모두 표시)
     [SerializeField] private float _currentMana;
@@ -42,7 +46,7 @@ public sealed class StatSystem : MonoBehaviour
     {
         get
         {
-            float total = _baseAtk;
+            float total = _baseAtk + _permAtk;
             for (int i = 0; i < _providers.Count; i++) total += _providers[i].GetAttackBonus();
             return total;
         }
@@ -52,7 +56,7 @@ public sealed class StatSystem : MonoBehaviour
     {
         get
         {
-            float total = _baseMagicAtk;
+            float total = _baseMagicAtk + _permMagicAtk;
             for (int i = 0; i < _providers.Count; i++) total += _providers[i].GetMagicAttackBonus();
             return total;
         }
@@ -92,7 +96,7 @@ public sealed class StatSystem : MonoBehaviour
     {
         get
         {
-            float total = _baseMaxHP;
+            float total = _baseMaxHP + _permMaxHP;
             for (int i = 0; i < _providers.Count; i++) total += _providers[i].GetMaxHPBonus();
             return total;
         }
@@ -156,6 +160,14 @@ public sealed class StatSystem : MonoBehaviour
         {
             OnStatsChanged?.Invoke();
         }
+    }
+
+    public void AddPermanentBonus(float hp, float atk, float magicAtk)
+    {
+        _permMaxHP += hp;
+        _permAtk += atk;
+        _permMagicAtk += magicAtk;
+        OnStatsChanged?.Invoke();
     }
 
 
