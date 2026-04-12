@@ -18,7 +18,7 @@ MonoBehaviour:
   MaxHP: 150
   ATK: 0
   DEF: 20
-  Speed: 10
+  Speed: 300
   AttackSpeed: 0
   AttackDelay: 0
   AttackShape:
