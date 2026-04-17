@@ -13295,9 +13295,9 @@ MonoBehaviour:
   tilemap: {fileID: 2051489253}
   player: {fileID: 928606629}
   chunkSize: 16
-  noiseScale: 0.05
+  noiseScale: 0.01
   biomes:
-  - name: 
+  - name: grass
     priority: 2
     tiles:
     - {fileID: 11400000, guid: 306fae7e6873de64c9fe6c28e855503a, type: 2}
@@ -13324,7 +13324,7 @@ MonoBehaviour:
     minSpacing: 5
     threshold: 0
     tileSize: {x: 1, y: 1}
-  - name: 
+  - name: dirt
     priority: 3
     tiles:
     - {fileID: 11400000, guid: 4ee52389e980d0744b1bdb1915fdab4c, type: 2}
@@ -13332,11 +13332,11 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 1c135cf77b9d7c74daa6c677704dbf6f, type: 2}
     - {fileID: 11400000, guid: 5d528f79cbf384447995cc22c78911f3, type: 2}
     - {fileID: 11400000, guid: 8038883a5ea90f042a55cd0e5e3c55d6, type: 2}
+    - {fileID: 11400000, guid: e5615f2e5fed9aa4396b80cc35ba7d2e, type: 2}
     - {fileID: 11400000, guid: 44baf974c6714044f9316be765c7491f, type: 2}
     - {fileID: 11400000, guid: ff87587e3f7cb0c43b71d07be28f33c5, type: 2}
     - {fileID: 11400000, guid: 6832aad5bde812c468806147819be385, type: 2}
     - {fileID: 11400000, guid: 377fdbd87c1cbcc4d83a12fe86932d62, type: 2}
-    - {fileID: 11400000, guid: 0014b3374190d4c408ff851179d7bc1a, type: 2}
     - {fileID: 11400000, guid: 0014b3374190d4c408ff851179d7bc1a, type: 2}
     - {fileID: 11400000, guid: cbcff9a9b4b6c474db826851e961e308, type: 2}
     - {fileID: 11400000, guid: 85a7a97316f4f7541b4b2b82f7595efc, type: 2}
