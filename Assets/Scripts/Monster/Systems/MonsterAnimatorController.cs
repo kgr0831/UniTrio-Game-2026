@@ -37,9 +37,18 @@ public sealed class MonsterAnimatorController : MonoBehaviour
 
         _animator.SetBool(_hashIsMoving, isMoving);
 
-        // 4방향 애니메이션 제어를 위한 방향 전달
-        _animator.SetFloat(_hashDirX, _runtime.CurrentDirection.x);
-        _animator.SetFloat(_hashDirY, _runtime.CurrentDirection.y);
+        // 2방향(좌우) 애니메이션 제어: 상하 애니메이션 제거
+        float dirX = _runtime.CurrentDirection.x;
+        
+        // 좌우 방향으로 조금이라도 움직이면 DirX 업데이트 (1 또는 -1)
+        if (Mathf.Abs(dirX) > 0.01f)
+        {
+            _animator.SetFloat(_hashDirX, Mathf.Sign(dirX));
+        }
+        // 수직으로만 이동할 때는 이전 좌우 방향(DirX)을 그대로 유지
+
+        // 상하 애니메이션(DirY)은 무조건 0으로 고정하여 재생되지 않게 차단
+        _animator.SetFloat(_hashDirY, 0f);
     }
 
     public void PlayAttack()

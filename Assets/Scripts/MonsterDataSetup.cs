@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEditor;
 
 [ExecuteInEditMode]
-public class CowDataSetup : MonoBehaviour
+public class MonsterDataSetup : MonoBehaviour
 {
     private void Awake()
     {
@@ -13,27 +13,27 @@ public class CowDataSetup : MonoBehaviour
     public static void SetupData()
     {
         string assetPath = "Assets/Resources/Data/Monster/Cow.asset";
-        MonsterData cowData = AssetDatabase.LoadAssetAtPath<MonsterData>(assetPath);
-        if (cowData == null)
+        MonsterData data = AssetDatabase.LoadAssetAtPath<MonsterData>(assetPath);
+        if (data == null)
         {
-            Debug.LogError("Cow.asset not found at " + assetPath);
+            Debug.LogError("Monster asset not found at " + assetPath);
             return;
         }
 
-        cowData.MonsterName = "Cow";
-        cowData.Type = MonsterType.Neutral; // Assuming MonsterType.Neutral exists
-        cowData.MaxHP = 150f;
-        cowData.ATK = 0f;
-        cowData.DEF = 20f;
-        cowData.Speed = 65f;
-        cowData.DetectionRadius = 6f;
+        data.MonsterName = "Cow";
+        data.Type = MonsterType.Neutral; // Assuming MonsterType.Neutral exists
+        data.MaxHP = 150f;
+        data.ATK = 0f;
+        data.DEF = 20f;
+        data.Speed = 65f;
+        data.DetectionRadius = 6f;
 
-        cowData.AnimController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Resources/Animations/Cow/Cow_AnimatorController.controller");
+        data.AnimController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Resources/Animations/Cow/Cow_AnimatorController.controller");
 
-        cowData.DropTable = new DropEntry[3];
+        data.DropTable = new DropEntry[3];
 
         // 1. AnimalMeat
-        cowData.DropTable[0] = new DropEntry
+        data.DropTable[0] = new DropEntry
         {
             Item = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/Data/ItemData/FoodData/AnimalMeat.asset"),
             DropChance = 1f,
@@ -42,7 +42,7 @@ public class CowDataSetup : MonoBehaviour
         };
 
         // 2. Leather
-        cowData.DropTable[1] = new DropEntry
+        data.DropTable[1] = new DropEntry
         {
             Item = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/Data/ItemData/IngredientData/Leather.asset"),
             DropChance = 1f,
@@ -51,7 +51,7 @@ public class CowDataSetup : MonoBehaviour
         };
 
         // 3. Bone
-        cowData.DropTable[2] = new DropEntry
+        data.DropTable[2] = new DropEntry
         {
             Item = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Resources/Data/ItemData/IngredientData/Bone.asset"),
             DropChance = 1f,
@@ -59,9 +59,9 @@ public class CowDataSetup : MonoBehaviour
             CountWeights = new float[] { 0.5f, 0.5f } // 1개: 50%, 2개: 50%
         };
 
-        EditorUtility.SetDirty(cowData);
+        EditorUtility.SetDirty(data);
         AssetDatabase.SaveAssets();
-        Debug.Log("Cow Data Setup Complete!");
+        Debug.Log("Monster Data Setup Complete!");
     }
 }
 #endif
