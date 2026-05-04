@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa8dee389c543e546bc35029bc70bb6f, type: 3}
+  m_Name: ManaSpearSkill
+  m_EditorClassIdentifier: Assembly-CSharp::ManaSpearSkillData
+  Id: 0
+  Name: "\uB9C8\uB098 \uCC3D (Mana Spear)"
+  Description: "\uC751\uC9D1\uB41C \uB9C8\uB098\uB97C \uCC3D\uC758 \uD615\uD0DC\uB85C
+    \uD615\uC0C1\uD654\uD558\uC5EC \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
+  Type: 8
+  Icon: {fileID: 21300000, guid: 20992139da376904481a7371de572c89, type: 3}
+  IngredientList: []
+  SkillPrefab: {fileID: 0}
+  ManaCost: 15
+  Cooldown: 7
+  RequiredWeapon: 4
+  _spearPrefab: {fileID: 7002805010167649091, guid: 59885e5ea06b39944ac91a4b06844e3c, type: 3}
+  _speed: 15

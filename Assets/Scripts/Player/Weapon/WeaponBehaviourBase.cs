@@ -7,6 +7,9 @@ using UnityEngine;
 /// </summary>
 public abstract class WeaponBehaviourBase : MonoBehaviour
 {
+    /// <summary>이 무기의 종류 (검, 창, 활, 지팡이 등).</summary>
+    public abstract WeaponType WeaponType { get; }
+
     /// <summary>현재 공격 애니메이션이 재생 중인지 여부.</summary>
     public bool IsAttacking { get; protected set; }
 
@@ -57,6 +60,12 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
     /// 예: 창 스프라이트가 45° 기울어진 경우 45f를 반환.
     /// </summary>
     public virtual float PivotRotationOffset => 0f;
+
+    /// <summary>현재 공격 중인 스윙에 적용될 강타(Bash) 배율입니다. (히트박스에서 읽음)</summary>
+    public float CurrentSwingBashMultiplier { get; protected set; } = 1f;
+
+    /// <summary>강타 시각 효과(블룸, 스프라이트 교체 등)를 활성화/비활성화 합니다.</summary>
+    public virtual void SetBashEffectActive(bool active) { }
 
     /// <summary>공격 시작. comboStep에 이번에 실행할 타수(1, 2, ...)를 넘깁니다.</summary>
     public abstract void BeginAttack(int comboStep);

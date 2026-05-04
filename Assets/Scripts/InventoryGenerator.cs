@@ -13,14 +13,31 @@ public class InventoryGenerator : MonoBehaviour
     // 슬롯들을 관리하기 위한 리스트
     private List<InventorySlot> allSlots = new List<InventorySlot>();
 
-    void Start()
+    public IReadOnlyList<InventorySlot> AllSlots => allSlots;
+
+    [Header("Starter Items")]
+    [Tooltip("게임 시작 시 지급할 기본 무기들")]
+    public List<WeaponData> starterWeapons;
+
+    [Tooltip("게임 시작 시 지급할 기본 아이템들 (소모품 등)")]
+    public List<ItemData> starterItems;
+
+
+    private void Awake()
     {
         GenerateEmptySlots();
+        // InventoryManager가 씬의 엉뚱한 Generator를 잡는 것을 방지하기 위해, 진짜 UI의 Generator가 스스로 등록
+        if (InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.RegisterGenerator(this);
+        }
     }
 
     [ContextMenu("Generate Inventory")] // 인스펙터 우클릭 메뉴로 테스트 가능
     public void GenerateEmptySlots()
     {
+        // 핫픽스: 이미 슬롯이 생성되어 있다면 (비활성화 상태에서 먼저 호출된 경우 등) 중복 생성 및 덮어쓰기 방지!
+        if (allSlots != null && allSlots.Count > 0) return;
         // 기존에 생성된 슬롯이 있다면 제거
         foreach (Transform child in container)
         {
@@ -45,5 +62,32 @@ public class InventoryGenerator : MonoBehaviour
         }
 
         Debug.Log($"{columns}x{rows} 인벤토리 생성 완료!");
+
+        // 시작 무기 지급
+        int slotIndex = 0;
+        if (starterWeapons != null)
+        {
+            for (int i = 0; i < starterWeapons.Count; i++)
+            {
+                if (slotIndex < allSlots.Count && starterWeapons[i] != null)
+                {
+                    allSlots[slotIndex].RefreshSlot(starterWeapons[i], 1);
+                    slotIndex++;
+                }
+            }
+        }
+
+        // 시작 아이템 지급 (소모품 등)
+        if (starterItems != null)
+        {
+            for (int i = 0; i < starterItems.Count; i++)
+            {
+                if (slotIndex < allSlots.Count && starterItems[i] != null)
+                {
+                    allSlots[slotIndex].RefreshSlot(starterItems[i], 3);
+                    slotIndex++;
+                }
+            }
+        }
     }
-}
+}

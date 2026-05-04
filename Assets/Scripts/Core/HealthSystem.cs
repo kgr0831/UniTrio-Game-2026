@@ -34,19 +34,30 @@ public sealed class HealthSystem : MonoBehaviour
     private SpriteRenderer        _spriteRenderer;
     private MaterialPropertyBlock _mpb;
     private float                 _flashTimer;
+    private StatSystem            _statSystem;
     private static readonly int   HashFlashAmount = Shader.PropertyToID("_FlashAmount");
 
     private void Awake()
     {
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+        _statSystem     = GetComponent<StatSystem>();
+
+        // StatSystem이 있으면 초기 최대 체력을 동기화
+        if (_statSystem != null)
+        {
+            _maxHp = _statSystem.TotalMaxHP;
+            _statSystem.OnStatsChanged += SyncMaxHp;
+        }
+
         _currentHealth  = _maxHp;
         _isAlive        = true;
         IsInvulnerable  = false;
-        _spriteRenderer = GetComponent<SpriteRenderer>();
 
         // SpriteRenderer가 없는 엔티티(비가시 트리거 등)도 허용 – null 체크로 방어
         if (_spriteRenderer != null)
             _mpb = new MaterialPropertyBlock();
     }
+
 
     private void Update()
     {
@@ -96,10 +107,39 @@ public sealed class HealthSystem : MonoBehaviour
 
     public void SetMaxHp(float newMax, bool refill = false)
     {
-        _maxHp         = newMax;
-        _currentHealth = refill ? _maxHp : Mathf.Min(_currentHealth, _maxHp);
-        _isAlive       = _currentHealth > 0f;
+        if (newMax <= 0) return;
+
+        // 현재 체력 비율 유지 (예: 50%일 때 최대체력이 늘어나도 계속 50% 유지)
+        float hpRatio = _maxHp > 0 ? _currentHealth / _maxHp : 1f;
+
+        _maxHp = newMax;
+        
+        if (refill)
+        {
+            _currentHealth = _maxHp;
+        }
+        else
+        {
+            _currentHealth = _maxHp * hpRatio;
+        }
+
+        _isAlive = _currentHealth > 0f;
         OnHpChanged?.Invoke(_currentHealth, _maxHp);
+    }
+
+    private void SyncMaxHp()
+    {
+        if (_statSystem == null) return;
+        
+        // StatSystem으로부터 합산된 최대 체력을 가져와 설정
+        SetMaxHp(_statSystem.TotalMaxHP, false);
+    }
+
+
+    private void OnDestroy()
+    {
+        if (_statSystem != null)
+            _statSystem.OnStatsChanged -= SyncMaxHp;
     }
 
     // ── 내부 ────────────────────────────────────────────────────────
@@ -114,3 +154,6 @@ public sealed class HealthSystem : MonoBehaviour
         _spriteRenderer.SetPropertyBlock(_mpb);
     }
 }
+
+
+

@@ -38,3 +38,13 @@ public enum ItemType
     Armor       = 7, // 방어구
     Skill       = 8  // 스킬 (ItemData 계층으로 편입)
 }
+
+[System.Serializable]
+public enum WeaponType
+{
+    None   = 0,
+    Sword  = 1, // 검
+    Spear  = 2, // 창
+    Bow    = 3, // 활
+    Staff  = 4  // 지팡이
+}

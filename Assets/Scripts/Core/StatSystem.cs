@@ -10,11 +10,21 @@ public sealed class StatSystem : MonoBehaviour
 {
     [Header("Base Stats")]
     [SerializeField] private float _baseAtk       = 5f;
+    [SerializeField] private float _baseMagicAtk  = 5f;
     [SerializeField] private float _baseDef       = 0f;
     [SerializeField] private float _baseMoveSpeed = 5f;
     [SerializeField] private float _baseMana      = 100f;
+    [SerializeField] private float _baseMaxHP     = 100f;
     [Tooltip("초당 마나 자연 회복량")]
     [SerializeField] private float _manaRegen     = 1f;
+
+    /// <summary>스탯이 변경되었을 때(장비 교체 등) 발생하는 이벤트.</summary>
+    public event System.Action OnStatsChanged;
+
+    [Header("Permanent First Kill Bonuses")]
+    [SerializeField] private float _permMaxHP;
+    [SerializeField] private float _permAtk;
+    [SerializeField] private float _permMagicAtk;
 
     // Play 모드 Inspector에서 실시간 확인용 (Normal/Debug 모드 모두 표시)
     [SerializeField] private float _currentMana;
@@ -23,6 +33,9 @@ public sealed class StatSystem : MonoBehaviour
         get => _currentMana;
         private set => _currentMana = value;
     }
+
+    /// <summary>강타(Bash) 스택: 다음 N회 공격 시 데미지 2배</summary>
+    public int BashCount { get; set; }
 
     // 리스트 기반 보너스 집계 (LINQ 금지 → for 루프 사용)
     private readonly List<IBonusProvider> _providers = new List<IBonusProvider>();
@@ -33,8 +46,18 @@ public sealed class StatSystem : MonoBehaviour
     {
         get
         {
-            float total = _baseAtk;
+            float total = _baseAtk + _permAtk;
             for (int i = 0; i < _providers.Count; i++) total += _providers[i].GetAttackBonus();
+            return total;
+        }
+    }
+
+    public float TotalMagicAtk
+    {
+        get
+        {
+            float total = _baseMagicAtk + _permMagicAtk;
+            for (int i = 0; i < _providers.Count; i++) total += _providers[i].GetMagicAttackBonus();
             return total;
         }
     }
@@ -68,6 +91,27 @@ public sealed class StatSystem : MonoBehaviour
             return total;
         }
     }
+
+    public float TotalMaxHP
+    {
+        get
+        {
+            float total = _baseMaxHP + _permMaxHP;
+            for (int i = 0; i < _providers.Count; i++) total += _providers[i].GetMaxHPBonus();
+            return total;
+        }
+    }
+
+    public float TotalAttackSpeed
+    {
+        get
+        {
+            float total = 1.0f; // 기본 배율 100%
+            for (int i = 0; i < _providers.Count; i++) total += _providers[i].GetAttackSpeedBonus();
+            return total;
+        }
+    }
+
 
     private float _manaRegenTimer;
 
@@ -104,11 +148,40 @@ public sealed class StatSystem : MonoBehaviour
     public void RegisterBonus(IBonusProvider provider)
     {
         if (!_providers.Contains(provider))
+        {
             _providers.Add(provider);
+            OnStatsChanged?.Invoke();
+        }
     }
 
     public void UnregisterBonus(IBonusProvider provider)
     {
-        _providers.Remove(provider);
+        if (_providers.Remove(provider))
+        {
+            OnStatsChanged?.Invoke();
+        }
+    }
+
+    public void AddPermanentBonus(float hp, float atk, float magicAtk)
+    {
+        _permMaxHP += hp;
+        _permAtk += atk;
+        _permMagicAtk += magicAtk;
+        OnStatsChanged?.Invoke();
+    }
+
+
+    /// <summary>
+    /// 강타(Bash) 스택을 확인하고 소진합니다.
+    /// </summary>
+    /// <returns>공격력 배율 (강타 적용 시 2.0, 아니면 1.0)</returns>
+    public float UseBashStack()
+    {
+        if (BashCount > 0)
+        {
+            BashCount--;
+            return 2.0f;
+        }
+        return 1.0f;
     }
 }

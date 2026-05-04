@@ -1,0 +1,50 @@
+=======================================================
+Monster System & Item Drop Integration Usage Guide
+=======================================================
+
+1. 몬스터(Monster) 생성 방법
+---------------------------
+- [Create -> Data -> Monster] 메뉴를 사용해 새로운 `MonsterData` (ScriptableObject)를 생성합니다.
+- 생성된 오브젝트에 몹의 기본 능력치, Type(중립, 적대적, 보스), 드롭 테이블, 공격 범위 형태를 입력합니다.
+- 몬스터로 쓸 2D 게임오브젝트를 씬에 생성하거나 프리팹을 만듭니다.
+
+2. 몬스터 프리팹 컴포넌트 세팅
+---------------------------
+모든 몬스터는 기본적으로 다음의 핵심 컴포넌트를 가져야 합니다:
+- `Sprite Renderer`
+- `Rigidbody2D` (+ Collider2D)
+- `HealthSystem`
+- `MonsterRuntimeData`
+- `MonsterAnimatorController` 
+- `AttackRangeVisualizer` & `MonsterAttackHandler`
+- `HitStaggerHandler` (경직 로직)
+- `MonsterLootDropper` (사망 시 드롭 로직)
+- `FirstKillBonusApplier` (최초 처치 시 영구 스탯 적용)
+
+이후 몹의 Type에 맞춰 다음 스크립트 중 **단 하나**만 부착합니다:
+- **적대적(Hostile):** `HostileMonster`, `DetectionSystem`, `MonsterNavigator`, `WanderSystem` 추가
+- **중립(Neutral):** `NeutralMonster`, `DetectionSystem`, `MonsterNavigator`, `WanderSystem` 추가
+- **보스(Boss):** `BossMonster`, `MonsterNavigator` 추가
+
+이후 완성된 GameObject를 프리팹으로 만들고, `MonsterData` SO의 "MonsterPrefab" 필드에 할당합니다.
+
+3. 몬스터 스폰 방법
+---------------------------
+- 씬에 빈 오브젝트를 만들고 `MobSpawner` 컴포넌트를 붙입니다.
+- Inspector에서 스폰할 `MonsterData`를 할당해줍니다. 
+- 게임 시작 시 알아서 프리팹을 복제하며, 모든 동적 세팅을 SO로부터 불러옵니다.
+
+4. 몹 드롭 아이템 & 획득(Magnetic) 세팅
+---------------------------
+- `FloatingMagneticItem` 컴포넌트가 달린 아이템 프리팹(예: 코인, 포션 모형 등)을 준비합니다. (해당 프리팹에는 `DroppedItemIdentity` 컴포넌트도 달려있어야 합니다)
+- 이 프리팹을 몬스터 프리팹의 `MonsterLootDropper` > [Drop Item Prefab] 에 넣습니다.
+- `MonsterData`(SO)의 "Drop Table" 배열에 실제 주고 싶은 `ItemData`들과 드롭 확률, 갯수 및 확률 세팅을 해줍니다.
+
+5. 인벤토리(Inventory) 등록
+---------------------------
+- 씬 어딘가(보통 싱글톤 매니저 관리 빈 오브젝트)에 `InventoryManager` 컴포넌트를 붙입니다.
+- `InventoryGenerator`가 붙어 있는 캔버스/패널의 오브젝트를 `InventoryManager` 필드에 드래그&드롭해 연결합니다.
+- 이렇게 해두면 `FloatingMagneticItem`이 플레이어에게 닿았을 때 자동으로 `InventoryManager.Instance.AddItem()`을 호출하고, 이는 곧 UI 패널 내 빈 슬롯 정보에 등록됩니다.
+
+=======================================================
+끝! 이제 자유롭게 다양한 몹의 행동과 보상을 조립할 수 있습니다.

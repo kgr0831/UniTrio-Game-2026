@@ -16,6 +16,10 @@ public class AccessoryData : ItemData, IBonusProvider
     public float SpeedBonus;
     [Tooltip("최대 마나 보너스")]
     public float ManaBonus;
+    [Tooltip("최대 체력 보너스")]
+    public float MaxHPBonus;
+    [Tooltip("공격 속도 보너스")]
+    public float AtkSpeedBonus;
 
     protected override void OnEnable()
     {
@@ -23,11 +27,15 @@ public class AccessoryData : ItemData, IBonusProvider
     }
 
     public override string GetStatDescription() =>
-        $"ATK +{AtkBonus}  DEF +{DefBonus}  SPD +{SpeedBonus}  MP +{ManaBonus}";
+        $"ATK +{AtkBonus}  DEF +{DefBonus}  HP +{MaxHPBonus}  SPD +{SpeedBonus}  MP +{ManaBonus}";
 
     // ── IBonusProvider ───────────────────────────────────────────────
     public float GetAttackBonus()  => AtkBonus;
+    public float GetMagicAttackBonus() => 0f; // 장신구는 현재 마공 보너스 없음 (필요 시 필드 추가 가능)
     public float GetDefenseBonus() => DefBonus;
     public float GetSpeedBonus()   => SpeedBonus;
     public float GetManaBonus()    => ManaBonus;
+    public float GetMaxHPBonus()   => MaxHPBonus;
+    public float GetAttackSpeedBonus() => AtkSpeedBonus;
+
 }

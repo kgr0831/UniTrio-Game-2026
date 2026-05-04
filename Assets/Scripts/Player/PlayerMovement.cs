@@ -24,6 +24,7 @@ public class PlayerMovement : MonoBehaviour
     private Camera      _mainCamera;
     private float       _camToWorldZ;
     private StatSystem  _statSystem; // optional – 없으면 moveSpeed 사용
+    private Vector2     _recoilVelocity; // 반동/넉백용 내부 속도
 
     private static readonly int HashIsMoving = Animator.StringToHash("IsMoving");
     private static readonly int HashDirX     = Animator.StringToHash("DirX");
@@ -63,11 +64,27 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 플레이어에게 일시적인 반동(넉백) 힘을 가합니다.
+    /// </summary>
+    public void ApplyRecoil(Vector2 force)
+    {
+        _recoilVelocity += force;
+    }
+
     void FixedUpdate()
     {
         // StatSystem이 있으면 TotalMoveSpeed 사용, 없으면 moveSpeed 폴백
         float speed = _statSystem != null ? _statSystem.TotalMoveSpeed : moveSpeed;
-        _rb.MovePosition(_rb.position + MoveInput * speed * SpeedMultiplier * Time.fixedDeltaTime);
+        
+        // 이동 입력 + 반동 속도
+        _rb.MovePosition(_rb.position + (MoveInput * speed * SpeedMultiplier + _recoilVelocity) * Time.fixedDeltaTime);
+        
+        // 반동 속도는 프레임마다 0으로 수렴 (점진적 감쇠 - 수치를 낮춰 더 멀리 밀려나가게 함)
+        if (_recoilVelocity.sqrMagnitude > 0.01f)
+            _recoilVelocity = Vector2.Lerp(_recoilVelocity, Vector2.zero, Time.fixedDeltaTime * 6f);
+        else
+            _recoilVelocity = Vector2.zero;
     }
 
     private void OnTriggerEnter2D(Collider2D other) // 테스트 코드

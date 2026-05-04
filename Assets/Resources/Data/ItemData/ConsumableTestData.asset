@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14671b4f5337bed41a3c05dbed445512, type: 3}
   m_Name: ConsumableTestData
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableData
-  Id: 0
-  Name: 
-  Description: 
-  Type: 0
+  Id: 9001
+  Name: "\uD68C\uBCF5 \uD3EC\uC158 (Healing Potion)"
+  Description: "\uCCB4\uB825\uC744 30 \uD68C\uBCF5\uD569\uB2C8\uB2E4."
+  Type: 2
   Icon: {fileID: 7618862485461792299, guid: 987c030b5c44f504cb71735eff365b04, type: 3}
   IngredientList: []
-  HealAmount: 0
+  HealAmount: 30

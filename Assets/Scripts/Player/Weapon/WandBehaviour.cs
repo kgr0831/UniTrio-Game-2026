@@ -55,6 +55,7 @@ public class WandBehaviour : WeaponBehaviourBase
     [SerializeField] private float _orbitRadius = 0.2f;
 
     // ── WeaponBehaviourBase 오버라이드 ──────────────────────────────
+    public override WeaponType WeaponType          => WeaponType.Staff;
     public override bool  UseYScaleFlip            => true;
     public override bool  LockRotationDuringAttack => true;
     public override bool  FlipComboDirection       => false;

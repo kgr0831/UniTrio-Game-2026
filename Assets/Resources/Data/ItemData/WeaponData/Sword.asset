@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3df4a1d243a58fe4391161c47ddd7467, type: 3}
+  m_Name: Sword
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  Id: 2001
+  Name: "\uB098\uBB34 \uBABD\uB465\uC774"
+  Description: WeaponData
+  Type: 1
+  Icon: {fileID: -1336964188, guid: dcdcd32b07f7f784083c3c11765a905b, type: 3}
+  IngredientList: []
+  WeaponType: 1
+  AttackBonus: 10
+  MagicAttackBonus: 0
+  DefenseBonus: 0
+  MoveSpeedBonus: 0
+  ManaBonus: 0
+  MaxHPBonus: 0
+  AttackSpeedBonus: 0

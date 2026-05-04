@@ -16,6 +16,15 @@ public class SpearBehaviour : WeaponBehaviourBase
     [Header("Hitbox")]
     [SerializeField] private Collider2D _hitboxCollider;
 
+    [Header("Bash Effect")]
+    [Tooltip("창 스프라이트 (강타 발동 시 붉은 블룸 적용)")]
+    [SerializeField] private SpriteRenderer _spearRenderer;
+    [Tooltip("강타 모드일 때 창 궤적 및 색상 값")]
+    [ColorUsage(true, true)]
+    [SerializeField] private Color _bashSpearColor = new Color(1.5f, 0.1f, 0.1f, 1f);
+
+    public override WeaponType WeaponType => WeaponType.Spear;
+
     [Header("Orbit Settings (공전)")]
     [Tooltip("캐릭터를 중심으로 얼마나 띄울지 결정합니다.")]
     [SerializeField] private float _orbitRadius = 0.5f;
@@ -37,7 +46,16 @@ public class SpearBehaviour : WeaponBehaviourBase
     public override int   MaxComboSteps => 1;   // 단타
 
     private bool             _hitboxFired;
-    private SpriteRenderer[] _vfxRenderers; // 자식 포함 전체 렌더러 (GetComponent는 자식 미포함으로 null 위험)
+    private SpriteRenderer[] _vfxRenderers; // 자식 포함 전체 렌더러
+
+    // 강타 효과 상태
+    private StatSystem _statSystem;
+    private Color      _originalSpearColor;
+    private Material   _originalSpearMaterial;
+    private Material[] _originalVfxMaterials;
+    private Material   _spearGlowMaterial;
+    private bool       _bashEffectActive;
+    private TrailRenderer _bashTrail;
 
     private void Awake()
     {
@@ -48,9 +66,135 @@ public class SpearBehaviour : WeaponBehaviourBase
             // GetComponent 대신 GetComponentsInChildren으로 자식까지 탐색
             _vfxRenderers = _vfxAnimator.GetComponentsInChildren<SpriteRenderer>(true);
             SetVfxVisible(false);
+
+            if (_vfxRenderers != null)
+            {
+                _originalVfxMaterials = new Material[_vfxRenderers.Length];
+                for (int i = 0; i < _vfxRenderers.Length; i++)
+                    _originalVfxMaterials[i] = _vfxRenderers[i].material;
+            }
         }
 
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
+
+        _statSystem = GetComponentInParent<StatSystem>();
+
+        // 인스펙터에서 할당 누락 시 자동 찾기
+        if (_spearRenderer == null)
+        {
+            Transform spearTransform = transform.Find("Spear");
+            if (spearTransform != null) _spearRenderer = spearTransform.GetComponent<SpriteRenderer>();
+        }
+
+        if (_spearRenderer != null)
+        {
+            _originalSpearColor = _spearRenderer.color;
+            _originalSpearMaterial = _spearRenderer.material;
+            
+            // 붉은 블룸 범용 머티리얼 구성
+            _spearGlowMaterial = new Material(Shader.Find("Custom/SpriteGlow"));
+            _spearGlowMaterial.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
+            _spearGlowMaterial.SetFloat("_GlowIntensity", 4f);
+            
+            // 너무 어두운 색이면 강제로 증폭
+            Color bloomCol = _bashSpearColor;
+            if (bloomCol.r < 1f && bloomCol.g < 1f && bloomCol.b < 1f) bloomCol *= 2f;
+            _spearGlowMaterial.SetColor("_GlowColor", bloomCol);
+        }
+        
+        CreateBashTrail();
+    }
+
+    private void CreateBashTrail()
+    {
+        if (_spearRenderer == null) return;
+
+        // 궤적 생성 위치 기준을 수동 오프셋 추측이 아닌 명확한 자식 오브젝트로 고정합니다.
+        Transform trailParent = _spearRenderer.transform;
+        
+        // 찌르기 이펙트(VFX, 검기)가 터지는 중심이 가장 이상적인 궤적 발생점
+        if (_vfxRenderers != null && _vfxRenderers.Length > 0 && _vfxRenderers[0] != null)
+        {
+            trailParent = _vfxRenderers[0].transform;
+        }
+        else if (_hitboxCollider != null)
+        {
+            // 이펙트를 못 찾으면 타격 판정(Hitbox)의 중심을 활용
+            trailParent = _hitboxCollider.transform;
+        }
+
+        GameObject trailObj = new GameObject("BashTrail");
+        trailObj.transform.SetParent(trailParent);
+        // 부모 오브젝트의 딱 정중앙(0,0,0)에 부착 (위치 노가다 X)
+        trailObj.transform.localPosition = Vector3.zero; 
+
+        _bashTrail = trailObj.AddComponent<TrailRenderer>();
+        _bashTrail.time = 0.25f;
+        _bashTrail.minVertexDistance = 0.05f;
+        _bashTrail.startWidth = 1.0f;
+        _bashTrail.endWidth = 0.0f;
+
+        _bashTrail.material = _spearGlowMaterial;
+
+        _bashTrail.sortingLayerName = "Weapons";
+        _bashTrail.sortingOrder = 5;
+
+        Gradient g = new Gradient();
+        g.SetKeys(
+            new GradientColorKey[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
+        );
+        _bashTrail.colorGradient = g;
+        _bashTrail.emitting = false;
+    }
+
+    private void LateUpdate()
+    {
+        SyncBashEffect();
+        if (_bashTrail != null)
+        {
+            _bashTrail.emitting = _bashEffectActive && IsAttacking;
+        }
+    }
+
+    private void SyncBashEffect()
+    {
+        if (_statSystem == null) return;
+        
+        bool hasStack = _statSystem.BashCount > 0;
+        bool shouldBeActive = hasStack || (_bashEffectActive && IsAttacking);
+        
+        if (shouldBeActive == _bashEffectActive) return;
+        ApplyBashVisual(shouldBeActive);
+    }
+
+    private void ApplyBashVisual(bool active)
+    {
+        _bashEffectActive = active;
+        if (_spearRenderer != null)
+        {
+            // 단순 붉은 색조 대신 완전한 블룸 머티리얼로 통째로 스왑
+            _spearRenderer.material = active ? _spearGlowMaterial : _originalSpearMaterial;
+            _spearRenderer.color = active ? Color.white : _originalSpearColor;
+        }
+
+        if (_vfxRenderers != null && _originalVfxMaterials != null)
+        {
+            for (int i = 0; i < _vfxRenderers.Length; i++)
+            {
+                var r = _vfxRenderers[i];
+                if (r == null) continue;
+                
+                r.material = active ? _spearGlowMaterial : _originalVfxMaterials[i];
+                // 머티리얼이 교체되므로 본래 색상(흰색)으로 유지
+                r.color = Color.white; 
+            }
+        }
+    }
+
+    public override void SetBashEffectActive(bool active)
+    {
+        ApplyBashVisual(active);
     }
 
     private void SetVfxVisible(bool visible)
@@ -65,6 +209,9 @@ public class SpearBehaviour : WeaponBehaviourBase
         IsAttacking      = true;
         _hitboxFired     = false;
         CurrentComboStep = 1; // 단타이므로 항상 1
+
+        // 공격 시작 시 강타 스택 사용
+        CurrentSwingBashMultiplier = _statSystem != null ? _statSystem.UseBashStack() : 1f;
 
         SetVfxVisible(true);
 
@@ -127,6 +274,8 @@ public class SpearBehaviour : WeaponBehaviourBase
             _vfxAnimator.Play("Idle", 0, 0f);
             _vfxAnimator.Update(0f);
         }
+
+        ApplyBashVisual(false);
     }
 
     private IEnumerator DisableHitboxAfterThrust()

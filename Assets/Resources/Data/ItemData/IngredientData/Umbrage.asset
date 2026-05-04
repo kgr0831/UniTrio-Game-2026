@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: befcd026f7b281e48bb0c2f8d31d1661, type: 3}
+  m_Name: Umbrage
+  m_EditorClassIdentifier: Assembly-CSharp::IngredientData
+  Id: 1003
+  Name: "\uC78E"
+  Description: "\uB098\uBB34\uB97C \uCE90\uB358 \uB3C4\uC911\uC5D0 \uB5A8\uC5B4\uC9C4
+    \uC78E\uC774\uB2E4."
+  Type: 0
+  Icon: {fileID: -409386906, guid: ae01861b401907c4f803fea4c08d0a55, type: 3}
+  IngredientList: []

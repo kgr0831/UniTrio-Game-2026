@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -10,12 +11,13 @@ public class PlayerWeaponController : MonoBehaviour
     [SerializeField] private Transform _weaponPivot;
     [SerializeField] private Animator  _playerAnimator;
 
-    [Header("Weapon Slots  (0 = 검 / 1 = 창)")]
-    [Tooltip("슬롯 수 만큼 크기를 맞추고 각 무기의 WeaponBehaviourBase 컴포넌트를 할당하세요.")]
-    [SerializeField] private WeaponBehaviourBase[] _weaponBehaviours = new WeaponBehaviourBase[2];
+    [Header("Weapon Slots (Index = WeaponType - 1)")]
+    [Tooltip("0:Sword, 1:Spear, 2:Bow, 3:Staff 순서대로 할당하세요. (None은 제외)")]
+    [SerializeField] private WeaponBehaviourBase[] _weaponBehaviours = new WeaponBehaviourBase[4];
 
-    [Tooltip("슬롯 수 만큼 크기를 맞추고 각 무기의 루트 GameObject를 할당하세요.")]
-    [SerializeField] private GameObject[] _weaponObjects = new GameObject[2];
+    [Tooltip("위와 동일한 순서대로 각 무기의 루트 GameObject를 할당하세요.")]
+    [SerializeField] private GameObject[] _weaponObjects = new GameObject[4];
+
 
     [Header("Hand Position (손 위치 보정)")]
     [Tooltip("좌/우/하단을 향할 때 피봇을 아래로 내리는 양. 위를 향할 때는 0, 나머지 방향에서 이 값만큼 내려갑니다.")]
@@ -38,10 +40,18 @@ public class PlayerWeaponController : MonoBehaviour
     private bool  _attackQueued;
     private float _attackQueueTime;
     private float _attackStartTime;
+    private StatSystem _stats;
+    private WeaponData _lastRegisteredBonus; // 현재 등록된 보너스 추적
+
 
     // 현재 활성 무기
     private int                 _currentSlotIndex = 0;
     private WeaponBehaviourBase _activeBehaviour;
+
+    public WeaponBehaviourBase ActiveBehaviour => _activeBehaviour;
+
+    /// <summary>무기 장착 완료 시 발생. 새로 장착된 무기의 WeaponType을 전달합니다.</summary>
+    public event Action<WeaponType> OnWeaponChanged;
 
     // 공격 중 스왑 요청을 저장해두는 큐 (-1 = 없음)
     // 공격이 끝난 첫 프레임에 자동 실행되어 피봇 트랜스폼 오염을 방지합니다.
@@ -53,32 +63,24 @@ public class PlayerWeaponController : MonoBehaviour
         if (_mainCamera != null)
             _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
 
-        // 시작 시 1번 슬롯(검) 자동 장착
-        EquipWeapon(0);
+        _stats = GetComponent<StatSystem>();
+
+        // 초기 장착은 QuickSlotManager.Start()가 담당합니다.
+
+        // 모든 무기 오브젝트를 비활성화해 둡니다.
+        foreach (var obj in _weaponObjects)
+            if (obj != null) obj.SetActive(false);
     }
 
     private void Update()
     {
-        HandleWeaponSwitch();
-        CheckAttackFinished();    // UpdateCursorDirection 전에 실행해야 공격 종료 프레임에서
-        FlushPendingSwap();       // 공격이 끝난 직후 대기 중인 스왑을 실행
-        UpdateCursorDirection();  // 즉시 피봇 회전이 갱신되어 이상한 각도가 1프레임도 보이지 않음
+        // 패널이 열려있으면 무기 조작 차단
+        if (InventoryToggle.Instance != null && InventoryToggle.Instance.IsAnyPanelOpen()) return;
+
+        CheckAttackFinished();
+        FlushPendingSwap();
+        UpdateCursorDirection();
         HandleAttackInput();
-    }
-
-    // ── 무기 교체 ─────────────────────────────────────────
-
-    private void HandleWeaponSwitch()
-    {
-        // 숫자키 1~9번: 공격 중이면 큐에 저장, 아니면 즉시 교체
-        for (int i = 0; i < _weaponBehaviours.Length; i++)
-        {
-            if (i < 9 && Input.GetKeyDown(KeyCode.Alpha1 + i))
-            {
-                TryEquipWeapon(i);
-                break;
-            }
-        }
     }
 
     /// <summary>
@@ -110,11 +112,77 @@ public class PlayerWeaponController : MonoBehaviour
         EquipWeapon(idx);
     }
 
+    /// <summary>무기 데이터(WeaponData)를 기반으로 무기를 장착합니다.</summary>
+    public void EquipWeaponByData(WeaponData data)
+    {
+        if (data == null)
+        {
+            UnequipAll();
+            return;
+        }
+
+        // 보너스 업데이트 (장착 시점에 즉시 반영)
+        UpdateWeaponBonus(data);
+
+        // WeaponType (None=0, Sword=1, Spear=2, Bow=3, Staff=4) → 배열 인덱스는 -1
+        // 배열: [0:Sword, 1:Spear, 2:Bow, 3:Staff]
+        int index = (int)data.WeaponType - 1;
+        TryEquipWeapon(index);
+    }
+
+    private void UpdateWeaponBonus(WeaponData data)
+    {
+        if (_stats == null) return;
+
+        // 기존 보너스 제거
+        if (_lastRegisteredBonus != null)
+        {
+            _stats.UnregisterBonus(_lastRegisteredBonus);
+            _lastRegisteredBonus = null;
+        }
+
+        // 새 보너스 등록 (합연산)
+        if (data != null)
+        {
+            _stats.RegisterBonus(data);
+            _lastRegisteredBonus = data;
+        }
+    }
+
+
+    /// <summary>모든 무기를 해제합니다.</summary>
+    public void UnequipAll()
+    {
+        _activeBehaviour?.OnDeactivated();
+        _activeBehaviour = null;
+        _currentSlotIndex = -1;
+
+        for (int i = 0; i < _weaponObjects.Length; i++)
+        {
+            if (_weaponObjects[i] != null) _weaponObjects[i].SetActive(false);
+        }
+
+        UpdateWeaponBonus(null); // 보너스 모두 제거
+
+        OnWeaponChanged?.Invoke(WeaponType.None);
+    }
+
+
     /// <summary>지정 슬롯 인덱스의 무기를 즉시 장착합니다. 직접 호출 시 공격 중단에 주의하세요.</summary>
     public void EquipWeapon(int index)
     {
-        if (index < 0 || index >= _weaponBehaviours.Length) return;
-        if (_weaponBehaviours[index] == null) return;
+        if (index < 0 || index >= _weaponBehaviours.Length)
+        {
+            UnequipAll();
+            return;
+        }
+        
+        // 데이터가 없는 슬롯이면 해제 처리
+        if (_weaponBehaviours[index] == null)
+        {
+            UnequipAll();
+            return;
+        }
 
         // 이미 들고 있는 무기면 무시
         if (index == _currentSlotIndex
@@ -139,7 +207,10 @@ public class PlayerWeaponController : MonoBehaviour
         _comboStep         = 1;
         _attackQueued      = false;
         _lastAttackEndTime = 0f;
+
+        OnWeaponChanged?.Invoke(_activeBehaviour.WeaponType);
     }
+
 
     // ── 커서 방향 / 피봇 회전 ─────────────────────────────
 
@@ -225,7 +296,9 @@ public class PlayerWeaponController : MonoBehaviour
             _attackQueued = false;
 
         // 공격 중이면 대기 (애니메이터 상태가 다시 전이 가능해질 때까지 기다림)
+        // 무기가 없으면(ActiveBehaviour == null) 공격 불가
         if (_activeBehaviour == null || _activeBehaviour.IsAttacking) return;
+
 
         // 콤보 유효 시간이 지났으면 1타로 리셋
         if (Time.time - _lastAttackEndTime > _activeBehaviour.ComboWindow)
