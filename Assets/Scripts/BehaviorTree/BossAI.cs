@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
 
-public class GolemAI : MonoBehaviour
+public class BossAI : MonoBehaviour
 {
     private Node rootNode;
     private BossBlackboard blackboard;
@@ -14,7 +15,6 @@ public class GolemAI : MonoBehaviour
 
     void Start()
     {
-        // 1. 블랙보드(데이터 주머니) 생성 및 초기화
         blackboard = new BossBlackboard
         {
             bossTransform = transform,
@@ -22,29 +22,25 @@ public class GolemAI : MonoBehaviour
             anim = GetComponent<Animator>(),
             moveSpeed = this.moveSpeed,
             attackRange = this.attackRange,
-            detectionRange = this.detectionRange
+            detectionRange = this.detectionRange,
+            bossAI = this
         };
-
-        // 플레이어 타겟 설정
+        
         GameObject player = GameObject.FindGameObjectWithTag(playerTag);
         if (player != null) blackboard.playerTarget = player.transform;
-
-        // 2. 행동 트리 조립 (우선순위: 공격 > 추적 > 대기)
-        // [공격 시퀀스]: 사거리 체크 -> 랜덤 스킬
+        
         Sequence attackSequence = new Sequence(blackboard, new List<Node>
         {
             new CheckPlayerDistance(blackboard, blackboard.attackRange),
             new RandomSkillNode(blackboard)
         });
-
-        // [추적 시퀀스]: 인식 범위 체크 -> 플레이어 따라가기
+        
         Sequence followSequence = new Sequence(blackboard, new List<Node>
         {
             new CheckPlayerDistance(blackboard, blackboard.detectionRange),
             new FollowPlayerNode(blackboard)
         });
-
-        // [최상위 선택자]: 공격할 수 있으면 하고, 안 되면 쫓아가고, 둘 다 아니면 대기
+        
         rootNode = new Selector(blackboard, new List<Node>
         {
             attackSequence,
@@ -61,16 +57,37 @@ public class GolemAI : MonoBehaviour
             rootNode.Evaluate();
         }
     }
-}
 
-// 덤: 아무것도 안 할 때의 Idle 노드
-public class ActionNode_Idle : Node
-{
-    public ActionNode_Idle(BossBlackboard bb) : base(bb) { }
-    public override NodeState Evaluate()
+    public void RandomSkill()
     {
-        blackboard.rb.linearVelocity = Vector2.zero;
-        blackboard.anim.SetFloat("Speed", 0);
-        return NodeState.SUCCESS;
+        int skillIdx = Random.Range(1, 3);
+        switch (skillIdx)
+        {
+            case 1:
+                StartCoroutine(Skill1());
+                break;
+            case 2:
+                StartCoroutine(Skill2());
+                break;
+            case 3:
+                StartCoroutine(Skill3());
+                break;
+        }
     }
+
+
+    public virtual IEnumerator Skill1()
+    {
+        return null;
+    } 
+    
+    public virtual IEnumerator Skill2()
+    {
+        return null;
+    } 
+    
+    public virtual IEnumerator Skill3()
+    {
+        return null;
+    } 
 }

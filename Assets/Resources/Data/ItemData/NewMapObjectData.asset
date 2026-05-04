@@ -10,12 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9919bdd139b8eae438593a72b869349b, type: 3}
-  m_Name: tree
+  m_Name: NewMapObjectData
   m_EditorClassIdentifier: Assembly-CSharp::MapObjectData
-  objectName: tree
+  objectName: 
   maxHealth: 100
-  visualSprite: {fileID: 21300000, guid: c8d705162d0b90c4596f66ac5f0e6634, type: 3}
-  indicatorPrefab: {fileID: 2823938140865518937, guid: 9fd7d9e996aa9314f9388d2899bbd7e4, type: 3}
-  indicatorWidth: 3
-  indicatorLength: 3
-  indicatorOffset: 0
+  visualSprite: {fileID: 0}
+  indicatorPrefab: {fileID: 0}
+  indicatorWidth: 1
+  indicatorLength: 1
+  indicatorOffset: 0.5
+  indicatorShapeIdx: 1

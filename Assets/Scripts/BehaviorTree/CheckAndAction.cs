@@ -1,4 +1,16 @@
+using System.Collections;
 using UnityEngine;
+
+public class ActionNode_Idle : Node
+{
+    public ActionNode_Idle(BossBlackboard bb) : base(bb) { }
+    public override NodeState Evaluate()
+    {
+        blackboard.rb.linearVelocity = Vector2.zero;
+        blackboard.anim.SetFloat("Speed", 0);
+        return NodeState.SUCCESS;
+    }
+}
 
 // 플레이어 거리 체크 노드
 public class CheckPlayerDistance : Node
@@ -38,7 +50,6 @@ public class FollowPlayerNode : Node
 // 랜덤 스킬 노드 (애니메이션 태그 활용)
 public class RandomSkillNode : Node
 {
-    private string[] skills = { "Attack01"}; // 테스트용 하나
     public RandomSkillNode(BossBlackboard bb) : base(bb) { }
 
     public override NodeState Evaluate()
@@ -50,10 +61,9 @@ public class RandomSkillNode : Node
             blackboard.rb.linearVelocity = Vector2.zero; // 공격 중 이동 정지
             return NodeState.RUNNING;
         }
-
+        blackboard.bossAI.RandomSkill(); // 랜덤 스킬 실시, 코루틴이 해당 클래스에서 상속받지 못했기에 일반 함수 출력, 추가로 코루틴이 돌아가는지에 따라 Running 상태 바꿔줘야 함
         // 새로운 공격 시작
-        string selectedSkill = skills[Random.Range(0, skills.Length)];
-        blackboard.anim.SetTrigger(selectedSkill);
+        
         return NodeState.SUCCESS;
     }
 }

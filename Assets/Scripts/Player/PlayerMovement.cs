@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -67,5 +68,11 @@ public class PlayerMovement : MonoBehaviour
         // StatSystem이 있으면 TotalMoveSpeed 사용, 없으면 moveSpeed 폴백
         float speed = _statSystem != null ? _statSystem.TotalMoveSpeed : moveSpeed;
         _rb.MovePosition(_rb.position + MoveInput * speed * SpeedMultiplier * Time.fixedDeltaTime);
+    }
+
+    private void OnTriggerEnter2D(Collider2D other) // 테스트 코드
+    {
+        if (other.gameObject.layer == 8) Debug.Log("정상 충돌");
+        //throw new NotImplementedException();
     }
 }

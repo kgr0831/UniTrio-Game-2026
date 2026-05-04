@@ -35,11 +35,6 @@ public class Rock : BaseMapObject
     }
 
     // 필요하다면 감지되었을 때 나무의 색상을 밝게 바꾸는 등의 오버라이드 가능
-    public override void OnDetected(bool isDetected)
-    {
-        base.OnDetected(isDetected);
-        
-    }
 
     public void Update()
     {

@@ -6,6 +6,7 @@ public class BossBlackboard
     public Rigidbody2D rb;
     public Animator anim;
     public Transform playerTarget;
+    public BossAI bossAI;
     
     // 설정값
     public float moveSpeed = 4f;

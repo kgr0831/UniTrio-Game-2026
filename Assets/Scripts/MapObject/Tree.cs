@@ -7,6 +7,11 @@ public class Tree : BaseMapObject
     [Header("Tree Specifics")]
     public GameObject woodLogPrefab; // 나무가 파괴될 때 나올 아이템
 
+    public void Start()
+    {
+        transform.localScale = new Vector3(3, 3, 1);
+    }
+
     // 나무가 데미지를 입을 때 흔들리는 연출 등을 추가할 수 있음
     public override void TakeDamage(float damage)
     {
@@ -31,15 +36,15 @@ public class Tree : BaseMapObject
 
     public override IEnumerator Gimic()
     {
+        Debug.Log("코루틴실행");
+        GameObject indicator = IndicatorManager.Instance.SpawnIndicator(data.indicatorSprite);
+        indicator.transform.localScale = new Vector3(3, 3, 1);
+        indicator.transform.position = transform.position;
+        yield return new WaitForSeconds(2.0f);
+        StartCoroutine(IndicatorManager.Instance.AttackBasedIndicator(indicator));
         yield return base.Gimic();
     }
-
-    // 필요하다면 감지되었을 때 나무의 색상을 밝게 바꾸는 등의 오버라이드 가능
-    public override void OnDetected(bool isDetected)
-    {
-        base.OnDetected(isDetected);
-        
-    }
+    
 
     public void Update()
     {

@@ -9,13 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9919bdd139b8eae438593a72b869349b, type: 3}
-  m_Name: rock
+  m_Script: {fileID: 11500000, guid: f7476f1f8e79c45458e2df48191045ba, type: 3}
+  m_Name: tree
   m_EditorClassIdentifier: Assembly-CSharp::MapObjectData
-  objectName: vine
+  objectName: tree
   maxHealth: 100
-  visualSprite: {fileID: 21300000, guid: 624f33846a602d6488a618f5243e9ae5, type: 3}
-  indicatorPrefab: {fileID: 2823938140865518937, guid: 9fd7d9e996aa9314f9388d2899bbd7e4, type: 3}
-  indicatorWidth: 1
-  indicatorLength: 6
+  visualSprite: {fileID: 21300000, guid: 09c390fdc098ce645b6f745b47333bb5, type: 3}
+  indicatorWidth: 3
+  indicatorLength: 3
   indicatorOffset: 0
+  indicatorSprite: {fileID: 21300000, guid: 984ee8bd016d41446acd10a84872f035, type: 3}
