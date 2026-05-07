@@ -7,7 +7,7 @@ using UnityEngine;
 [System.Serializable]
 public struct IngredientInfo
 {
-    public int ItemId;
+    public ItemData Item;
     public int Count;
 }
 
@@ -27,7 +27,7 @@ public abstract class ItemData : ScriptableObject
     [Tooltip("월드에 드롭될 때 생성되는 모델 프리팹")]
     public GameObject DropPrefab;
 
-    public List<IngredientInfo> IngredientList; // 제작 재료 리스트
+    // 기존에 있던 IngredientList 필드는 CraftingRecipeSO로 분리되어 삭제되었습니다.
 
     /// <summary>파생 클래스에서 override하여 _Type을 자동 설정합니다.</summary>
     protected virtual void OnEnable() { }

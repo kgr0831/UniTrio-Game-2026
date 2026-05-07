@@ -8,6 +8,8 @@ using UnityEngine;
 public class BuildingData : ItemData
 {
     [Header("Building Settings")]
+    [Tooltip("최대 내구도 (체력)")]
+    public int MaxHealth = 100;
     [Tooltip("설치할 건물/오브젝트 프리팹")]
     public GameObject BuildingPrefab;
     [Tooltip("차지하는 타일 크기 (가로 x 세로)")]

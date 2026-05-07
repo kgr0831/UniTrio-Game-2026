@@ -18,5 +18,16 @@ namespace Core
         {
             OnItemCollected?.Invoke(data, count);
         }
+
+        /// <summary>
+        /// 인벤토리 내용(추가, 소모 등)이 변경되었을 때 발생합니다.
+        /// 이를 구독하여 레시피 UI 등에서 수량을 실시간 갱신할 수 있습니다.
+        /// </summary>
+        public static Action OnInventoryChanged;
+
+        public static void TriggerInventoryChanged()
+        {
+            OnInventoryChanged?.Invoke();
+        }
     }
 }

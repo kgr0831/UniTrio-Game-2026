@@ -119,6 +119,16 @@ public class QuickSlotManager : MonoBehaviour
     {
         ItemData data = slot.currentData;
 
+        var stateManager = FindObjectOfType<PlayerStateManager>();
+        var placementController = FindObjectOfType<BuildingPlacementController>();
+
+        // 건축 아이템이 아닌 다른 아이템을 사용하려고 하면, 건축 모드 해제
+        if (!(data is BuildingData) && stateManager != null && stateManager.CurrentMode == PlayerMode.Building)
+        {
+            stateManager.SetMode(PlayerMode.Combat);
+            if (placementController != null) placementController.SetBuildingData(null);
+        }
+
         // 1. 타입별 사용 로직 처리
         if (data is ConsumableData consumable)
         {
@@ -130,6 +140,24 @@ public class QuickSlotManager : MonoBehaviour
         else if (data is SkillData skill)
         {
             TryUseSkill(skill, slotIndex);
+        }
+        else if (data is BuildingData building)
+        {
+            if (stateManager != null)
+            {
+                stateManager.SetMode(PlayerMode.Building);
+
+                // 무기 오브젝트 비활성화 및 타격 로직 차단
+                if (_weaponController != null)
+                {
+                    _weaponController.UnequipAll();
+                }
+
+                if (placementController != null)
+                {
+                    placementController.SetBuildingData(building);
+                }
+            }
         }
         else
         {
