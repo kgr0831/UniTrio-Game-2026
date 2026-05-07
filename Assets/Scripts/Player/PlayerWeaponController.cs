@@ -41,6 +41,7 @@ public class PlayerWeaponController : MonoBehaviour
     private bool  _attackQueued;
     private float _attackQueueTime;
     private float _attackStartTime;
+    private float _attackCooldownEndTime; // 공격 후 최소 대기 프레임 강제
     private StatSystem _stats;
     private WeaponData _lastRegisteredBonus; // 현재 등록된 보너스 추적
 
@@ -179,7 +180,13 @@ public class PlayerWeaponController : MonoBehaviour
 
         for (int i = 0; i < _weaponObjects.Length; i++)
         {
-            if (_weaponObjects[i] != null) _weaponObjects[i].SetActive(false);
+            if (_weaponObjects[i] == null) continue;
+            
+            var motion = _weaponObjects[i].GetComponent<FloatingWeaponMotion>();
+            if (motion != null && _weaponObjects[i].activeSelf)
+                motion.StartFadeOut();
+            else
+                _weaponObjects[i].SetActive(false);
         }
 
         UpdateWeaponBonus(null); // 보너스 모두 제거
@@ -213,11 +220,21 @@ public class PlayerWeaponController : MonoBehaviour
         // 이전 무기 정리
         _activeBehaviour?.OnDeactivated();
 
-        // 무기 오브젝트 표시 전환
+        // 무기 오브젝트 표시 전환 (소멸 시에는 페이드 아웃 적용)
         for (int i = 0; i < _weaponObjects.Length; i++)
         {
-            if (_weaponObjects[i] != null)
-                _weaponObjects[i].SetActive(i == index);
+            if (_weaponObjects[i] == null) continue;
+
+            if (i == index)
+            {
+                _weaponObjects[i].SetActive(true);
+            }
+            else if (_weaponObjects[i].activeSelf)
+            {
+                var motion = _weaponObjects[i].GetComponent<FloatingWeaponMotion>();
+                if (motion != null) motion.StartFadeOut();
+                else _weaponObjects[i].SetActive(false);
+            }
         }
 
         _currentSlotIndex = index;
@@ -307,9 +324,9 @@ public class PlayerWeaponController : MonoBehaviour
         if (_attackQueued && Time.time - _attackQueueTime > 0.3f)
             _attackQueued = false;
 
-        // 공격 중이면 대기 (애니메이터 상태가 다시 전이 가능해질 때까지 기다림)
-        // 무기가 없으면(ActiveBehaviour == null) 공격 불가
+        // 공격 중이거나 쿨다운 중이면 대기 (최소 2프레임 간격 보장)
         if (_activeBehaviour == null || _activeBehaviour.IsAttacking) return;
+        if (Time.time < _attackCooldownEndTime) return;
 
 
         // 콤보 유효 시간이 지났으면 1타로 리셋
@@ -328,11 +345,10 @@ public class PlayerWeaponController : MonoBehaviour
             if (_activeBehaviour.WeaponType == WeaponType.Sword || _activeBehaviour.WeaponType == WeaponType.Spear)
             {
                 float maxDist = (_activeBehaviour.WeaponType == WeaponType.Spear) ? 3.5f : 2.5f;
-                float targetDist = Mathf.Min(_cursorDistance, maxDist); // 커서 위치까지만
+                float targetDist = Mathf.Min(_cursorDistance, maxDist);
                 
-                // 피격 판정의 가운데가 커서 위치에 오도록 무기 본체를 약간 뒤로 당김
                 float weaponLengthOffset = (_activeBehaviour.WeaponType == WeaponType.Spear) ? 1.5f : 0.8f;
-                float finalDist = Mathf.Max(0.5f, targetDist - weaponLengthOffset); // 캐릭터와 너무 겹치지 않게 최소거리 제한
+                float finalDist = Mathf.Max(1.0f, targetDist - weaponLengthOffset); 
                 
                 var floating = _activeBehaviour.GetComponent<FloatingWeaponMotion>();
                 if (floating != null)
@@ -345,6 +361,8 @@ public class PlayerWeaponController : MonoBehaviour
             // 공격 시작 직전에 콤보 flip scale을 미리 세팅합니다.
             ApplyAttackStartScale(_comboStep);
 
+            // 공격 시 무기 오브젝트 활성화 보장 (페이드 아웃으로 꺼졌을 수 있음)
+            _activeBehaviour.gameObject.SetActive(true);
             _activeBehaviour.BeginAttack(_comboStep);
 
             // 다음 클릭/연사를 위해 스텝 순환
@@ -378,6 +396,7 @@ public class PlayerWeaponController : MonoBehaviour
         if (_activeBehaviour.PollFinished(_attackStartTime))
         {
             _lastAttackEndTime = Time.time;
+            _attackCooldownEndTime = Time.time + 0.05f; // 공격 종료 후 최소 0.05초(약 3프레임) 대기
         }
     }
 
@@ -410,12 +429,13 @@ public class PlayerWeaponController : MonoBehaviour
         _convergeGradients = new Gradient[5];
         _flashGradients = new Gradient[5];
 
+        // 레퍼런스 기반 통합 팔레트: 황금 코어 + 연녹색 테두리
         Color[] baseColors = new Color[5] {
-            new Color(0.9f, 0.9f, 1f, 1f), // None
-            new Color(1f, 0.3f, 0.2f, 1f), // Sword
-            new Color(0.3f, 0.6f, 1f, 1f), // Spear
-            new Color(0.7f, 0.3f, 1f, 1f), // Bow
-            new Color(0.3f, 0.9f, 1f, 1f)  // Staff
+            new Color(1f, 0.9f, 0.4f, 1f),   // None: 기본 황금
+            new Color(1f, 0.85f, 0.3f, 1f),  // Sword: 순수 황금
+            new Color(0.8f, 0.95f, 0.4f, 1f),// Spear: 황금+연녹
+            new Color(0.9f, 0.8f, 0.5f, 1f), // Bow: 따뜻한 황금
+            new Color(0.7f, 0.95f, 0.5f, 1f) // Staff: 연녹 강조
         };
 
         for (int i = 0; i < 5; i++)

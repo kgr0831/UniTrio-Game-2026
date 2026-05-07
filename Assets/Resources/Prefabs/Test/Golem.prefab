@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 6764913075219902712}
   - component: {fileID: 7483045696725760729}
   - component: {fileID: 6632740875744982694}
-  - component: {fileID: 7384596882320636377}
   m_Layer: 0
   m_Name: Golem
   m_TagString: Untagged
@@ -143,19 +142,3 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!114 &7384596882320636377
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8992042086741285878}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3c3cff3531f545843866911b2fd76e98, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GolemAI
-  moveSpeed: 3
-  attackRange: 2.5
-  detectionRange: 10
-  playerTag: Player

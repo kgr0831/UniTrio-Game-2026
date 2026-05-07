@@ -32,7 +32,7 @@ public class SwordBehaviour : WeaponBehaviourBase
     public override WeaponType WeaponType => WeaponType.Sword;
 
     public override float ComboWindow        => 0.5f;
-    public override int   MaxComboSteps      => 2;
+    public override int   MaxComboSteps      => 3;
     // 콤보 flip은 이 클래스 내부(this.transform Y-scale)에서 처리하므로 컨트롤러 레벨 flip 불필요
     public override bool  FlipComboDirection => false;
 
@@ -62,6 +62,13 @@ public class SwordBehaviour : WeaponBehaviourBase
 
         // SwordWeapon 루트의 초기 스케일 저장
         _restLocalScale = transform.localScale;
+
+        // 사용자의 요청으로 애니메이터 VFX는 비활성화합니다. (대신 스크립트로 잔상 생성)
+        if (_vfxAnimator != null)
+        {
+            _vfxAnimator.transform.localScale = Vector3.one;
+            _vfxAnimator.gameObject.SetActive(false); // 다시 끕니다
+        }
 
         if (_weaponAnimator != null)
             _weaponRestLocalPos = _weaponAnimator.transform.localPosition;
@@ -116,19 +123,20 @@ public class SwordBehaviour : WeaponBehaviourBase
 
     private void LateUpdate()
     {
-        // 애니메이터가 매 프레임 덮어쓰는 localPosition을 원래 값으로 복원
         if (_weaponAnimator != null)
-            _weaponAnimator.transform.localPosition = _weaponRestLocalPos;
-        if (_vfxAnimator != null)
-            _vfxAnimator.transform.localPosition = _vfxRestLocalPos;
-
-        // 비공격 상태에서는 자식 회전도 원복
-        if (!IsAttacking)
         {
-            if (_weaponAnimator != null)
-                _weaponAnimator.transform.localEulerAngles = Vector3.zero;
-            if (_vfxAnimator != null)
-                _vfxAnimator.transform.localEulerAngles = Vector3.zero;
+            // 검 스프라이트는 수동 수식(FloatingWeaponMotion)에 완벽하게 종속되도록 고정
+            _weaponAnimator.transform.localPosition = _weaponRestLocalPos;
+            _weaponAnimator.transform.localEulerAngles = Vector3.zero;
+            // 애니메이션 키프레임에 의해 검의 크기가 찌그러지는 현상을 방지 (모든 프레임에서 일정한 크기 유지)
+            _weaponAnimator.transform.localScale = Vector3.one;
+        }
+
+        if (_vfxAnimator != null)
+        {
+            // 사용하지 않지만 기본 로컬 위치로 고정
+            _vfxAnimator.transform.localPosition = _vfxRestLocalPos;
+            _vfxAnimator.transform.localEulerAngles = Vector3.zero;
         }
 
         // 강타 스택 변화 감지 및 비주얼 효과 동기화
@@ -225,8 +233,8 @@ public class SwordBehaviour : WeaponBehaviourBase
         // 스윙 시작 시 강타 스택 소모 (적중 여부 무관하게 1회 차감)
         CurrentSwingBashMultiplier = _statSystem != null ? _statSystem.UseBashStack() : 1f;
 
-        // 2타는 SwordWeapon 루트(this.transform)의 Y-scale을 반전해 스윙 방향을 뒤집습니다.
-        float flipY = (comboStep == 2) ? -1f : 1f;
+        // 2타, 3타는 스윙 궤적과 시계방향 오르빗에 맞춰 칼날이 밖을 향하도록 Y를 뒤집습니다.
+        float flipY = (comboStep >= 2) ? -1f : 1f;
         transform.localScale = new Vector3(
             _restLocalScale.x, _restLocalScale.y * flipY, _restLocalScale.z);
 
@@ -234,10 +242,11 @@ public class SwordBehaviour : WeaponBehaviourBase
         float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
         if (speed <= 0) speed = 1f;
 
+        _weaponAnimator.ResetTrigger("Attack"); // 버퍼 방지 (1번 클릭에 2번 나가는 버그 수정)
         _weaponAnimator.speed = speed;
         _weaponAnimator.SetTrigger("Attack");
 
-        if (_vfxAnimator != null)
+        if (_vfxAnimator != null && _vfxAnimator.gameObject.activeInHierarchy)
         {
             _vfxAnimator.speed = speed;
             _vfxAnimator.SetTrigger("Attack");
@@ -267,6 +276,9 @@ public class SwordBehaviour : WeaponBehaviourBase
         if (!info.IsName("Attack") || info.normalizedTime >= 0.95f)
         {
             IsAttacking = false;
+            
+            _weaponAnimator.ResetTrigger("Attack"); // 공격 종료 시 버퍼 초기화
+            
             if (info.IsName("Attack"))
             {
                 _weaponAnimator.Play("Idle", 0, 0f);
@@ -280,7 +292,8 @@ public class SwordBehaviour : WeaponBehaviourBase
                 }
             }
             // Idle 전환 직후 animation 커브 갱신 전에 rotation·scale을 리셋.
-            ResetChildTransforms();
+            // Idle 전환 시 즉시 리셋 제거 (FloatingWeaponMotion에서 처리)
+            // ResetChildTransforms();
             return true;
         }
         return false;
@@ -292,13 +305,11 @@ public class SwordBehaviour : WeaponBehaviourBase
         _hitboxFired = false;
         StopAllCoroutines();
 
-        transform.localScale = _restLocalScale;
+        // transform.localScale = _restLocalScale; // 즉시 리셋 제거
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
         if (_weaponAnimator  != null) _weaponAnimator.Play("Idle", 0, 0f);
         if (_vfxAnimator     != null) _vfxAnimator.Play("Idle", 0, 0f);
-        ResetChildTransforms();
 
-        // 무기 교체 시 강타 비주얼도 원복 (BashCount는 StatSystem에 남아 다른 무기에서는 적용 안 됨)
         ApplyBashVisual(false);
     }
 

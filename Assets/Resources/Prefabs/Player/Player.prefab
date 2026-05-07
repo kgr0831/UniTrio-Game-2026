@@ -277,6 +277,8 @@ MonoBehaviour:
   _maxGlowIntensity: 5
   _pulseAmplitude: 1.5
   _glowColor: {r: 0.7, g: 0, b: 1, a: 1}
+  _aimedShotBowPrefab: {fileID: 0}
+  _aimShootArrowPrefab: {fileID: 0}
 --- !u!1 &2481507512482110463
 GameObject:
   m_ObjectHideFlags: 0
@@ -326,6 +328,8 @@ MonoBehaviour:
   _weaponAnimator: {fileID: 1478792732590329935}
   _vfxAnimator: {fileID: 8294688094704253741}
   _hitboxCollider: {fileID: 4469310113847408289}
+  _spearRenderer: {fileID: 0}
+  _bashSpearColor: {r: 1.5, g: 0.1, b: 0.1, a: 1}
   _orbitRadius: -0.4
   _useGoBehind: 1
 --- !u!1 &3414513390060974718
@@ -1584,7 +1588,6 @@ GameObject:
   - component: {fileID: 3666809469102148546}
   - component: {fileID: 3455611401367997205}
   - component: {fileID: 7377758244409759325}
-  - component: {fileID: 2351730819098626235}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1838,6 +1841,9 @@ MonoBehaviour:
   _baseMana: 100
   _baseMaxHP: 100
   _manaRegen: 1
+  _permMaxHP: 0
+  _permAtk: 0
+  _permMagicAtk: 0
   _currentMana: 0
 --- !u!114 &3955967279642289493
 MonoBehaviour:
@@ -2066,18 +2072,3 @@ MonoBehaviour:
   _ghostLifetime: 0.38
   _activeDuration: 2
   _ghostColor: {r: 0.55, g: 0, b: 0, a: 0.7}
---- !u!114 &2351730819098626235
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8850823021916702358}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91db8102e98082e498c0d87936a59124, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SkillSlotManager
-  _useKey: 113
-  _defaultSkill: {fileID: 0}
-  _skillSlotUI: {fileID: 0}
