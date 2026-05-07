@@ -131,8 +131,11 @@ public class BowBehaviour : WeaponBehaviourBase
     {
         CurrentComboStep   = 1;
         _playerMovement      = GetComponentInParent<PlayerMovement>();
-        _weaponTransform     = transform;
+        
+        // 🔮 수정: 루트(transform) 대신 자식(Animator) 트랜스폼을 흔들어 FloatingWeaponMotion과 충돌 방지
+        _weaponTransform     = _weaponAnimator != null ? _weaponAnimator.transform : transform;
         _weaponLocalOrigin   = _weaponTransform.localPosition;
+        
         // 애니메이터가 붙은 자식 오브젝트의 원본 scale 캐싱 (루트가 아닌 자식 기준)
         _weaponAnimatorScale = _weaponAnimator != null
                                ? _weaponAnimator.transform.localScale

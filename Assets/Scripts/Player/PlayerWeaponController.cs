@@ -29,6 +29,7 @@ public class PlayerWeaponController : MonoBehaviour
     private Camera _mainCamera;
     private float  _camToWorldZ;
     private float  _cursorDx; // UpdateCursorDirection에서 캐싱 → HandleAttackInput에서 콤보 flip에 재사용
+    private float  _cursorDistance; // 커서까지의 거리 (무기 동적 생성용)
     // ── 콤보 엔진 ─────────────────────────────────────────
     // _comboStep : 다음 번에 실행될 공격의 타수(step).
     // BeginAttack 호출 후 즉시 증가하므로, UpdateCursorDirection이
@@ -43,6 +44,15 @@ public class PlayerWeaponController : MonoBehaviour
     private StatSystem _stats;
     private WeaponData _lastRegisteredBonus; // 현재 등록된 보너스 추적
 
+    // 파티클 머티리얼 및 오브젝트 풀 캐싱 (메모리 누수 방지)
+    private Material _handMagicMat;
+    private ParticleSystem[] _handMagicPool;
+    private int _handMagicPoolIndex = 0;
+    
+    // GC 방지용 미리 생성된 색상 데이터 (인덱스 = WeaponType)
+    private Color[] _hdrColors;
+    private Gradient[] _convergeGradients;
+    private Gradient[] _flashGradients;
 
     // 현재 활성 무기
     private int                 _currentSlotIndex = 0;
@@ -65,11 +75,21 @@ public class PlayerWeaponController : MonoBehaviour
 
         _stats = GetComponent<StatSystem>();
 
+        InitHandMagicPool();
+
         // 초기 장착은 QuickSlotManager.Start()가 담당합니다.
 
-        // 모든 무기 오브젝트를 비활성화해 둡니다.
+        // 모든 무기 오브젝트에 부유 모션 컴포넌트를 동적으로 부착하고 비활성화해 둡니다.
         foreach (var obj in _weaponObjects)
-            if (obj != null) obj.SetActive(false);
+        {
+            if (obj != null)
+            {
+                if (obj.GetComponent<FloatingWeaponMotion>() == null)
+                    obj.AddComponent<FloatingWeaponMotion>();
+                
+                obj.SetActive(false);
+            }
+        }
     }
 
     private void Update()
@@ -226,9 +246,11 @@ public class PlayerWeaponController : MonoBehaviour
         float dy = mouseWorld.y - transform.position.y;
 
         float sqrMag = dx * dx + dy * dy;
+        _cursorDistance = Mathf.Sqrt(sqrMag);
+
         if (sqrMag > 0.0001f)
         {
-            float inv = 1f / Mathf.Sqrt(sqrMag);
+            float inv = 1f / _cursorDistance;
             dx *= inv;
             dy *= inv;
         }
@@ -256,24 +278,14 @@ public class PlayerWeaponController : MonoBehaviour
         _weaponPivot.localScale = new Vector3(1f, baseScaleY, 1f);
 
         // 무기가 등 뒤(위/좌 방향)일 때 Z를 +1 해 플레이어 뒤로 렌더링할지 결정
+        // 🔮 마법 무기 컨셉: 공중에 떠다니므로 항상 캐릭터 앞에 렌더링하는 것이 자연스럽습니다.
         bool goBehind = false;
-        if (_activeBehaviour == null || _activeBehaviour.UseGoBehind)
-        {
-            if (Mathf.Abs(dx) >= Mathf.Abs(dy))
-                goBehind = (dx < 0f);
-            else
-                goBehind = (dy > 0f);
-        }
-
-        // 피봇은 항상 플레이어 중심(0,0)에 고정. 공전 반경은 각 무기 오브젝트의
-        // localPosition.x 값(에디터에서 orbitRadius만큼 +X로 배치)으로 결정됨.
-        // 피봇이 커서 방향으로 회전하면 무기가 그 거리만큼 떨어진 채 공전.
+        
         float zDepth = goBehind ? 1f : -1f;
         float depthNudge = goBehind ? 0.001f : -0.001f;
 
-        // 손 위치 보정: 위를 향할 때(dy=1)는 오프셋 0, 좌/우/하단(dy≤0)은 _handYOffset만큼 내림.
-        // Clamp01으로 dy<0 구간을 모두 0으로 처리해 아래 방향도 동일하게 적용.
-        float handY = Mathf.Lerp(-_handYOffset, 0f, Mathf.Clamp01(dy));
+        // 손 위치 보정: 마법으로 조종하므로 손 위치를 따라 위아래로 움직일 필요 없이 일정 높이 유지
+        float handY = 0f;
         _weaponPivot.localPosition = new Vector3(0f, handY + depthNudge, zDepth);
     }
 
@@ -308,6 +320,26 @@ public class PlayerWeaponController : MonoBehaviour
         {
             _attackQueued    = false;
             _attackStartTime = Time.time;
+
+            // 🔮 마법 컨셉: 공격 시작 시 손 위치에 작은 파티클 방출
+            SpawnHandMagicEffect();
+
+            // 🔮 무기 소환 거리 동적 보정 (검, 창)
+            if (_activeBehaviour.WeaponType == WeaponType.Sword || _activeBehaviour.WeaponType == WeaponType.Spear)
+            {
+                float maxDist = (_activeBehaviour.WeaponType == WeaponType.Spear) ? 3.5f : 2.5f;
+                float targetDist = Mathf.Min(_cursorDistance, maxDist); // 커서 위치까지만
+                
+                // 피격 판정의 가운데가 커서 위치에 오도록 무기 본체를 약간 뒤로 당김
+                float weaponLengthOffset = (_activeBehaviour.WeaponType == WeaponType.Spear) ? 1.5f : 0.8f;
+                float finalDist = Mathf.Max(0.5f, targetDist - weaponLengthOffset); // 캐릭터와 너무 겹치지 않게 최소거리 제한
+                
+                var floating = _activeBehaviour.GetComponent<FloatingWeaponMotion>();
+                if (floating != null)
+                {
+                    floating.SetBaseLocalPosition(new Vector3(finalDist, 0f, 0f));
+                }
+            }
 
             // LockRotationDuringAttack 무기는 BeginAttack 이후 UpdateCursorDirection이 early return하므로
             // 공격 시작 직전에 콤보 flip scale을 미리 세팅합니다.
@@ -363,5 +395,256 @@ public class PlayerWeaponController : MonoBehaviour
         _activeBehaviour?.OnDeactivated();
         
         // 무기 피봇 재활성화는 연출이 모두 끝난 후 OnCutsceneEnd()에서 수행하도록 합니다.
+    }
+
+    /// <summary>
+    /// 마법 시전 이펙트 초기화 (Awake 시 1회 호출)
+    /// 오브젝트 풀링 및 힙 할당(GC) 제거를 위해 모든 객체와 배열을 미리 생성합니다.
+    /// </summary>
+    private void InitHandMagicPool()
+    {
+        EnsureHandMagicMaterial();
+
+        // WeaponType에 대응하는 인덱스: 0(None), 1(Sword), 2(Spear), 3(Bow), 4(Staff)
+        _hdrColors = new Color[5];
+        _convergeGradients = new Gradient[5];
+        _flashGradients = new Gradient[5];
+
+        Color[] baseColors = new Color[5] {
+            new Color(0.9f, 0.9f, 1f, 1f), // None
+            new Color(1f, 0.3f, 0.2f, 1f), // Sword
+            new Color(0.3f, 0.6f, 1f, 1f), // Spear
+            new Color(0.7f, 0.3f, 1f, 1f), // Bow
+            new Color(0.3f, 0.9f, 1f, 1f)  // Staff
+        };
+
+        for (int i = 0; i < 5; i++)
+        {
+            Color magic = baseColors[i];
+            Color hdr = magic * 6f; hdr.a = 1f;
+            _hdrColors[i] = hdr;
+
+            // 수렴 파티클: 빛나면서 다가온 뒤 서서히 페이드아웃
+            var cGrad = new Gradient();
+            cGrad.SetKeys(
+                new GradientColorKey[] {
+                    new GradientColorKey(magic, 0f),
+                    new GradientColorKey(Color.white, 0.5f),  // 중간에 밝게
+                    new GradientColorKey(magic, 1f)
+                },
+                new GradientAlphaKey[] {
+                    new GradientAlphaKey(0.6f, 0f),     // 시작부터 보임
+                    new GradientAlphaKey(1f,   0.4f),   // 40%에서 최대 밝기
+                    new GradientAlphaKey(0.7f, 0.7f),   // 70%까지 발광 유지
+                    new GradientAlphaKey(0f,   1f)      // 부드럽게 사라짐
+                }
+            );
+            _convergeGradients[i] = cGrad;
+
+            // 플래시: 강렬하게 터진 뒤 서서히 페이드아웃
+            var fGrad = new Gradient();
+            fGrad.SetKeys(
+                new GradientColorKey[] {
+                    new GradientColorKey(Color.white, 0f),
+                    new GradientColorKey(magic, 0.4f),
+                    new GradientColorKey(magic * 0.5f, 1f)
+                },
+                new GradientAlphaKey[] {
+                    new GradientAlphaKey(1f,   0f),     // 즉시 최대
+                    new GradientAlphaKey(0.8f, 0.4f),   // 발광 유지
+                    new GradientAlphaKey(0.3f, 0.7f),   // 서서히 감소
+                    new GradientAlphaKey(0f,   1f)      // 완전히 사라짐
+                }
+            );
+            _flashGradients[i] = fGrad;
+        }
+
+        int poolSize = 3;
+        _handMagicPool = new ParticleSystem[poolSize];
+
+        var burst1 = new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, 30, 45) };
+        var burst2 = new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, 1) };
+        
+        AnimationCurve convergeSizeCurve = new AnimationCurve(new Keyframe(0f, 1.5f), new Keyframe(1f, 0f));
+        AnimationCurve flashCurve = new AnimationCurve(new Keyframe(0f, 0.4f), new Keyframe(0.2f, 1f), new Keyframe(1f, 0f));
+
+        for (int i = 0; i < poolSize; i++)
+        {
+            GameObject rootObj = new GameObject($"HandMagic_Pool_{i}");
+            rootObj.transform.SetParent(_weaponPivot);
+            rootObj.transform.localPosition = new Vector3(0f, 0.3f, 0f);
+
+            var converge = rootObj.AddComponent<ParticleSystem>();
+            converge.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            
+            var cMain = converge.main;
+            cMain.duration = 0.6f;
+            cMain.loop = false;
+            cMain.playOnAwake = false;
+            cMain.stopAction = ParticleSystemStopAction.Disable; // 재생 완료 후 스스로 꺼짐
+            cMain.startLifetime = 0.5f;
+            cMain.startSpeed = -3f;
+            cMain.startSize = new ParticleSystem.MinMaxCurve(0.1f, 0.25f);
+            
+            var cEmission = converge.emission;
+            cEmission.rateOverTime = 0f;
+            cEmission.SetBursts(burst1);
+
+            var cShape = converge.shape;
+            cShape.shapeType = ParticleSystemShapeType.Sphere;
+            cShape.radius = 1.0f;
+
+            var cSize = converge.sizeOverLifetime;
+            cSize.enabled = true;
+            cSize.size = new ParticleSystem.MinMaxCurve(1f, convergeSizeCurve);
+
+            var cColor = converge.colorOverLifetime;
+            cColor.enabled = true;
+
+            var cRenderer = converge.GetComponent<ParticleSystemRenderer>();
+            cRenderer.material = _handMagicMat;
+            cRenderer.sortingLayerName = "Weapons";
+            cRenderer.sortingOrder = 20;
+
+            GameObject flashObj = new GameObject("HandMagic_Flash");
+            flashObj.transform.SetParent(rootObj.transform);
+            flashObj.transform.localPosition = Vector3.zero;
+
+            var flash = flashObj.AddComponent<ParticleSystem>();
+            flash.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var fMain = flash.main;
+            fMain.duration = 0.15f;
+            fMain.loop = false;
+            fMain.playOnAwake = false;
+            fMain.startDelay = 0.35f;
+            fMain.startLifetime = 0.3f;
+            fMain.startSpeed = 0f;
+            fMain.startSize = 0.8f;
+
+            var fEmission = flash.emission;
+            fEmission.rateOverTime = 0f;
+            fEmission.SetBursts(burst2);
+
+            var fShape = flash.shape;
+            fShape.enabled = false;
+
+            var fSize = flash.sizeOverLifetime;
+            fSize.enabled = true;
+            fSize.size = new ParticleSystem.MinMaxCurve(1f, flashCurve);
+
+            var fColor = flash.colorOverLifetime;
+            fColor.enabled = true;
+
+            var fRenderer = flash.GetComponent<ParticleSystemRenderer>();
+            fRenderer.material = _handMagicMat;
+            fRenderer.sortingLayerName = "Weapons";
+            fRenderer.sortingOrder = 21;
+
+            _handMagicPool[i] = converge;
+            rootObj.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 마법 시전 이펙트: 오브젝트 풀에서 꺼내어 재사용 (GC Zero)
+    /// </summary>
+    private void SpawnHandMagicEffect()
+    {
+        if (_handMagicPool == null || _handMagicPool.Length == 0) return;
+
+        int weaponIndex = (_activeBehaviour != null) ? (int)_activeBehaviour.WeaponType : 0;
+        if (weaponIndex < 0 || weaponIndex >= 5) weaponIndex = 0;
+
+        ParticleSystem converge = _handMagicPool[_handMagicPoolIndex];
+        _handMagicPoolIndex = (_handMagicPoolIndex + 1) % _handMagicPool.Length;
+
+        // 색상 갱신
+        var cMain = converge.main;
+        cMain.startColor = _hdrColors[weaponIndex];
+
+        var cColor = converge.colorOverLifetime;
+        cColor.color = _convergeGradients[weaponIndex];
+
+        if (converge.transform.childCount > 0)
+        {
+            var flash = converge.transform.GetChild(0).GetComponent<ParticleSystem>();
+            if (flash != null)
+            {
+                var fMain = flash.main;
+                Color fColor = _hdrColors[weaponIndex];
+                fColor.a = 0.8f;
+                fMain.startColor = fColor;
+
+                var fColModule = flash.colorOverLifetime;
+                fColModule.color = _flashGradients[weaponIndex];
+            }
+        }
+
+        // 오브젝트 활성화 및 파티클 재생
+        converge.gameObject.SetActive(true);
+        converge.Play(true);
+    }
+
+    /// <summary>
+    /// 파티클 머티리얼을 한 번만 생성하여 캐싱합니다.
+    /// URP에는 "Default-Particle.png" 빌트인 리소스가 없으므로,
+    /// 코드에서 소프트 서클 텍스처를 절차적으로 생성합니다.
+    /// </summary>
+    private void EnsureHandMagicMaterial()
+    {
+        if (_handMagicMat != null) return;
+
+        // URP 셰이더 우선 탐색, 없으면 빌트인 폴백
+        Shader particleShader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+            ?? Shader.Find("Particles/Standard Unlit");
+
+        _handMagicMat = new Material(particleShader);
+
+        // URP Particles/Unlit: Surface=Transparent, Blend=Additive
+        _handMagicMat.SetFloat("_Surface", 1f);  // 0=Opaque, 1=Transparent
+        _handMagicMat.SetFloat("_Blend", 1f);    // 0=Alpha, 1=Additive
+        _handMagicMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        _handMagicMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+        _handMagicMat.SetInt("_ZWrite", 0);
+        _handMagicMat.renderQueue = 3000;
+        _handMagicMat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        _handMagicMat.EnableKeyword("_BLENDMODE_ADD");
+
+        // 절차적 소프트 서클 텍스처 (둥근 파티클용)
+        _handMagicMat.SetTexture("_BaseMap", CreateSoftCircleTexture(32));
+        _handMagicMat.SetTexture("_MainTex", CreateSoftCircleTexture(32));
+    }
+
+    /// <summary>
+    /// 32×32 소프트 서클 텍스처를 절차적 생성합니다.
+    /// 중심에서 가장자리로 갈수록 알파가 0으로 감소하여 부드러운 둥근 파티클을 만듭니다.
+    /// 한 번만 생성되어 _handMagicMat에 캐싱되므로 GC 부담 없음.
+    /// </summary>
+    private static Texture2D CreateSoftCircleTexture(int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        float center = (size - 1) * 0.5f;
+        float invRadius = 1f / center;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x - center) * invRadius;
+                float dy = (y - center) * invRadius;
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                // 부드러운 감쇠: 중심=1 → 가장자리=0
+                float alpha = Mathf.Clamp01(1f - dist);
+                alpha *= alpha; // 제곱 감쇠로 더 부드럽게
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+            }
+        }
+
+        tex.Apply(false, true); // makeNoLongerReadable=true → 메모리 절약
+        return tex;
     }
 }

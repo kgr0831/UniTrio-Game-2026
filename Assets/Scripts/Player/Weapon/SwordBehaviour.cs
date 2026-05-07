@@ -226,24 +226,21 @@ public class SwordBehaviour : WeaponBehaviourBase
         CurrentSwingBashMultiplier = _statSystem != null ? _statSystem.UseBashStack() : 1f;
 
         // 2타는 SwordWeapon 루트(this.transform)의 Y-scale을 반전해 스윙 방향을 뒤집습니다.
-        // - this.transform의 worldPosition은 변하지 않으므로 피봇 위치 이동 없음.
-        // - 자식(애니메이터, VFX, 히트박스)이 모두 일관되게 함께 뒤집힘.
-        // - 피봇의 Y-scale(커서 방향 미러)과는 독립적으로 곱해져 좌우 어느 방향이든 동작.
         float flipY = (comboStep == 2) ? -1f : 1f;
         transform.localScale = new Vector3(
             _restLocalScale.x, _restLocalScale.y * flipY, _restLocalScale.z);
 
-        _weaponAnimator.SetTrigger("Attack");
-        
-        // 공격 속도 연동 (StatSystem의 합연산 수치 반영)
+        // 공격 속도 연동 (StatSystem 반영)
         float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
-        if (speed <= 0) speed = 1f; 
+        if (speed <= 0) speed = 1f;
+
         _weaponAnimator.speed = speed;
+        _weaponAnimator.SetTrigger("Attack");
 
         if (_vfxAnimator != null)
         {
-            _vfxAnimator.SetTrigger("Attack");
             _vfxAnimator.speed = speed;
+            _vfxAnimator.SetTrigger("Attack");
         }
     }
 

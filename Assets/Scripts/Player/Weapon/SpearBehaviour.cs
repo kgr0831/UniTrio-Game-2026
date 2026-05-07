@@ -215,8 +215,18 @@ public class SpearBehaviour : WeaponBehaviourBase
 
         SetVfxVisible(true);
 
+        // StatSystem 연동 (기본 속도 복원)
+        float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
+        if (speed <= 0) speed = 1f;
+
+        _weaponAnimator.speed = speed;
         _weaponAnimator.SetTrigger("Attack");
-        if (_vfxAnimator != null) _vfxAnimator.SetTrigger("Attack");
+        
+        if (_vfxAnimator != null)
+        {
+            _vfxAnimator.speed = speed;
+            _vfxAnimator.SetTrigger("Attack");
+        }
     }
 
     public override bool PollFinished(float attackStartTime)
