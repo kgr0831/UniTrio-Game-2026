@@ -13492,6 +13492,10 @@ PrefabInstance:
       value: 2.6666667
       objectReference: {fileID: 0}
     - target: {fileID: 1941232120923058647, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
+      propertyPath: _spawnRadius
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1941232120923058647, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
       propertyPath: _aimedShotBowPrefab
       value: 
       objectReference: {fileID: 8493334755477145656, guid: 5f4e7650781b7b641b15df75e16e3950, type: 3}
