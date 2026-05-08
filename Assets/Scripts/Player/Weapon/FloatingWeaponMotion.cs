@@ -62,7 +62,7 @@ public class FloatingWeaponMotion : MonoBehaviour
 
     [Header("Ghost Trail (Afterimage)")]
     [SerializeField] private float _ghostSpawnDistance = 0.015f; // 너무 빽빽하지 않게 간격 약간 확대
-    private float _ghostLifeTime = 0.25f;
+    private float _ghostLifeTime = 0.18f;
     private Vector3 _lastGhostLocalPos;
     private SpriteRenderer _mainSpriteRenderer;
     private System.Collections.Generic.Queue<SpriteRenderer> _ghostPool = new System.Collections.Generic.Queue<SpriteRenderer>();
@@ -229,12 +229,19 @@ public class FloatingWeaponMotion : MonoBehaviour
         Color baseColor = GetWeaponAuraColor();
         // 3타는 더 잘 보이도록 기본 알파를 약간 높임
         float startAlpha = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.7f : 0.4f;
-        float lifeTime = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.4f : _ghostLifeTime;
+        float lifeTime = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.28f : _ghostLifeTime;
 
         while (elapsed < lifeTime)
         {
             elapsed += Time.deltaTime;
             float t = elapsed / lifeTime;
+            
+            // 검(Sword)인 경우 레트로 느낌을 위해 알파값을 4단계로 뚝뚝 끊어지게 스텝 처리
+            if (_weapon != null && _weapon.WeaponType == WeaponType.Sword)
+            {
+                int steps = 4;
+                t = Mathf.Floor(t * steps) / steps;
+            }
             
             // 알파 페이드 (크기 확장은 사용자 요청으로 제거)
             Color c = baseColor;
@@ -562,7 +569,7 @@ public class FloatingWeaponMotion : MonoBehaviour
         {
             // 무기 교체 시: 서서히 사라짐
             _currentAlpha = Mathf.MoveTowards(_currentAlpha, 0f, Time.deltaTime * 5f);
-            if (_currentAlpha <= 0.001f) 
+            if (_currentAlpha <= 0.001f && _activeGhosts.Count == 0) 
             {
                 gameObject.SetActive(false);
                 return;
@@ -574,7 +581,8 @@ public class FloatingWeaponMotion : MonoBehaviour
             _currentAlpha = Mathf.MoveTowards(_currentAlpha, 0f, Time.deltaTime * 10f);
             
             // 완전히 사라지면 오브젝트 끄기 (사용자 요청: 공격 끝나면 무조건 사라져야 함)
-            if (_currentAlpha <= 0.001f)
+            // 단, 활성화된 잔상이 남아있을 경우 잔상이 다 사라질 때까지 대기
+            if (_currentAlpha <= 0.001f && _activeGhosts.Count == 0)
             {
                 gameObject.SetActive(false);
                 return;
