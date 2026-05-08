@@ -91,7 +91,11 @@ public class BowBehaviour : WeaponBehaviourBase
 
     // ── WeaponBehaviourBase 오버라이드 ───────────────────────────
     public override WeaponType WeaponType          => WeaponType.Bow;
-    public override float PivotRotationOffset      => 0f;
+    public override float PivotRotationOffset      => -45f;
+    
+    // 오프셋 시스템 사용 시 FloatingWeaponMotion의 위치 제어 비활성화
+    public override bool DisableFloatingMotion => _useOffsetSystem;
+
     // 왼쪽을 향할 때 피봇 Y-scale을 -1로 반전해 스프라이트를 mirror 처리.
     // false(순수 회전)이면 180° 뒤집혀 비대칭하게 보여 좌측에서 크기가 달라 보임.
     public override bool  UseYScaleFlip            => true;

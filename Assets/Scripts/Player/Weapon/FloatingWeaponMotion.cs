@@ -603,6 +603,12 @@ public class FloatingWeaponMotion : MonoBehaviour
             }
         }
 
+        if (_weapon != null && _weapon.DisableFloatingMotion)
+        {
+            _hasAppliedOffset = false;
+            return;
+        }
+
         // 3. 새 오프셋 계산 (현재 transform.localPosition이 원본 상태임)
         Vector3 basePos = transform.localPosition;
         Vector3 newPos = basePos;
@@ -641,7 +647,7 @@ public class FloatingWeaponMotion : MonoBehaviour
         _hasAppliedOffset = true;
 
         // 🌟 4. 무기 위치가 완벽히 적용된 직후에 잔상을 생성해야 제 위치에 생성됩니다!
-        if (isAttacking)
+        if (isAttacking && _weapon != null && _weapon.WeaponType == WeaponType.Sword)
         {
             // 속도가 빠를수록(초반에 p가 작을 때) 더 촘촘하게 생성되도록 간격 가변 적용
             float t_p = 0.5f;
@@ -684,8 +690,11 @@ public class FloatingWeaponMotion : MonoBehaviour
         }
 
         // 🌟 5. 파티클 역시 궤적 계산이 모두 끝난 뒤에 생성해야 무기 끝/시작 지점과 일치합니다!
-        if (triggerStartParticle) EmitSwordParticles(15);
-        if (triggerEndParticle) EmitSwordParticles(50);
+        if (_weapon != null && _weapon.WeaponType == WeaponType.Sword)
+        {
+            if (triggerStartParticle) EmitSwordParticles(15);
+            if (triggerEndParticle) EmitSwordParticles(50);
+        }
 
         // 🌟 6. 알파값 적용 (이미 상단에서 처리됨 - 중복 제거 가능하지만 안전을 위해 유지하거나 상단 로직과 통합)
         // 위에서 이미 _renderers 컬러를 _currentAlpha에 맞춰 업데이트했습니다.

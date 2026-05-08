@@ -279,6 +279,12 @@ MonoBehaviour:
   _glowColor: {r: 0.7, g: 0, b: 1, a: 1}
   _aimedShotBowPrefab: {fileID: 8493334755477145656, guid: 5f4e7650781b7b641b15df75e16e3950, type: 3}
   _aimShootArrowPrefab: {fileID: 1798821590960780626, guid: 03706960fa8d50e4f99c806a69f2c33c, type: 3}
+  _useOffsetSystem: 1
+  _useFixedPosition: 0
+  _fixedSpawnPosition: {x: 0.5, y: 0.5}
+  _spawnRadius: 1.5
+  _offsetAngle: 45
+  _hideDelay: 0.5
 --- !u!1 &2481507512482110463
 GameObject:
   m_ObjectHideFlags: 0
@@ -474,6 +480,8 @@ MonoBehaviour:
   _maxGlowIntensity: 4
   _glowColor: {r: 0.47932023, g: 0.12477186, b: 1, a: 1}
   _orbitRadius: 0.2
+  _isInstantCastMode: 0
+  _instantCastDelay: 0.5
 --- !u!1 &3462043197688276117
 GameObject:
   m_ObjectHideFlags: 0

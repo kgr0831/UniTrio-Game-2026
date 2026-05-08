@@ -70,6 +70,7 @@ public class WandBehaviour : WeaponBehaviourBase
     public override float ComboWindow              => 0f;
     public override int   MaxComboSteps            => 1;
     public override float PivotRotationOffset      => 0f;
+    public override bool  DisableFloatingMotion    => _isInstantCastMode;
 
     // ── 내부 상태 ──────────────────────────────────────────────────
     private bool    _hasFired;
