@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -14,6 +13,13 @@ public class SwordBehaviour : WeaponBehaviourBase
 
     [Header("Hitbox")]
     [SerializeField] private Collider2D _hitboxCollider;
+    [SerializeField] private SwordHitbox _swordHitbox;
+
+    [Header("Hitbox Size Per Combo")]
+    [Tooltip("1,2타용 히트박스 크기 (BoxCollider2D 기준)")]
+    [SerializeField] private Vector2 _normalHitboxSize = new Vector2(1.6f, 1.0f);
+    [Tooltip("3타용 히트박스 크기 (더 넓은 범위)")]
+    [SerializeField] private Vector2 _finisherHitboxSize = new Vector2(2.2f, 1.4f);
 
     [Header("Bash Effect")]
     [Tooltip("검 스프라이트의 SpriteRenderer (강타 발동 시 붉은 블룸 색조 적용)")]
@@ -139,6 +145,10 @@ public class SwordBehaviour : WeaponBehaviourBase
             _vfxAnimator.transform.localEulerAngles = Vector3.zero;
         }
 
+        // 이동 중 공격 시 히트박스 위치 동기화 (AutoSyncTransforms=0 환경)
+        if (IsAttacking && _hitboxCollider != null && _hitboxCollider.enabled)
+            Physics2D.SyncTransforms();
+
         // 강타 스택 변화 감지 및 비주얼 효과 동기화
         SyncBashEffect();
 
@@ -238,11 +248,19 @@ public class SwordBehaviour : WeaponBehaviourBase
         transform.localScale = new Vector3(
             _restLocalScale.x, _restLocalScale.y * flipY, _restLocalScale.z);
 
+        // 히트박스 크기 조절 및 활성화
+        if (_hitboxCollider is BoxCollider2D box)
+            box.size = (comboStep >= 3) ? _finisherHitboxSize : _normalHitboxSize;
+
+        if (_swordHitbox != null) _swordHitbox.ResetSwingHits();
+        if (_hitboxCollider != null) _hitboxCollider.enabled = true;
+        Physics2D.SyncTransforms();
+
         // 공격 속도 연동 (StatSystem 반영)
         float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
         if (speed <= 0) speed = 1f;
 
-        _weaponAnimator.ResetTrigger("Attack"); // 버퍼 방지 (1번 클릭에 2번 나가는 버그 수정)
+        _weaponAnimator.ResetTrigger("Attack");
         _weaponAnimator.speed = speed;
         _weaponAnimator.SetTrigger("Attack");
 
@@ -256,44 +274,35 @@ public class SwordBehaviour : WeaponBehaviourBase
 
     public override bool PollFinished(float attackStartTime)
     {
-        // 첫 0.05초는 Play() 호출 직후 상태가 갱신되지 않아 오탐이 생길 수 있으므로 대기
-        if (Time.time - attackStartTime < 0.05f) return false;
+        float elapsed = Time.time - attackStartTime;
+        if (elapsed < 0.05f) return false;
 
-        AnimatorStateInfo info = _weaponAnimator.GetCurrentAnimatorStateInfo(0);
-
-        // 애니메이션 1/4 지점에서 히트박스 1프레임 활성화
-        if (info.IsName("Attack") && info.normalizedTime >= 0.25f && !_hitboxFired)
+        float orbitDuration;
+        switch (CurrentComboStep)
         {
-            _hitboxFired = true;
-            if (_hitboxCollider != null)
-            {
-                _hitboxCollider.enabled = true;
-                StartCoroutine(DisableHitboxNextPhysicsUpdate());
-            }
+            case 1:  orbitDuration = 0.35f / 1.0f; break;
+            case 2:  orbitDuration = 0.45f / 1.0f; break;
+            default: orbitDuration = 0.40f / (1.0f * 0.8f); break;
         }
 
-        // 95% 이상 재생 시 즉시 Idle로 강제 전환 (전이 딜레이 없애기)
-        if (!info.IsName("Attack") || info.normalizedTime >= 0.95f)
+        float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
+        if (speed > 0f) orbitDuration /= speed;
+
+        if (elapsed >= orbitDuration)
         {
             IsAttacking = false;
-            
-            _weaponAnimator.ResetTrigger("Attack"); // 공격 종료 시 버퍼 초기화
-            
-            if (info.IsName("Attack"))
+            if (_hitboxCollider != null) _hitboxCollider.enabled = false;
+
+            _weaponAnimator.ResetTrigger("Attack");
+            _weaponAnimator.Play("Idle", 0, 0f);
+
+            if (_vfxAnimator != null)
             {
-                _weaponAnimator.Play("Idle", 0, 0f);
-                // 강타 활성 중이면 BashIdle로, 아니면 Idle로 복귀
-                if (_vfxAnimator != null)
-                {
-                    string vfxState = _bashEffectActive && !string.IsNullOrEmpty(_bashVfxStateName)
-                        ? _bashVfxStateName : "Idle";
-                    if (!_vfxAnimator.HasState(0, Animator.StringToHash(vfxState))) vfxState = "Idle";
-                    _vfxAnimator.Play(vfxState, 0, 0f);
-                }
+                string vfxState = _bashEffectActive && !string.IsNullOrEmpty(_bashVfxStateName)
+                    ? _bashVfxStateName : "Idle";
+                if (!_vfxAnimator.HasState(0, Animator.StringToHash(vfxState))) vfxState = "Idle";
+                _vfxAnimator.Play(vfxState, 0, 0f);
             }
-            // Idle 전환 직후 animation 커브 갱신 전에 rotation·scale을 리셋.
-            // Idle 전환 시 즉시 리셋 제거 (FloatingWeaponMotion에서 처리)
-            // ResetChildTransforms();
             return true;
         }
         return false;
@@ -303,21 +312,11 @@ public class SwordBehaviour : WeaponBehaviourBase
     {
         IsAttacking  = false;
         _hitboxFired = false;
-        StopAllCoroutines();
 
-        // transform.localScale = _restLocalScale; // 즉시 리셋 제거
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
         if (_weaponAnimator  != null) _weaponAnimator.Play("Idle", 0, 0f);
         if (_vfxAnimator     != null) _vfxAnimator.Play("Idle", 0, 0f);
 
         ApplyBashVisual(false);
-    }
-
-    // 물리 사이클 2회 후 히트박스 비활성화 (1 physics frame 온전히 보장)
-    private IEnumerator DisableHitboxNextPhysicsUpdate()
-    {
-        yield return new WaitForFixedUpdate();
-        yield return new WaitForFixedUpdate();
-        if (_hitboxCollider != null) _hitboxCollider.enabled = false;
     }
 }

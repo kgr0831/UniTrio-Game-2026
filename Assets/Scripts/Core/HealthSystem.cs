@@ -13,7 +13,7 @@ public sealed class HealthSystem : MonoBehaviour
 
     [Header("Hit Flash (SpriteGlow Shader)")]
     [Tooltip("피격 플래시가 유지되는 시간 (초)")]
-    [SerializeField] private float _flashDuration = 0.15f;
+    [SerializeField] private float _flashDuration = 0.75f;
 
     // Inspector(Normal 모드)에서 실시간 HP / 생존 여부 확인용
     [SerializeField] private float _currentHealth;
@@ -88,6 +88,13 @@ public sealed class HealthSystem : MonoBehaviour
 
         if (_currentHealth <= 0f)
             OnDied?.Invoke();
+    }
+
+    /// <summary>현재 점멸 타이머를 외부에서 덮어씌웁니다. 스턴 시간과 동기화할 때 사용.</summary>
+    public void OverrideFlashTimer(float duration)
+    {
+        SetFlashShader(1f);
+        _flashTimer = duration;
     }
 
     public void Heal(float amount)

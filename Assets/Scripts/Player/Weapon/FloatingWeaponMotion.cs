@@ -27,7 +27,7 @@ public class FloatingWeaponMotion : MonoBehaviour
     [SerializeField] private float _slashDistance = -0.1f; // 검과 플레이어의 거리 (인스펙터에서 조절 가능)
     [SerializeField] private float _slashScale = 1.2f;    // 검의 크기 (인스펙터에서 조절 가능)
     [SerializeField] private float _slashEasePower = 4.0f; // 비선형 감속 강도 (빠르게 벤 후 점점 느려짐)
-    [SerializeField] private float _attackSpeedMultiplier = 2.0f; // 공격 속도 배율 (2.0 = 2배 빠름)
+    [SerializeField] private float _attackSpeedMultiplier = 1.0f;
 
     private WeaponBehaviourBase _weapon;
     
@@ -66,7 +66,8 @@ public class FloatingWeaponMotion : MonoBehaviour
     private Vector3 _lastGhostLocalPos;
     private SpriteRenderer _mainSpriteRenderer;
     private System.Collections.Generic.Queue<SpriteRenderer> _ghostPool = new System.Collections.Generic.Queue<SpriteRenderer>();
-    private bool _isFadingOut = false; // 사라지는 중인지 여부
+    private System.Collections.Generic.List<SpriteRenderer> _activeGhosts = new System.Collections.Generic.List<SpriteRenderer>();
+    private bool _isFadingOut = false;
 
     private void Awake()
     {
@@ -119,9 +120,10 @@ public class FloatingWeaponMotion : MonoBehaviour
                 {
                     Material energyMat = new Material(glowShader);
                     energyMat.EnableKeyword("_USE_OUTLINE_GLOW");
-                    energyMat.SetColor("_GlowColor", auraColor * 1.5f); 
-                    energyMat.SetFloat("_GlowIntensity", 2.0f); 
+                    energyMat.SetColor("_GlowColor", auraColor * 1.5f);
+                    energyMat.SetFloat("_GlowIntensity", 2.0f);
                     energyMat.SetFloat("_OutlineWidth", 1.5f);
+                    energyMat.SetFloat("_InteriorAlpha", 0.3f);
                     r.material = energyMat;
                 }
 
@@ -212,11 +214,12 @@ public class FloatingWeaponMotion : MonoBehaviour
         ghost.sprite = _mainSpriteRenderer.sprite;
         ghost.transform.position = position;
         ghost.transform.rotation = rotation;
-        
+
         ghost.transform.localScale = _mainSpriteRenderer.transform.lossyScale;
         ghost.flipX = _mainSpriteRenderer.flipX;
         ghost.flipY = _mainSpriteRenderer.flipY;
 
+        _activeGhosts.Add(ghost);
         StartCoroutine(FadeGhostCoroutine(ghost));
     }
 
@@ -242,6 +245,7 @@ public class FloatingWeaponMotion : MonoBehaviour
         }
 
         ghost.gameObject.SetActive(false);
+        _activeGhosts.Remove(ghost);
         _ghostPool.Enqueue(ghost);
     }
 
@@ -253,7 +257,8 @@ public class FloatingWeaponMotion : MonoBehaviour
         particleObj.transform.position = _mainSpriteRenderer.transform.position;
         particleObj.transform.rotation = _mainSpriteRenderer.transform.rotation;
         ParticleSystem ps = particleObj.AddComponent<ParticleSystem>();
-        
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
         var main = ps.main;
         main.duration = 1.0f;
         main.loop = false;
@@ -347,6 +352,18 @@ public class FloatingWeaponMotion : MonoBehaviour
                     _renderers[i].color = _originalColors[i];
             }
         }
+
+        // 잔상 즉시 제거
+        StopAllCoroutines();
+        for (int i = _activeGhosts.Count - 1; i >= 0; i--)
+        {
+            if (_activeGhosts[i] != null)
+            {
+                _activeGhosts[i].gameObject.SetActive(false);
+                _ghostPool.Enqueue(_activeGhosts[i]);
+            }
+        }
+        _activeGhosts.Clear();
     }
 
     // 다단계 공격 모션 상태

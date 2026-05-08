@@ -345,8 +345,10 @@ public class PlayerWeaponController : MonoBehaviour
             if (_activeBehaviour.WeaponType == WeaponType.Sword || _activeBehaviour.WeaponType == WeaponType.Spear)
             {
                 float maxDist = (_activeBehaviour.WeaponType == WeaponType.Spear) ? 3.5f : 2.5f;
-                float targetDist = Mathf.Min(_cursorDistance, maxDist);
-                
+                float targetDist = (_activeBehaviour.WeaponType == WeaponType.Sword)
+                    ? maxDist
+                    : Mathf.Min(_cursorDistance, maxDist);
+
                 float weaponLengthOffset = (_activeBehaviour.WeaponType == WeaponType.Spear) ? 1.5f : 0.8f;
                 float finalDist = Mathf.Max(1.0f, targetDist - weaponLengthOffset); 
                 
@@ -360,6 +362,14 @@ public class PlayerWeaponController : MonoBehaviour
             // LockRotationDuringAttack 무기는 BeginAttack 이후 UpdateCursorDirection이 early return하므로
             // 공격 시작 직전에 콤보 flip scale을 미리 세팅합니다.
             ApplyAttackStartScale(_comboStep);
+
+            // 공격 시 커서 방향으로 순간 이동
+            if (_activeBehaviour.WeaponType == WeaponType.Sword)
+            {
+                var pm = GetComponent<PlayerMovement>();
+                if (pm != null)
+                    transform.position += (Vector3)(pm.FacingDirection * 0.3f);
+            }
 
             // 공격 시 무기 오브젝트 활성화 보장 (페이드 아웃으로 꺼졌을 수 있음)
             _activeBehaviour.gameObject.SetActive(true);

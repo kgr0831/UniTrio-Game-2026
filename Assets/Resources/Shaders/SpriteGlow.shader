@@ -10,7 +10,8 @@ Shader "Custom/SpriteGlow"
         [HDR] _GlowColor ("Glow Color", Color) = (1, 1, 1, 1)
         _GlowIntensity ("Glow Intensity", Float) = 1.0
         _OutlineWidth ("Outline Width (pixels)", Float) = 2.0
-        
+        _InteriorAlpha ("Interior Alpha (Outline Mode)", Range(0, 1)) = 0.3
+
         [Toggle(_USE_MAIN_ALPHA_AS_GLOW)] _UseMainAlphaAsGlow ("Use Whole Sprite Glow", Float) = 0
         [Toggle(_USE_OUTLINE_GLOW)] _UseOutlineGlow ("Use Outline Glow Only", Float) = 0
 
@@ -53,6 +54,7 @@ Shader "Custom/SpriteGlow"
                 fixed4 _GlowColor;
                 float _GlowIntensity;
                 float _OutlineWidth;
+                float _InteriorAlpha;
             CBUFFER_END
 
             sampler2D _EmissionTex;
@@ -132,16 +134,22 @@ Shader "Custom/SpriteGlow"
 
                 // 렌더러 알파가 0이면 글로우도 사라지도록 (공격 후 투명화 대응)
                 mask *= IN.color.a;
-                
+
+                #if defined(_USE_OUTLINE_GLOW)
+                    // 내부 픽셀을 반투명하게 (외곽선만 빛나고 내부는 투과)
+                    float interiorFactor = saturate(1.0 - mask * 2.0);
+                    c.a *= lerp(1.0, _InteriorAlpha, interiorFactor * centerAlpha);
+                #endif
+
                 // 3. 글로우 연산
                 float3 glow = _GlowColor.rgb * _GlowIntensity * mask;
-                
+
                 // 4. 알파 프리멀티플라이
                 c.rgb *= c.a;
-                
+
                 // 5. 글로우 더하기
                 c.rgb += glow;
-                
+
                 // 6. 투명도 보정 (글로우가 있다면 그 부분은 보이게 함)
                 c.a = saturate(c.a + (mask * _GlowIntensity * 0.1));
 
