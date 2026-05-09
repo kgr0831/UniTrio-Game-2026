@@ -108,17 +108,18 @@ public class InventoryToggle : MonoBehaviour
     }
 
     /// <summary>
-    /// Bonfire 상호작용 시 호출: 인벤토리 + Bonfire 패널을 함께 엽니다.
+    /// Bonfire 상호작용 시 호출: Bonfire 패널만 엽니다. (인벤토리 미표시)
     /// timeScale은 0으로 설정하되, 조리 타이머는 unscaledDeltaTime으로 동작합니다.
     /// </summary>
     public void OpenBonfirePanel()
     {
         _isBonfireMode = true;
 
-        if (_inventoryPanel != null) _inventoryPanel.SetActive(true);
+        // Bonfire 패널만 표시 — 인벤토리는 열지 않음 (스크롤뷰 재료 목록으로 대체)
         if (_bonfirePanel != null) _bonfirePanel.SetActive(true);
 
         // 다른 패널은 닫기
+        if (_inventoryPanel != null) _inventoryPanel.SetActive(false);
         if (_skillTreePanel != null) _skillTreePanel.SetActive(false);
         if (_recipePanel != null) _recipePanel.SetActive(false);
 

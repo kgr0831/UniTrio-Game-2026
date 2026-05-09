@@ -17,4 +17,5 @@ MonoBehaviour:
   Description: "\uB098\uBB34\uB97C \uCEA4\uB2E4."
   Type: 0
   Icon: {fileID: -1650188191, guid: ae01861b401907c4f803fea4c08d0a55, type: 3}
-  IngredientList: []
+  DropPrefab: {fileID: 1090004806173101068, guid: 0834724ef0712ff46be3c6f719b58f27, type: 3}
+  FuelCategory: 1

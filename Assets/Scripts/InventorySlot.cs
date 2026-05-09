@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems; // UI 이벤트를 처리하기 위한 필수 임포트
 
-public enum SlotType { Inventory, QuickSlot, SubWeaponSlot, SkillTreeNode, BonfireInput, BonfireOutput }
+public enum SlotType { Inventory, QuickSlot, SubWeaponSlot, SkillTreeNode }
 
 public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler {
     [Header("Slot Settings")]
@@ -107,26 +107,8 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
         if (currentData == null) return;
 
-        // BonfireInput은 조리 중일 때 드래그 불가
-        if (slotType == SlotType.BonfireInput)
-        {
-            BonfireInteractable bonfire = BonfireUIPanel.Instance?.GetCurrentBonfire();
-            if (bonfire != null && bonfire.IsCooking) return;
-        }
-
-        // ★ StartDrag를 먼저 호출하여 데이터를 DragManager에 캐싱.
-        // OnOutputSlotItemTaken()이 이벤트 체인으로 RefreshSlot(null,0)을 
-        // 호출하기 때문에, 순서가 바뀌면 currentData가 null이 되어 데이터가 소실됨.
+        // StartDrag를 먼저 호출하여 데이터를 DragManager에 캐싱
         DragManager.Instance.StartDrag(currentData, currentCount, this, iconImage.sprite);
-
-        // BonfireOutput 전용: 드래그 시작 후 Bonfire 영속 데이터 동기화
-        if (slotType == SlotType.BonfireOutput)
-        {
-            if (BonfireUIPanel.Instance != null)
-            {
-                BonfireUIPanel.Instance.OnOutputSlotItemTaken();
-            }
-        }
 
         // 드래그 중 원본 아이콘 숨기기 (이동 느낌)
         if (slotType == SlotType.SkillTreeNode) {
@@ -146,16 +128,6 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         // 드롭이 성공하지 않았으면 원래 슬롯 복원
         if (!dm.dragConsumed && dm.startSlot != null) {
             dm.startSlot.RefreshSlot(dm.draggingData, dm.draggingCount);
-
-            // BonfireOutput에서 드래그 실패 시 Bonfire 데이터도 복원
-            if (dm.startSlot.slotType == SlotType.BonfireOutput && BonfireUIPanel.Instance != null)
-            {
-                BonfireInteractable bonfire = BonfireUIPanel.Instance.GetCurrentBonfire();
-                if (bonfire != null)
-                {
-                    bonfire.SetOutput(dm.draggingData, dm.draggingCount);
-                }
-            }
         }
         dm.EndDrag();
     }
@@ -205,14 +177,7 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
             dm.dragConsumed = true;
 
             if (fromSlot.slotType != SlotType.SkillTreeNode) {
-                if (fromSlot.slotType == SlotType.BonfireOutput)
-                {
-                    fromSlot.RefreshSlot(null, 0);
-                }
-                else
-                {
-                    fromSlot.RefreshSlot(myOldData, myOldCount);
-                }
+                fromSlot.RefreshSlot(myOldData, myOldCount);
             }
         }
         // 2. 내가 퀵슬롯일 때
@@ -283,54 +248,5 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
                 fromSlot.RefreshSlot(null, 0);
             }
         }
-        // 5. 내가 Bonfire 입력 슬롯일 때
-        else if (this.slotType == SlotType.BonfireInput)
-        {
-            // ConsumableData이면서 CookMethod가 Bonfire인 아이템만 수락
-            ConsumableData foodData = draggedData as ConsumableData;
-            if (foodData == null || foodData.CookMethod != CookingMethod.Bonfire)
-            {
-                if (NotificationUI.Instance != null)
-                    NotificationUI.Instance.ShowMessage("이 아이템은 조리할 수 없습니다!");
-                return;
-            }
-
-            // 조리 중이면 드롭 불가
-            BonfireInteractable bonfire = BonfireUIPanel.Instance?.GetCurrentBonfire();
-            if (bonfire != null && bonfire.IsCooking)
-            {
-                if (NotificationUI.Instance != null)
-                    NotificationUI.Instance.ShowMessage("조리 중입니다! 잠시 기다려주세요.");
-                return;
-            }
-
-            // 출력 슬롯에 아이템이 있으면 동일 레시피 검증
-            if (bonfire != null && bonfire.OutputItem != null)
-            {
-                if (bonfire.OutputItem != foodData.CookedResult)
-                {
-                    if (NotificationUI.Instance != null)
-                        NotificationUI.Instance.ShowMessage("다른 종류의 음식이 남아있습니다!");
-                    return;
-                }
-            }
-
-            // 전체 스택을 Bonfire에 투입 (1개씩 자동 연속 조리)
-            fromSlot.RefreshSlot(null, 0);
-            dm.dragConsumed = true;
-
-            // BonfireUIPanel에 전체 스택 전달
-            if (BonfireUIPanel.Instance != null)
-            {
-                BonfireUIPanel.Instance.OnInputSlotItemPlaced(foodData, dm.draggingCount);
-            }
-        }
-        // 6. 내가 Bonfire 출력 슬롯일 때 — 외부에서 드롭 불가 (출력 전용)
-        else if (this.slotType == SlotType.BonfireOutput)
-        {
-            if (NotificationUI.Instance != null)
-                NotificationUI.Instance.ShowMessage("이 슬롯은 조리 결과 전용입니다!");
-        }
     }
 }
-
