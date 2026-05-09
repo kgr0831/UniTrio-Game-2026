@@ -5042,6 +5042,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 31fd5cad0848ba440a2cd985ed671164, type: 2}
   - {fileID: 11400000, guid: 3530591954fc6b9459cc46c4d1d34df0, type: 2}
   - {fileID: 11400000, guid: 493564b09d3b8354ba3da56c0b7128b3, type: 2}
+  - {fileID: 11400000, guid: aa2641e21cd62524d9839f8192879877, type: 2}
   starterItems:
   - {fileID: 11400000, guid: 5e28b4ed79e1dc94886f9456db601730, type: 2}
 --- !u!1001 &81941217
