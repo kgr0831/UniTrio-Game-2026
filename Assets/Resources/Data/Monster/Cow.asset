@@ -30,7 +30,7 @@ MonoBehaviour:
     CircleRadius: 0
   DetectionRadius: 6
   DropTable:
-  - Item: {fileID: 11400000, guid: 33176ec2eee744f4c888bc70de0d3f8e, type: 2}
+  - Item: {fileID: 11400000, guid: f4a50b4681c994748a7fe864cfda06af, type: 2}
     DropChance: 1
     MaxCount: 3
     CountWeights:

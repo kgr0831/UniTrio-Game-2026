@@ -17,6 +17,13 @@ public class InventoryToggle : MonoBehaviour
     [SerializeField] private GameObject _skillTreePanel;
     [SerializeField] private GameObject _recipePanel;
 
+    [Header("Bonfire")]
+    [Tooltip("Bonfire 조리 패널 (BonfireUIPanel이 부착된 오브젝트)")]
+    [SerializeField] private GameObject _bonfirePanel;
+
+    // Bonfire 패널이 열려있는지 추적 (ESC로 닫을 때 BonfireUIPanel.Close()도 호출)
+    private bool _isBonfireMode;
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -28,13 +35,15 @@ public class InventoryToggle : MonoBehaviour
         if (_inventoryPanel != null) _inventoryPanel.SetActive(false);
         if (_skillTreePanel != null) _skillTreePanel.SetActive(false);
         if (_recipePanel != null) _recipePanel.SetActive(false);
+        if (_bonfirePanel != null) _bonfirePanel.SetActive(false);
     }
 
     public bool IsAnyPanelOpen()
     {
         return (_inventoryPanel != null && _inventoryPanel.activeSelf) || 
                (_skillTreePanel != null && _skillTreePanel.activeSelf) ||
-               (_recipePanel != null && _recipePanel.activeSelf);
+               (_recipePanel != null && _recipePanel.activeSelf) ||
+               (_bonfirePanel != null && _bonfirePanel.activeSelf);
     }
 
     private void Update()
@@ -48,6 +57,9 @@ public class InventoryToggle : MonoBehaviour
                 return;
             }
         }
+
+        // Bonfire 모드에서는 I/Q/K 키 입력을 차단 (Bonfire UI만 조작 가능)
+        if (_isBonfireMode) return;
 
         // I키: 토글
         if (Input.GetKeyDown(_toggleKey))
@@ -95,11 +107,37 @@ public class InventoryToggle : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Bonfire 상호작용 시 호출: 인벤토리 + Bonfire 패널을 함께 엽니다.
+    /// timeScale은 0으로 설정하되, 조리 타이머는 unscaledDeltaTime으로 동작합니다.
+    /// </summary>
+    public void OpenBonfirePanel()
+    {
+        _isBonfireMode = true;
+
+        if (_inventoryPanel != null) _inventoryPanel.SetActive(true);
+        if (_bonfirePanel != null) _bonfirePanel.SetActive(true);
+
+        // 다른 패널은 닫기
+        if (_skillTreePanel != null) _skillTreePanel.SetActive(false);
+        if (_recipePanel != null) _recipePanel.SetActive(false);
+
+        SetPaused(true);
+    }
+
     private void CloseAllPanels()
     {
+        // Bonfire 모드였다면 BonfireUIPanel.Close() 호출하여 정리
+        if (_isBonfireMode && BonfireUIPanel.Instance != null)
+        {
+            BonfireUIPanel.Instance.Close();
+            _isBonfireMode = false;
+        }
+
         if (_inventoryPanel != null) _inventoryPanel.SetActive(false);
         if (_skillTreePanel != null) _skillTreePanel.SetActive(false);
         if (_recipePanel != null) _recipePanel.SetActive(false);
+        if (_bonfirePanel != null) _bonfirePanel.SetActive(false);
         SetPaused(false);
     }
 

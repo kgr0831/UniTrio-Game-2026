@@ -23,6 +23,9 @@ public class Item
 
     // 무기 정보 조회용 프로퍼티 (캐스팅 편의성)
     public WeaponData WeaponInfo => Data as WeaponData;
+
+    // 소모품/음식 정보 조회용 프로퍼티
+    public ConsumableData ConsumableInfo => Data as ConsumableData;
 }
 
 [System.Serializable]
