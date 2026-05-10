@@ -11,7 +11,7 @@ public sealed class HealthSystem : MonoBehaviour
     [Header("Health")]
     [SerializeField] private float _maxHp = 10f;
 
-    [Header("Hit Flash (SpriteGlow Shader)")]
+    [Header("Hit Flash")]
     [Tooltip("피격 플래시가 유지되는 시간 (초)")]
     [SerializeField] private float _flashDuration = 0.75f;
 

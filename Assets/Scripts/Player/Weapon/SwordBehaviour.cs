@@ -107,11 +107,11 @@ public class SwordBehaviour : WeaponBehaviourBase
         _bashTrail.startWidth = 1.0f;
         _bashTrail.endWidth = 0.0f;
         
-        Material glowMat = new Material(Shader.Find("Custom/SpriteGlow"));
-        glowMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-        glowMat.SetFloat("_GlowIntensity", 4f);
-        glowMat.SetColor("_GlowColor", _bashSwordColor);
-        _bashTrail.material = glowMat;
+        Material vfxMat = new Material(Shader.Find("Custom/VFXLit2D"));
+        vfxMat.SetFloat("_EmissionIntensity", 4f);
+        vfxMat.SetColor("_EmissionColor", _bashSwordColor);
+        vfxMat.SetFloat("_LightInfluence", 0.3f);
+        _bashTrail.material = vfxMat;
         
         _bashTrail.sortingLayerName = "Weapons";
         _bashTrail.sortingOrder = 5;
@@ -208,6 +208,12 @@ public class SwordBehaviour : WeaponBehaviourBase
             if (_vfxAnimator.HasState(0, Animator.StringToHash(state)))
                 _vfxAnimator.Play(state, 0, 0f);
         }
+    }
+
+    public override void SetWeaponSprite(Sprite sprite)
+    {
+        if (_swordRenderer != null && sprite != null)
+            _swordRenderer.sprite = sprite;
     }
 
     /// <summary>BashSkillData.Execute()에서 호출 — 강타 효과를 즉시 활성화합니다.</summary>

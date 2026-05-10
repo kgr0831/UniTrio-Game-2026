@@ -104,10 +104,10 @@ public class SwordHitbox : MonoBehaviour
         bashVfxObj.transform.position = hitPoint;
         Destroy(bashVfxObj, 2f);
 
-        Material glowMat = new Material(Shader.Find("Custom/SpriteGlow"));
-        glowMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-        glowMat.SetFloat("_GlowIntensity", 4f);
-        glowMat.SetColor("_GlowColor", new Color(1f, 0.2f, 0.1f, 1f));
+        Material glowMat = new Material(Shader.Find("Custom/VFXLit2D"));
+        glowMat.SetFloat("_EmissionIntensity", 4f);
+        glowMat.SetColor("_EmissionColor", new Color(1f, 0.2f, 0.1f, 1f));
+        glowMat.SetFloat("_LightInfluence", 0.3f);
 
         // 1. Shockwave (원형 충격파)
         GameObject shockObj = new GameObject("Shockwave");

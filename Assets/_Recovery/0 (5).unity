@@ -5042,7 +5042,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 31fd5cad0848ba440a2cd985ed671164, type: 2}
   - {fileID: 11400000, guid: 3530591954fc6b9459cc46c4d1d34df0, type: 2}
   - {fileID: 11400000, guid: 493564b09d3b8354ba3da56c0b7128b3, type: 2}
-  - {fileID: 11400000, guid: aa2641e21cd62524d9839f8192879877, type: 2}
   starterItems:
   - {fileID: 11400000, guid: 5e28b4ed79e1dc94886f9456db601730, type: 2}
 --- !u!1001 &81941217
@@ -5688,7 +5687,7 @@ Camera:
   far clip plane: 1000
   field of view: 90
   orthographic: 0
-  orthographic size: 5.625
+  orthographic size: 2.8125
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -5830,8 +5829,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.2D.Runtime::UnityEngine.Rendering.Universal.PixelPerfectCamera
   m_ComponentVersion: 1
   m_AssetsPPU: 32
-  m_RefResolutionX: 640
-  m_RefResolutionY: 360
+  m_RefResolutionX: 320
+  m_RefResolutionY: 180
   m_CropFrame: 0
   m_GridSnapping: 2
   m_FilterMode: 0
@@ -12013,8 +12012,8 @@ Light:
   serializedVersion: 12
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 5
-  m_Range: 8
+  m_Intensity: 8
+  m_Range: 20
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
   m_CookieSize2D: {x: 0.5, y: 0.5}
@@ -12076,7 +12075,7 @@ Transform:
   m_GameObject: {fileID: 723182354}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4, y: 1, z: -1.9999999}
+  m_LocalPosition: {x: -4, y: 1, z: -2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -13652,18 +13651,6 @@ PrefabInstance:
       propertyPath: _karmaNotifyText
       value: 
       objectReference: {fileID: 424394687}
-    - target: {fileID: 4469310113847408289, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
-      propertyPath: m_Offset.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4469310113847408289, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
-      propertyPath: m_Offset.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7082405819502004036, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
-      propertyPath: _spriteRotationZ
-      value: 45
-      objectReference: {fileID: 0}
     - target: {fileID: 8068621033325971706, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
       propertyPath: _primarySlot
       value: 

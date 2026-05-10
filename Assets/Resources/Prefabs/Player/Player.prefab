@@ -326,12 +326,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpearBehaviour
   _weaponAnimator: {fileID: 1478792732590329935}
-  _vfxAnimator: {fileID: 8294688094704253741}
+  _spriteRotationZ: 135
   _hitboxCollider: {fileID: 4469310113847408289}
+  _spearHitbox: {fileID: 0}
   _spearRenderer: {fileID: 0}
   _bashSpearColor: {r: 1.5, g: 0.1, b: 0.1, a: 1}
   _orbitRadius: -0.354
   _useGoBehind: 1
+  _thrustDuration: 0.3
 --- !u!1 &3414513390060974718
 GameObject:
   m_ObjectHideFlags: 0
