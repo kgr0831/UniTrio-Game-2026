@@ -15,7 +15,6 @@ public class BuildingPlacementController : MonoBehaviour
     [SerializeField] private Transform _playerTransform;
 
     private PlayerStateManager _stateManager;
-    private WeaponSlotManager _weaponSlotManager;
     private BuildingData _currentBuildingData;
     
     private GameObject _ghostPreview;
@@ -34,7 +33,6 @@ public class BuildingPlacementController : MonoBehaviour
         if (_playerTransform == null) _playerTransform = transform;
         
         _stateManager = GetComponent<PlayerStateManager>();
-        _weaponSlotManager = GetComponent<WeaponSlotManager>();
 
         InitializeHighlights();
     }
@@ -248,11 +246,7 @@ public class BuildingPlacementController : MonoBehaviour
         Debug.Log("[Building] 우클릭 - 건축 모드 취소");
         SetBuildingData(null);
         _stateManager.SetMode(PlayerMode.Combat);
-        
-        if (_weaponSlotManager != null)
-        {
-            _weaponSlotManager.SyncWeaponWithActiveSlot();
-        }
+        // 무기 재장착은 퀵슬롯 키 입력으로 수행 (WeaponSlotManager 의존 제거)
     }
 
     /// <summary>

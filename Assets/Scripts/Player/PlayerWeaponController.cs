@@ -85,7 +85,7 @@ public class PlayerWeaponController : MonoBehaviour
 
     /// <summary>
     /// 무기 장착 요청. 공격 중이면 큐에 저장해 공격 종료 직후 실행합니다.
-    /// WeaponSlotManager(E키), HandleWeaponSwitch(숫자키) 양쪽에서 호출됩니다.
+    /// QuickSlotManager(숫자키)에서 호출됩니다.
     /// </summary>
     public void TryEquipWeapon(int index)
     {

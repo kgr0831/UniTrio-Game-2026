@@ -3,7 +3,12 @@ using UnityEngine;
 public class QuickSlotManager : MonoBehaviour
 {
     // 인스펙터에서 하이어라키에 있는 8개 슬롯을 순서대로 드래그해서 넣으세요.
+    // 이 슬롯들은 인게임 QuickSlotPanel의 퀵슬롯입니다.
     public InventorySlot[] quickSlots; 
+
+    [Header("Inventory Hotbar Mirror")]
+    [Tooltip("인벤토리 패널 내 HotbarObject의 8개 슬롯 (미러 동기화 대상)")]
+    [SerializeField] private InventorySlot[] _inventoryHotbarSlots;
 
     [Header("Player References")]
     [SerializeField] private StatSystem _stats;
@@ -13,11 +18,20 @@ public class QuickSlotManager : MonoBehaviour
     private float[] _cooldowns;
     private float[] _cooldownMaxes;
 
+    // 현재 무기가 장착된 퀵슬롯 인덱스 (-1 = 무기 미장착)
+    private int _activeWeaponSlotIndex = -1;
+
     // ── 차징 스킬 상태 추적 ──────────────────────────────────────
     private int            _chargingSlotIndex = -1;
     private BowBehaviour   _chargingBow;
     private float          _chargingCooldown;
     private float          _chargingMaxCooldown;
+
+    // ── 핫바 미러 동기화용 캐싱 (GC 방지, 폴링 기반) ──────────────
+    private ItemData[] _lastQuickSlotData;
+    private int[]      _lastQuickSlotCounts;
+    private ItemData[] _lastHotbarData;
+    private int[]      _lastHotbarCounts;
 
     private void Start()
     {
@@ -31,6 +45,16 @@ public class QuickSlotManager : MonoBehaviour
         {
             _cooldowns = new float[quickSlots.Length];
             _cooldownMaxes = new float[quickSlots.Length];
+
+            // 미러 동기화용 캐시 배열 초기화
+            _lastQuickSlotData   = new ItemData[quickSlots.Length];
+            _lastQuickSlotCounts = new int[quickSlots.Length];
+        }
+
+        if (_inventoryHotbarSlots != null && _inventoryHotbarSlots.Length > 0)
+        {
+            _lastHotbarData   = new ItemData[_inventoryHotbarSlots.Length];
+            _lastHotbarCounts = new int[_inventoryHotbarSlots.Length];
         }
     }
 
@@ -46,65 +70,83 @@ public class QuickSlotManager : MonoBehaviour
 
     void Update()
     {
-        if (_cooldowns != null)
-        {
-            for (int i = 0; i < _cooldowns.Length; i++)
-            {
-                if (_cooldowns[i] > 0f)
-                {
-                    _cooldowns[i] -= Time.deltaTime;
-                    if (_cooldowns[i] < 0f) _cooldowns[i] = 0f;
-                }
+        UpdateCooldowns();
+        HandleChargingRelease();
+        HandleQuickSlotInput();
+    }
 
-                // 쿨다운 오버레이 업데이트
-                if (i < quickSlots.Length && quickSlots[i] != null && quickSlots[i].cooldownOverlay != null)
+    private void LateUpdate()
+    {
+        // 핫바 미러 동기화 (LateUpdate에서 변경 감지 → 반대쪽 반영)
+        SyncHotbarMirror();
+    }
+
+    // ── 쿨다운 업데이트 (SRP: 쿨다운 로직만 담당) ─────────────────
+    private void UpdateCooldowns()
+    {
+        if (_cooldowns == null) return;
+
+        for (int i = 0; i < _cooldowns.Length; i++)
+        {
+            if (_cooldowns[i] > 0f)
+            {
+                _cooldowns[i] -= Time.deltaTime;
+                if (_cooldowns[i] < 0f) _cooldowns[i] = 0f;
+            }
+
+            // 쿨다운 오버레이 업데이트
+            if (i < quickSlots.Length && quickSlots[i] != null && quickSlots[i].cooldownOverlay != null)
+            {
+                if (_cooldowns[i] > 0f && _cooldownMaxes[i] > 0f)
                 {
-                    if (_cooldowns[i] > 0f && _cooldownMaxes[i] > 0f)
-                    {
-                        quickSlots[i].cooldownOverlay.enabled = true;
-                        quickSlots[i].cooldownOverlay.fillAmount = _cooldowns[i] / _cooldownMaxes[i];
-                    }
-                    else
-                    {
-                        quickSlots[i].cooldownOverlay.enabled = false;
-                    }
+                    quickSlots[i].cooldownOverlay.enabled = true;
+                    quickSlots[i].cooldownOverlay.fillAmount = _cooldowns[i] / _cooldownMaxes[i];
+                }
+                else
+                {
+                    quickSlots[i].cooldownOverlay.enabled = false;
                 }
             }
         }
+    }
 
-        // ── 차징 중 키 릴리즈 감지 ──────────────────────────────
-        if (_chargingSlotIndex >= 0)
+    // ── 차징 스킬 키 릴리즈 감지 ─────────────────────────────────
+    private void HandleChargingRelease()
+    {
+        if (_chargingSlotIndex < 0) return;
+
+        if (Input.GetKeyUp(KeyCode.Alpha1 + _chargingSlotIndex))
         {
-            if (Input.GetKeyUp(KeyCode.Alpha1 + _chargingSlotIndex))
+            // 차징 종료 → 발사
+            if (_chargingBow != null)
+                _chargingBow.ReleaseAimedShot();
+
+            // 쿨다운 적용 (발사 시점부터)
+            if (_cooldowns != null)
             {
-                // 차징 종료 → 발사
-                if (_chargingBow != null)
-                    _chargingBow.ReleaseAimedShot();
-
-                // 쿨다운 적용 (발사 시점부터)
-                if (_cooldowns != null)
-                {
-                    _cooldowns[_chargingSlotIndex]    = _chargingCooldown;
-                    _cooldownMaxes[_chargingSlotIndex] = _chargingMaxCooldown;
-                }
-
-                _chargingSlotIndex = -1;
-                _chargingBow       = null;
+                _cooldowns[_chargingSlotIndex]    = _chargingCooldown;
+                _cooldownMaxes[_chargingSlotIndex] = _chargingMaxCooldown;
             }
-            return; // 차징 중 다른 모든 입력 차단
-        }
 
-        // 1~8 키 입력 체크
+            _chargingSlotIndex = -1;
+            _chargingBow       = null;
+        }
+    }
+
+    // ── 1~8 키 입력 처리 ─────────────────────────────────────────
+    private void HandleQuickSlotInput()
+    {
+        // 차징 중 다른 모든 입력 차단
+        if (_chargingSlotIndex >= 0) return;
+
         for (int i = 0; i < quickSlots.Length; i++)
         {
             if (Input.GetKeyDown(KeyCode.Alpha1 + i))
             {
-                Debug.Log($"[QuickSlotManager] 퀵슬롯 {i+1} 입력 감지. PanelOpen 상태: {(InventoryToggle.Instance != null && InventoryToggle.Instance.IsAnyPanelOpen())}");
-                if (InventoryToggle.Instance != null && InventoryToggle.Instance.IsAnyPanelOpen()) continue; // 개별 차단
+                if (InventoryToggle.Instance != null && InventoryToggle.Instance.IsAnyPanelOpen()) continue;
 
                 if (quickSlots[i] != null && quickSlots[i].currentData != null)
                 {
-                    Debug.Log($"[QuickSlotManager] {quickSlots[i].currentData.Name} 사용 시도");
                     UseItem(quickSlots[i], i);
                 }
                 else
@@ -129,12 +171,20 @@ public class QuickSlotManager : MonoBehaviour
             if (placementController != null) placementController.SetBuildingData(null);
         }
 
-        // 1. 타입별 사용 로직 처리
-        if (data is ConsumableData consumable)
+        // ── 타입별 사용 로직 (OCP: 새 타입은 else if 추가로 확장) ──
+        if (data is WeaponData weapon)
         {
-            // 아직 Player의 회복 로직이 연결되어 있지 않으면 Debug 로그로 확인
+            // 무기 장착: PlayerWeaponController에 위임 (DIP)
+            if (_weaponController != null)
+            {
+                _weaponController.EquipWeaponByData(weapon);
+                _activeWeaponSlotIndex = slotIndex;
+                Debug.Log($"[QuickSlotManager] 무기 '{weapon.Name}' 장착 (슬롯 {slotIndex + 1})");
+            }
+        }
+        else if (data is ConsumableData consumable)
+        {
             Debug.Log($"{consumable.Name} 사용 (회복량: {consumable.HealAmount})");
-            // 소모품은 사용 후 수량 차감
             ConsumeItem(slot);
         }
         else if (data is SkillData skill)
@@ -222,23 +272,20 @@ public class QuickSlotManager : MonoBehaviour
 
         // 플레이어 GameObject 참조 (스킬 Execute에 전달)
         GameObject player = _weaponController != null ? _weaponController.gameObject : gameObject;
-        Debug.Log($"[QuickSlotManager] 스킬 시전 대상: {player.name}, StatSystem: {(player.GetComponent<StatSystem>() != null)}, PlayerWeaponController: {(player.GetComponent<PlayerWeaponController>() != null)}");
 
         // ── 차징 스킬 분기 (AimedShot 등) ──────────────────────
         if (skillData is AimedShotSkillData)
         {
-            // 차징 스킬: 마나만 소비, 쿨다운은 발사 시 적용
             _chargingSlotIndex   = slotIndex;
             _chargingCooldown    = cooldown;
             _chargingMaxCooldown = cooldown;
 
             skillData.Execute(player);
 
-            // BowBehaviour 참조 저장 (키 릴리즈 시 ReleaseAimedShot 호출용)
             if (_weaponController != null)
                 _chargingBow = _weaponController.ActiveBehaviour as BowBehaviour;
 
-            return; // 쿨다운은 ReleaseAimedShot 시 적용
+            return;
         }
 
         // 일반 스킬: 즉시 쿨다운 적용
@@ -249,7 +296,6 @@ public class QuickSlotManager : MonoBehaviour
         }
 
         // 프리팹 인스턴스화 실행 (레거시 vs SO 분기)
-        // 만약 SkillData를 상속받은 커스텀 클래스(BashSkillData 등)라면 무조건 SO의 Execute()를 우선 실행합니다.
         if (skillData.SkillPrefab != null && skillData.GetType() == typeof(SkillData))
         {
             GameObject skillObj = Instantiate(skillData.SkillPrefab, player.transform.position, Quaternion.identity);
@@ -286,6 +332,51 @@ public class QuickSlotManager : MonoBehaviour
         else
         {
             slot.RefreshSlot(slot.currentData, newCount);
+        }
+    }
+
+    // ── 핫바 미러 동기화 ──────────────────────────────────────────
+    // 인벤토리 내 HotbarObject 슬롯 ↔ 인게임 QuickSlotPanel 슬롯
+    // 한쪽이 변경되면 다른 쪽을 자동 동기화합니다.
+    // GC 방지: 캐싱된 이전 값과 비교하여 변경분만 처리.
+    private void SyncHotbarMirror()
+    {
+        if (quickSlots == null || _inventoryHotbarSlots == null) return;
+
+        int count = Mathf.Min(quickSlots.Length, _inventoryHotbarSlots.Length);
+        if (_lastQuickSlotData == null || _lastHotbarData == null) return;
+
+        for (int i = 0; i < count; i++)
+        {
+            InventorySlot qs = quickSlots[i];
+            InventorySlot hs = _inventoryHotbarSlots[i];
+
+            if (qs == null || hs == null) continue;
+
+            // QuickSlotPanel → HotbarObject 동기화
+            if (qs.currentData != _lastQuickSlotData[i] || qs.currentCount != _lastQuickSlotCounts[i])
+            {
+                hs.RefreshSlot(qs.currentData, qs.currentCount);
+                
+                // 양쪽 캐시 동시 업데이트 (순환 방지)
+                _lastQuickSlotData[i]   = qs.currentData;
+                _lastQuickSlotCounts[i] = qs.currentCount;
+                _lastHotbarData[i]      = qs.currentData;
+                _lastHotbarCounts[i]    = qs.currentCount;
+                continue;
+            }
+
+            // HotbarObject → QuickSlotPanel 동기화
+            if (hs.currentData != _lastHotbarData[i] || hs.currentCount != _lastHotbarCounts[i])
+            {
+                qs.RefreshSlot(hs.currentData, hs.currentCount);
+                
+                // 양쪽 캐시 동시 업데이트 (순환 방지)
+                _lastHotbarData[i]      = hs.currentData;
+                _lastHotbarCounts[i]    = hs.currentCount;
+                _lastQuickSlotData[i]   = hs.currentData;
+                _lastQuickSlotCounts[i] = hs.currentCount;
+            }
         }
     }
 }

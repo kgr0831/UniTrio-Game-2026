@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems; // UI 이벤트를 처리하기 위한 필수 임포트
 
-public enum SlotType { Inventory, QuickSlot, SubWeaponSlot, SkillTreeNode }
+public enum SlotType { Inventory, QuickSlot, EquipmentSlot, SkillTreeNode }
 
 public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler {
     [Header("Slot Settings")]
@@ -12,6 +12,10 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     
     public ItemData currentData;
     public int currentCount;
+
+    [Header("Equipment Slot Filter")]
+    [Tooltip("EquipmentSlot 전용: 이 슬롯에 허용되는 GadgetType")]
+    public GadgetType allowedGadgetType;
 
     [Header("Cooldown Overlay")]
     [Tooltip("퀵슬롯 전용: 쿨다운 표시용 Filled Image (Radial 360)")]
@@ -95,6 +99,9 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
                     iconImage.color = c;
                 }
                 if (countText != null) countText.enabled = false;
+            } else if (slotType == SlotType.EquipmentSlot) {
+                // 장비 슬롯은 비어있어도 자식 아이콘(placeholder)을 유지
+                if (countText != null) countText.enabled = false;
             } else {
                 if (iconImage != null) iconImage.enabled = false;
                 if (countText != null) countText.enabled = false;
@@ -143,110 +150,153 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         // 데이터가 없거나 자기 자신에게 드랍한 경우 무시
         if (draggedData == null || fromSlot == null || fromSlot == this) return;
 
-        // --- 스왑(Swap) 처리를 위한 로직 ---
+        // --- 슬롯 타입별 드롭 처리 (OCP — 새 슬롯 타입은 분기 추가만으로 확장) ---
         
         // 1. 내가 인벤토리 슬롯일 때
         if (this.slotType == SlotType.Inventory) 
         {
-            // 스킬은 인벤토리에 들어올 수 없음
-            if (draggedData is SkillData) {
-                if (NotificationUI.Instance != null) NotificationUI.Instance.ShowMessage("스킬은 인벤토리에 보관할 수 없습니다.");
-                else Debug.LogWarning("스킬은 인벤토리에 보관할 수 없습니다.");
-                return; 
-            }
-
-            ItemData myOldData = this.currentData;
-            int myOldCount = this.currentCount;
-
-            // ★ 동일 아이템 스태킹: 같은 아이템이면 수량 합산
-            if (myOldData != null && myOldData == draggedData)
-            {
-                RefreshSlot(draggedData, myOldCount + dm.draggingCount);
-                dm.dragConsumed = true;
-
-                // 출발지 슬롯 비우기 (합산했으므로)
-                if (fromSlot.slotType != SlotType.SkillTreeNode)
-                {
-                    fromSlot.RefreshSlot(null, 0);
-                }
-                return;
-            }
-
-            // 다른 아이템 → 스왑(Swap) 처리
-            RefreshSlot(draggedData, dm.draggingCount);
-            dm.dragConsumed = true;
-
-            if (fromSlot.slotType != SlotType.SkillTreeNode) {
-                fromSlot.RefreshSlot(myOldData, myOldCount);
-            }
+            HandleInventoryDrop(dm, draggedData, fromSlot);
         }
-        // 2. 내가 퀵슬롯일 때
+        // 2. 내가 퀵슬롯일 때 (무기 포함 모든 아이템 허용)
         else if (this.slotType == SlotType.QuickSlot) 
         {
-            if (draggedData is WeaponData) {
-                if (NotificationUI.Instance != null) NotificationUI.Instance.ShowMessage("무기는 퀵슬롯에 배치할 수 없습니다!");
-                else Debug.LogWarning("무기는 퀵슬롯에 배치할 수 없습니다.");
-                return;
-            }
-
-            ItemData myOldData = this.currentData;
-            int myOldCount = this.currentCount;
-
-            // 나(도착지)를 새 데이터로 갱신
-            RefreshSlot(draggedData, dm.draggingCount);
-            dm.dragConsumed = true;
-
-            // [출발지 슬롯 처리]
-            if (fromSlot.slotType != SlotType.SkillTreeNode) {
-                if (myOldData is SkillData && fromSlot.slotType == SlotType.Inventory) {
-                    fromSlot.RefreshSlot(null, 0);
-                } else {
-                    fromSlot.RefreshSlot(myOldData, myOldCount);
-                }
-            }
-            
-            Debug.Log($"{draggedData.Name}이(가) 퀵슬롯에 등록/교체되었습니다.");
+            HandleQuickSlotDrop(dm, draggedData, fromSlot);
         }
-        // 3. 내가 보조 무기 슬롯일 때
-        else if (this.slotType == SlotType.SubWeaponSlot)
+        // 3. 내가 장비 슬롯일 때 (GadgetType 필터링)
+        else if (this.slotType == SlotType.EquipmentSlot)
         {
-            // 무기만 허용
-            if (!(draggedData is WeaponData))
-            {
-                if (NotificationUI.Instance != null) NotificationUI.Instance.ShowMessage("보조 무기 슬롯에는 무기만 등록할 수 있습니다!");
-                else Debug.LogWarning("보조 무기 슬롯에는 무기만 등록할 수 있습니다!");
-                return;
-            }
-
-            ItemData myOldData = this.currentData;
-            int myOldCount = this.currentCount;
-
-            RefreshSlot(draggedData, dm.draggingCount);
-            dm.dragConsumed = true;
-
-            if (fromSlot.slotType != SlotType.SkillTreeNode)
-            {
-                fromSlot.RefreshSlot(myOldData, myOldCount);
-            }
-
-            Debug.Log($"{draggedData.Name}이(가) 보조 무기 슬롯에 장착되었습니다.");
+            HandleEquipmentSlotDrop(dm, draggedData, fromSlot);
         }
         // 4. 내가 스킬트리 노드일 때
         else if (this.slotType == SlotType.SkillTreeNode)
         {
-            if (!(draggedData is SkillData)) {
-                return; // 스킬만 허용
-            }
-            if (_originalSkillData != null && draggedData != _originalSkillData) {
-                return; // 원래 자신의 스킬만 다시 장착 가능
-            }
-            
-            RefreshSlot(draggedData, dm.draggingCount);
+            HandleSkillTreeDrop(dm, draggedData, fromSlot);
+        }
+    }
+
+    // ── 인벤토리 슬롯 드롭 처리 ──────────────────────────────────────
+    private void HandleInventoryDrop(DragManager dm, ItemData draggedData, InventorySlot fromSlot)
+    {
+        // 스킬은 인벤토리에 들어올 수 없음
+        if (draggedData is SkillData) {
+            if (NotificationUI.Instance != null) NotificationUI.Instance.ShowMessage("스킬은 인벤토리에 보관할 수 없습니다.");
+            else Debug.LogWarning("스킬은 인벤토리에 보관할 수 없습니다.");
+            return; 
+        }
+
+        ItemData myOldData = this.currentData;
+        int myOldCount = this.currentCount;
+
+        // ★ 동일 아이템 스태킹: 같은 아이템이면 수량 합산
+        if (myOldData != null && myOldData == draggedData)
+        {
+            RefreshSlot(draggedData, myOldCount + dm.draggingCount);
             dm.dragConsumed = true;
 
-            if (fromSlot.slotType != SlotType.SkillTreeNode) {
+            // 출발지 슬롯 비우기 (합산했으므로)
+            if (fromSlot.slotType != SlotType.SkillTreeNode)
+            {
                 fromSlot.RefreshSlot(null, 0);
             }
+            return;
+        }
+
+        // 다른 아이템 → 스왑(Swap) 처리
+        RefreshSlot(draggedData, dm.draggingCount);
+        dm.dragConsumed = true;
+
+        if (fromSlot.slotType != SlotType.SkillTreeNode) {
+            fromSlot.RefreshSlot(myOldData, myOldCount);
+        }
+    }
+
+    // ── 퀵슬롯 드롭 처리 (무기 포함 허용) ─────────────────────────────
+    private void HandleQuickSlotDrop(DragManager dm, ItemData draggedData, InventorySlot fromSlot)
+    {
+        ItemData myOldData = this.currentData;
+        int myOldCount = this.currentCount;
+
+        // 나(도착지)를 새 데이터로 갱신
+        RefreshSlot(draggedData, dm.draggingCount);
+        dm.dragConsumed = true;
+
+        // [출발지 슬롯 처리]
+        if (fromSlot.slotType != SlotType.SkillTreeNode) {
+            if (myOldData is SkillData && fromSlot.slotType == SlotType.Inventory) {
+                fromSlot.RefreshSlot(null, 0);
+            } else {
+                fromSlot.RefreshSlot(myOldData, myOldCount);
+            }
+        }
+        
+        Debug.Log($"{draggedData.Name}이(가) 퀵슬롯에 등록/교체되었습니다.");
+    }
+
+    // ── 장비 슬롯 드롭 처리 (GadgetType 필터링) ────────────────────────
+    private void HandleEquipmentSlotDrop(DragManager dm, ItemData draggedData, InventorySlot fromSlot)
+    {
+        // GadgetData만 허용
+        if (!(draggedData is GadgetData gadget))
+        {
+            if (NotificationUI.Instance != null) 
+                NotificationUI.Instance.ShowMessage("장비 아이템만 장착할 수 있습니다!");
+            else 
+                Debug.LogWarning("장비 아이템만 장착할 수 있습니다!");
+            return;
+        }
+
+        // GadgetType 필터링 — 슬롯에 지정된 종류만 장착 가능
+        if (gadget.GadgetType != allowedGadgetType)
+        {
+            if (NotificationUI.Instance != null) 
+                NotificationUI.Instance.ShowMessage($"이 슬롯에는 {allowedGadgetType} 장비만 장착 가능합니다!");
+            else 
+                Debug.LogWarning($"[EquipmentSlot] {gadget.GadgetType} != {allowedGadgetType}");
+            return;
+        }
+
+        ItemData myOldData = this.currentData;
+        int myOldCount = this.currentCount;
+
+        // 기존 장비 해제 → EquipmentManager에 알림 (DIP)
+        if (myOldData is GadgetData oldGadget)
+        {
+            if (EquipmentManager.Instance != null)
+                EquipmentManager.Instance.OnUnequip(this);
+        }
+
+        // 새 장비 장착
+        RefreshSlot(draggedData, dm.draggingCount);
+        dm.dragConsumed = true;
+
+        // EquipmentManager에 장착 알림 → StatSystem 보너스 등록
+        if (EquipmentManager.Instance != null)
+            EquipmentManager.Instance.OnEquip(this, gadget);
+
+        // 출발지 슬롯에 이전 장비 반환 (스왑)
+        if (fromSlot.slotType != SlotType.SkillTreeNode)
+        {
+            fromSlot.RefreshSlot(myOldData, myOldCount);
+        }
+
+        Debug.Log($"[Equipment] {gadget.Name} ({gadget.GadgetType}) 장착 완료");
+    }
+
+    // ── 스킬트리 노드 드롭 처리 ──────────────────────────────────────
+    private void HandleSkillTreeDrop(DragManager dm, ItemData draggedData, InventorySlot fromSlot)
+    {
+        if (!(draggedData is SkillData)) {
+            return; // 스킬만 허용
+        }
+        if (_originalSkillData != null && draggedData != _originalSkillData) {
+            return; // 원래 자신의 스킬만 다시 장착 가능
+        }
+        
+        RefreshSlot(draggedData, dm.draggingCount);
+        dm.dragConsumed = true;
+
+        if (fromSlot.slotType != SlotType.SkillTreeNode) {
+            fromSlot.RefreshSlot(null, 0);
         }
     }
 }

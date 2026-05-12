@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// 크래프팅 레시피 UI 프리팹에 부착되어 개별 레시피의 시각적 요소를 제어합니다.
@@ -7,8 +8,8 @@ using UnityEngine.UI;
 public class RecipeUI : MonoBehaviour
 {
     [SerializeField] private Image _resultIcon;
-    [SerializeField] private Text _resultNameText;
-    [SerializeField] private Text _ingredientsText;
+    [SerializeField] private TextMeshProUGUI _resultNameText;
+    [SerializeField] private TextMeshProUGUI _ingredientsText;
     [SerializeField] private Button _craftButton;
 
     private CraftingRecipeSO _currentRecipe;

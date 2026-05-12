@@ -36,12 +36,20 @@ public class InventoryGenerator : MonoBehaviour
     [ContextMenu("Generate Inventory")] // 인스펙터 우클릭 메뉴로 테스트 가능
     public void GenerateEmptySlots()
     {
-        // 핫픽스: 이미 슬롯이 생성되어 있다면 (비활성화 상태에서 먼저 호출된 경우 등) 중복 생성 및 덮어쓰기 방지!
-        if (allSlots != null && allSlots.Count > 0) return;
-        // 기존에 생성된 슬롯이 있다면 제거
-        foreach (Transform child in container)
+        // 사용자가 씬에서 강제로 슬롯을 삭제했을 경우를 대비해 Missing(null) 상태의 리스트 정리
+        allSlots.RemoveAll(slot => slot == null);
+
+        // 핫픽스: 게임 실행(Play) 중일 때만 중복 생성 방지 적용 
+        // (에디터 뷰에서는 언제든 재시도할 수 있도록 허용)
+        if (Application.isPlaying && allSlots.Count > 0) return;
+
+        // 기존에 생성된 슬롯이 있다면 제거 (에디터와 런타임 호환을 위해 역순 삭제 및 DestroyImmediate 분기)
+        for (int i = container.childCount - 1; i >= 0; i--)
         {
-            Destroy(child.gameObject);
+            if (Application.isPlaying)
+                Destroy(container.GetChild(i).gameObject);
+            else
+                DestroyImmediate(container.GetChild(i).gameObject);
         }
         allSlots.Clear();
 
