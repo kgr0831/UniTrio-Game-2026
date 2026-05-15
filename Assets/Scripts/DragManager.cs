@@ -9,6 +9,7 @@ public class DragManager : MonoBehaviour
     public Image dragVisualIcon;
     public ItemData draggingData;
     public InventorySlot startSlot; // 어디서 드래그를 시작했는지 저장
+    public StorageBoxSlotUI startBoxSlot; // 박스 슬롯에서 드래그 시작 시 저장
     public int draggingCount;       // 드래그 중인 아이템의 개수
     public bool dragConsumed;       // 드롭이 성공적으로 처리되었는지 여부
 
@@ -57,6 +58,7 @@ public class DragManager : MonoBehaviour
     {
         draggingData = null;
         startSlot = null; // 초기화
+        startBoxSlot = null; // 상자 출처 초기화
         draggingCount = 0;
         if (dragVisualIcon != null)
         {

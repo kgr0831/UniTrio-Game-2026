@@ -9,6 +9,9 @@ public class InventoryGenerator : MonoBehaviour
     
     [Range(1, 10)] public int columns = 5; // 가로 개수
     [Range(1, 10)] public int rows = 4;    // 세로 개수
+    
+    [Header("Main Inventory Guard")]
+    public bool isMainInventory = false; // 메인 인벤토리인 경우에만 켜서 시작 템을 지급하고 매니저의 메인 인덱스로 사용
 
     // 슬롯들을 관리하기 위한 리스트
     private List<InventorySlot> allSlots = new List<InventorySlot>();
@@ -26,10 +29,18 @@ public class InventoryGenerator : MonoBehaviour
     private void Awake()
     {
         GenerateEmptySlots();
-        // InventoryManager가 씬의 엉뚱한 Generator를 잡는 것을 방지하기 위해, 진짜 UI의 Generator가 스스로 등록
+    }
+
+    private void OnEnable()
+    {
+        // 씬 로드 및 오브젝트 활성화 시점에 매니저에 안전하게 등록 및 미러 동기화 요청
         if (InventoryManager.Instance != null)
         {
             InventoryManager.Instance.RegisterGenerator(this);
+            if (!isMainInventory)
+            {
+                InventoryManager.Instance.RequestSyncFromMain(this);
+            }
         }
     }
 
@@ -62,6 +73,7 @@ public class InventoryGenerator : MonoBehaviour
             go.name = $"Slot_{i}"; // 디버깅용 이름 설정
 
             InventorySlot slot = go.GetComponent<InventorySlot>();
+            slot.slotIndex = i; // 동기화용 인덱스 할당
             
             // 초기 상태는 데이터가 없는 빈 슬롯으로 설정
             slot.RefreshSlot(null, 0);
@@ -70,6 +82,8 @@ public class InventoryGenerator : MonoBehaviour
         }
 
         Debug.Log($"{columns}x{rows} 인벤토리 생성 완료!");
+
+        if (!isMainInventory) return; // 메인 인벤토리가 아닌 경우 시작 아이템 지급을 생략합니다.
 
         // 시작 무기 지급
         int slotIndex = 0;

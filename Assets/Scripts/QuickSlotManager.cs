@@ -10,6 +10,9 @@ public class QuickSlotManager : MonoBehaviour
     [Tooltip("인벤토리 패널 내 HotbarObject의 8개 슬롯 (미러 동기화 대상)")]
     [SerializeField] private InventorySlot[] _inventoryHotbarSlots;
 
+    [Tooltip("상자 패널 내 HotbarObject의 8개 슬롯 (미러 동기화 대상)")]
+    [SerializeField] private InventorySlot[] _boxHotbarSlots;
+
     [Header("Player References")]
     [SerializeField] private StatSystem _stats;
     [SerializeField] private PlayerWeaponController _weaponController;
@@ -32,6 +35,8 @@ public class QuickSlotManager : MonoBehaviour
     private int[]      _lastQuickSlotCounts;
     private ItemData[] _lastHotbarData;
     private int[]      _lastHotbarCounts;
+    private ItemData[] _lastBoxHotbarData;
+    private int[]      _lastBoxHotbarCounts;
 
     private void Start()
     {
@@ -56,6 +61,12 @@ public class QuickSlotManager : MonoBehaviour
             _lastHotbarData   = new ItemData[_inventoryHotbarSlots.Length];
             _lastHotbarCounts = new int[_inventoryHotbarSlots.Length];
         }
+
+        if (_boxHotbarSlots != null && _boxHotbarSlots.Length > 0)
+        {
+            _lastBoxHotbarData   = new ItemData[_boxHotbarSlots.Length];
+            _lastBoxHotbarCounts = new int[_boxHotbarSlots.Length];
+        }
     }
 
     public void ClearAllSlots()
@@ -73,6 +84,7 @@ public class QuickSlotManager : MonoBehaviour
         UpdateCooldowns();
         HandleChargingRelease();
         HandleQuickSlotInput();
+        CheckActiveWeaponSlotStale();
     }
 
     private void LateUpdate()
@@ -335,48 +347,181 @@ public class QuickSlotManager : MonoBehaviour
         }
     }
 
+    private bool _wasBoxActive = false;
+    private bool _wasInvActive = false;
+
     // ── 핫바 미러 동기화 ──────────────────────────────────────────
     // 인벤토리 내 HotbarObject 슬롯 ↔ 인게임 QuickSlotPanel 슬롯
     // 한쪽이 변경되면 다른 쪽을 자동 동기화합니다.
     // GC 방지: 캐싱된 이전 값과 비교하여 변경분만 처리.
     private void SyncHotbarMirror()
     {
-        if (quickSlots == null || _inventoryHotbarSlots == null) return;
+        if (quickSlots == null) return;
+        int count = quickSlots.Length;
 
-        int count = Mathf.Min(quickSlots.Length, _inventoryHotbarSlots.Length);
-        if (_lastQuickSlotData == null || _lastHotbarData == null) return;
+        if (_lastQuickSlotData == null) return;
+
+        // 패널들의 현재 화면 표시(활성화) 상태를 실시간 체크합니다.
+        bool isBoxCurrentlyActive = _boxHotbarSlots != null && _boxHotbarSlots.Length > 0 && _boxHotbarSlots[0] != null && _boxHotbarSlots[0].gameObject.activeInHierarchy;
+        bool isInvCurrentlyActive = _inventoryHotbarSlots != null && _inventoryHotbarSlots.Length > 0 && _inventoryHotbarSlots[0] != null && _inventoryHotbarSlots[0].gameObject.activeInHierarchy;
+
+        // 상자 패널이 비활성화 -> 활성화 상태로 열리는 시점 (꺼져있는 동안 고여있던 구 데이터 덮어쓰기)
+        if (isBoxCurrentlyActive && !_wasBoxActive)
+        {
+            if (_lastBoxHotbarData != null)
+            {
+                for (int i = 0; i < _lastBoxHotbarData.Length; i++)
+                {
+                    _lastBoxHotbarData[i] = null;
+                    _lastBoxHotbarCounts[i] = 0;
+
+                    if (_boxHotbarSlots != null && i < _boxHotbarSlots.Length && _boxHotbarSlots[i] != null)
+                    {
+                        InventorySlot bs = _boxHotbarSlots[i];
+                        InventorySlot qs = (quickSlots != null && i < quickSlots.Length) ? quickSlots[i] : null;
+                        if (qs != null)
+                        {
+                            bs.RefreshSlot(qs.currentData, qs.currentCount);
+                        }
+                        else
+                        {
+                            bs.RefreshSlot(null, 0);
+                        }
+                    }
+                }
+            }
+        }
+        _wasBoxActive = isBoxCurrentlyActive;
+
+        // 인벤토리 패널이 비활성화 -> 활성화 상태로 열리는 시점 (꺼져있는 동안 고여있던 구 데이터 덮어쓰기)
+        if (isInvCurrentlyActive && !_wasInvActive)
+        {
+            if (_lastHotbarData != null)
+            {
+                for (int i = 0; i < _lastHotbarData.Length; i++)
+                {
+                    _lastHotbarData[i] = null;
+                    _lastHotbarCounts[i] = 0;
+
+                    if (_inventoryHotbarSlots != null && i < _inventoryHotbarSlots.Length && _inventoryHotbarSlots[i] != null)
+                    {
+                        InventorySlot hs = _inventoryHotbarSlots[i];
+                        InventorySlot qs = (quickSlots != null && i < quickSlots.Length) ? quickSlots[i] : null;
+                        if (qs != null)
+                        {
+                            hs.RefreshSlot(qs.currentData, qs.currentCount);
+                        }
+                        else
+                        {
+                            hs.RefreshSlot(null, 0);
+                        }
+                    }
+                }
+            }
+        }
+        _wasInvActive = isInvCurrentlyActive;
 
         for (int i = 0; i < count; i++)
         {
             InventorySlot qs = quickSlots[i];
-            InventorySlot hs = _inventoryHotbarSlots[i];
+            if (qs == null) continue;
 
-            if (qs == null || hs == null) continue;
-
-            // QuickSlotPanel → HotbarObject 동기화
-            if (qs.currentData != _lastQuickSlotData[i] || qs.currentCount != _lastQuickSlotCounts[i])
+            // 1. 인벤토리 내 핫바 슬롯 동기화
+            if (_inventoryHotbarSlots != null && i < _inventoryHotbarSlots.Length && _inventoryHotbarSlots[i] != null && _lastHotbarData != null)
             {
-                hs.RefreshSlot(qs.currentData, qs.currentCount);
+                InventorySlot hs = _inventoryHotbarSlots[i];
                 
-                // 양쪽 캐시 동시 업데이트 (순환 방지)
+                // [안전 가드]: 인벤토리 핫바 슬롯이 비어있는데, 진짜 퀵슬롯에는 아이템이 있고, 캐시 기록이 없는 경우
+                if (hs.currentData == null && qs.currentData != null && _lastHotbarData[i] == null)
+                {
+                    hs.RefreshSlot(qs.currentData, qs.currentCount);
+                }
+                else if (qs.currentData != _lastQuickSlotData[i] || qs.currentCount != _lastQuickSlotCounts[i])
+                {
+                    hs.RefreshSlot(qs.currentData, qs.currentCount);
+                }
+                else if (hs.currentData != _lastHotbarData[i] || hs.currentCount != _lastHotbarCounts[i])
+                {
+                    qs.RefreshSlot(hs.currentData, hs.currentCount);
+                    _lastQuickSlotData[i] = hs.currentData;
+                    _lastQuickSlotCounts[i] = hs.currentCount;
+                }
+            }
+
+            // 2. 상자 패널 내 핫바 슬롯 동기화
+            if (_boxHotbarSlots != null && i < _boxHotbarSlots.Length && _boxHotbarSlots[i] != null && _lastBoxHotbarData != null)
+            {
+                InventorySlot bs = _boxHotbarSlots[i];
+
+                // [안전 가드]: 상자 핫바 슬롯이 비어있는데, 진짜 퀵슬롯에는 아이템이 있고, 캐시 기록이 없는 경우 (상자 패널 오픈 직후)
+                if (bs.currentData == null && qs.currentData != null && _lastBoxHotbarData[i] == null)
+                {
+                    bs.RefreshSlot(qs.currentData, qs.currentCount);
+                }
+                else if (qs.currentData != _lastQuickSlotData[i] || qs.currentCount != _lastQuickSlotCounts[i])
+                {
+                    bs.RefreshSlot(qs.currentData, qs.currentCount);
+                }
+                else if (bs.currentData != _lastBoxHotbarData[i] || bs.currentCount != _lastBoxHotbarCounts[i])
+                {
+                    qs.RefreshSlot(bs.currentData, bs.currentCount);
+                    _lastQuickSlotData[i] = bs.currentData;
+                    _lastQuickSlotCounts[i] = bs.currentCount;
+                }
+            }
+        }
+
+        // 루프 종료 후 변경된 최종 렌더링 상태를 캐시로 업데이트 (순환 동기화 가드)
+        for (int i = 0; i < count; i++)
+        {
+            InventorySlot qs = quickSlots[i];
+            if (qs != null)
+            {
                 _lastQuickSlotData[i]   = qs.currentData;
                 _lastQuickSlotCounts[i] = qs.currentCount;
-                _lastHotbarData[i]      = qs.currentData;
-                _lastHotbarCounts[i]    = qs.currentCount;
-                continue;
             }
 
-            // HotbarObject → QuickSlotPanel 동기화
-            if (hs.currentData != _lastHotbarData[i] || hs.currentCount != _lastHotbarCounts[i])
+            if (_inventoryHotbarSlots != null && i < _inventoryHotbarSlots.Length && _inventoryHotbarSlots[i] != null && _lastHotbarData != null)
             {
-                qs.RefreshSlot(hs.currentData, hs.currentCount);
-                
-                // 양쪽 캐시 동시 업데이트 (순환 방지)
-                _lastHotbarData[i]      = hs.currentData;
-                _lastHotbarCounts[i]    = hs.currentCount;
-                _lastQuickSlotData[i]   = hs.currentData;
-                _lastQuickSlotCounts[i] = hs.currentCount;
+                _lastHotbarData[i]   = _inventoryHotbarSlots[i].currentData;
+                _lastHotbarCounts[i] = _inventoryHotbarSlots[i].currentCount;
             }
+
+            if (_boxHotbarSlots != null && i < _boxHotbarSlots.Length && _boxHotbarSlots[i] != null && _lastBoxHotbarData != null)
+            {
+                _lastBoxHotbarData[i]   = _boxHotbarSlots[i].currentData;
+                _lastBoxHotbarCounts[i] = _boxHotbarSlots[i].currentCount;
+            }
+        }
+    }
+
+    // ── 현재 장착한 무기 슬롯의 상태 변경 감지 및 자동 해제 ────────
+    private void CheckActiveWeaponSlotStale()
+    {
+        if (_activeWeaponSlotIndex < 0) return;
+
+        if (quickSlots == null || _activeWeaponSlotIndex >= quickSlots.Length)
+        {
+            _activeWeaponSlotIndex = -1;
+            return;
+        }
+
+        InventorySlot activeSlot = quickSlots[_activeWeaponSlotIndex];
+        
+        // 현재 무기가 장착된 슬롯의 데이터가 비어있거나, 무기가 아닌 딴 아이템으로 덮어씌워진 경우
+        if (activeSlot == null || activeSlot.currentData == null || !(activeSlot.currentData is WeaponData))
+        {
+            Debug.Log($"[QuickSlotManager] 장착 중인 슬롯 {_activeWeaponSlotIndex + 1}의 무기가 사라지거나 교체되었습니다. 무기를 자동 해제합니다.");
+            
+            if (_weaponController == null) 
+                _weaponController = FindObjectOfType<PlayerWeaponController>();
+
+            if (_weaponController != null)
+            {
+                _weaponController.UnequipAll();
+            }
+
+            _activeWeaponSlotIndex = -1;
         }
     }
 }

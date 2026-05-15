@@ -11,6 +11,7 @@ public sealed class InventoryManager : MonoBehaviour
     public static InventoryManager Instance { get; private set; }
 
     [SerializeField] private InventoryGenerator _inventoryGenerator;
+    private List<InventoryGenerator> _inventoryGenerators = new List<InventoryGenerator>();
     private QuickSlotManager _quickSlotManager;
 
     private void Awake()
@@ -42,8 +43,69 @@ public sealed class InventoryManager : MonoBehaviour
 
     public void RegisterGenerator(InventoryGenerator generator)
     {
-        _inventoryGenerator = generator;
-        Debug.Log($"[InventoryManager] 진짜 UI의 InventoryGenerator({generator.name})가 인벤토리 매니저에 안전하게 등록되었습니다.");
+        if (!_inventoryGenerators.Contains(generator))
+        {
+            _inventoryGenerators.Add(generator);
+            Debug.Log($"[InventoryManager] InventoryGenerator({generator.name})가 새로 등록되었습니다. 총 등록 개수: {_inventoryGenerators.Count}");
+        }
+
+        if (generator.isMainInventory)
+        {
+            _inventoryGenerator = generator;
+            Debug.Log($"[InventoryManager] 메인 인벤토리 확정 등록: {generator.name}");
+        }
+    }
+
+    /// <summary>
+    /// 외부/서브 인벤토리가 켜질 때 메인 인벤토리의 실시간 데이터를 요청하여 강제 1:1 동기화시킵니다.
+    /// </summary>
+    public void RequestSyncFromMain(InventoryGenerator targetGen)
+    {
+        EnsureGeneratorExists();
+        if (_inventoryGenerator == null || _inventoryGenerator.AllSlots == null || targetGen == null || targetGen.AllSlots == null)
+        {
+            Debug.LogWarning("[InventoryManager] 메인 인벤토리 또는 동기화 요청 대상 인벤토리가 준비되지 않아 무시합니다.");
+            return;
+        }
+
+        int count = Mathf.Min(_inventoryGenerator.AllSlots.Count, targetGen.AllSlots.Count);
+        for (int i = 0; i < count; i++)
+        {
+            var mainSlot = _inventoryGenerator.AllSlots[i];
+            targetGen.AllSlots[i].RefreshSlotWithoutSync(mainSlot.currentData, mainSlot.currentCount);
+        }
+        Debug.Log($"[InventoryManager] 서브 인벤토리 UI({targetGen.name})가 주 인벤토리의 {count}개 슬롯과 완벽히 동기화되었습니다.");
+    }
+
+    private void SyncAllToNewGenerator(InventoryGenerator newGen)
+    {
+        EnsureGeneratorExists();
+        if (_inventoryGenerator == null || _inventoryGenerator.AllSlots == null || newGen.AllSlots == null) return;
+
+        for (int i = 0; i < _inventoryGenerator.AllSlots.Count && i < newGen.AllSlots.Count; i++)
+        {
+            var mainSlot = _inventoryGenerator.AllSlots[i];
+            newGen.AllSlots[i].RefreshSlotWithoutSync(mainSlot.currentData, mainSlot.currentCount);
+        }
+        Debug.Log($"[InventoryManager] 신규 인벤토리 UI({newGen.name})로 기존 메인 데이터를 동기화 완료했습니다.");
+    }
+
+    /// <summary>
+    /// 다른 인벤토리 슬롯 UI에서 데이터 변경이 감지되면 다른 모든 동기화 대상 UI에도 동기화 값을 복사합니다.
+    /// </summary>
+    public void SyncSlotAcrossUI(int slotIndex, ItemData data, int count, InventorySlot caller)
+    {
+        foreach (var gen in _inventoryGenerators)
+        {
+            if (gen != null && gen.AllSlots != null && slotIndex < gen.AllSlots.Count)
+            {
+                var targetSlot = gen.AllSlots[slotIndex];
+                if (targetSlot != caller)
+                {
+                    targetSlot.RefreshSlotWithoutSync(data, count);
+                }
+            }
+        }
     }
 
     private void EnsureGeneratorExists()
@@ -55,9 +117,19 @@ public sealed class InventoryManager : MonoBehaviour
             {
                 if (gen.gameObject.scene.rootCount > 0 && gen.GetComponentInParent<Canvas>() != null)
                 {
-                    _inventoryGenerator = gen;
-                    break;
+                    if (gen.isMainInventory)
+                    {
+                        _inventoryGenerator = gen;
+                        if (!_inventoryGenerators.Contains(gen)) _inventoryGenerators.Add(gen);
+                        break;
+                    }
                 }
+            }
+            // fallback if no main inventory found
+            if (_inventoryGenerator == null && generators.Length > 0)
+            {
+                _inventoryGenerator = generators[0];
+                if (!_inventoryGenerators.Contains(_inventoryGenerator)) _inventoryGenerators.Add(_inventoryGenerator);
             }
         }
     }
