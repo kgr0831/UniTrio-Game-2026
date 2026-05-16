@@ -4,7 +4,6 @@ using UnityEngine;
 
 public enum NodeState { RUNNING, SUCCESS, FAILURE }
 
-// 모든 노드의 조상
 public abstract class Node
 {
     protected BossBlackboard blackboard;
@@ -12,7 +11,6 @@ public abstract class Node
     public abstract NodeState Evaluate();
 }
 
-// Selector: 자식 중 하나라도 성공/진행 중이면 즉시 반환 (우선순위 결정)
 public class Selector : Node
 {
     private List<Node> children;
@@ -33,7 +31,6 @@ public class Selector : Node
     }
 }
 
-// Sequence: 모든 자식이 성공해야 성공 (일련의 행동 수행)
 public class Sequence : Node
 {
     private List<Node> children;
