@@ -11,6 +11,7 @@ public class SpearBehaviour : WeaponBehaviourBase
 {
     [Header("Animators")]
     [SerializeField] private Animator _weaponAnimator;
+    [SerializeField] private Animator _vfxAnimator;
 
     [Header("Sprite Rotation")]
     [Tooltip("창 스프라이트의 로컬 Z 회전. 날이 오른쪽(커서 방향)을 향하도록 조절하세요.")]
@@ -181,6 +182,12 @@ public class SpearBehaviour : WeaponBehaviourBase
             _weaponAnimator.transform.localEulerAngles = Vector3.zero;
             _weaponAnimator.transform.localScale = Vector3.one;
         }
+        if (_vfxAnimator != null)
+        {
+            _vfxAnimator.transform.localPosition = Vector3.zero;
+            _vfxAnimator.transform.localEulerAngles = Vector3.zero;
+            _vfxAnimator.transform.localScale = Vector3.one;
+        }
 
         if (IsAttacking && _hitboxCollider != null && _hitboxCollider.enabled)
             Physics2D.SyncTransforms();
@@ -206,6 +213,12 @@ public class SpearBehaviour : WeaponBehaviourBase
     private void ApplyBashVisual(bool active)
     {
         _bashEffectActive = active;
+        
+        if (_vfxAnimator != null)
+        {
+            _vfxAnimator.gameObject.SetActive(active);
+        }
+
         if (_spearRenderer == null) return;
 
         Material mat = _spearRenderer.material;
@@ -255,6 +268,12 @@ public class SpearBehaviour : WeaponBehaviourBase
 
         _weaponAnimator.speed = speed;
         _weaponAnimator.SetTrigger("Attack");
+
+        if (_vfxAnimator != null && _vfxAnimator.gameObject.activeInHierarchy)
+        {
+            _vfxAnimator.speed = speed;
+            _vfxAnimator.SetTrigger("Attack");
+        }
     }
 
     public override bool PollFinished(float attackStartTime)
@@ -274,6 +293,11 @@ public class SpearBehaviour : WeaponBehaviourBase
             _weaponAnimator.ResetTrigger("Attack");
             _weaponAnimator.Play("Idle", 0, 0f);
 
+            if (_vfxAnimator != null)
+            {
+                _vfxAnimator.Play("Idle", 0, 0f);
+            }
+
             return true;
         }
         return false;
@@ -290,6 +314,11 @@ public class SpearBehaviour : WeaponBehaviourBase
         {
             _weaponAnimator.Play("Idle", 0, 0f);
             _weaponAnimator.Update(0f);
+        }
+        if (_vfxAnimator != null)
+        {
+            _vfxAnimator.Play("Idle", 0, 0f);
+            _vfxAnimator.Update(0f);
         }
 
         ApplyBashVisual(false);

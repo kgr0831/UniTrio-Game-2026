@@ -729,7 +729,7 @@ public class FloatingWeaponMotion : MonoBehaviour
             Physics2D.SyncTransforms();
 
         // 🌟 4. 무기 위치가 완벽히 적용된 직후에 잔상을 생성해야 제 위치에 생성됩니다!
-        if (isAttacking && _weapon != null && _weapon.WeaponType == WeaponType.Sword)
+        if (isAttacking && _weapon != null && (_weapon.WeaponType == WeaponType.Sword || _weapon.WeaponType == WeaponType.Spear))
         {
             // 속도가 빠를수록(초반에 p가 작을 때) 더 촘촘하게 생성되도록 간격 가변 적용
             float t_p = 0.5f;

@@ -332,6 +332,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpearBehaviour
   _weaponAnimator: {fileID: 1478792732590329935}
+  _vfxAnimator: {fileID: 8294688094704253741}
   _spriteRotationZ: 135
   _hitboxCollider: {fileID: 4469310113847408289}
   _spearHitbox: {fileID: 0}
@@ -482,7 +483,7 @@ MonoBehaviour:
   _maxGlowIntensity: 4
   _glowColor: {r: 0.47932023, g: 0.12477186, b: 1, a: 1}
   _orbitRadius: 0.2
-  _isInstantCastMode: 0
+  _isInstantCastMode: 1
   _instantCastDelay: 0.5
 --- !u!1 &3462043197688276117
 GameObject:
