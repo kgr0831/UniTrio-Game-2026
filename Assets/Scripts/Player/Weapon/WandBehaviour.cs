@@ -139,13 +139,7 @@ public class WandBehaviour : WeaponBehaviourBase
         }
     }
 
-    private void LateUpdate()
-    {
-        if (_weaponAnimator == null) return;
-        _weaponAnimator.transform.localPosition = _localPosCached;
-        if (!IsAttacking)
-            _weaponAnimator.transform.localEulerAngles = Vector3.zero;
-    }
+
 
     // ── WeaponBehaviourBase 구현 ───────────────────────────────────
 
