@@ -24,6 +24,9 @@ public abstract class ItemData : ScriptableObject
     public ItemType Type;        // 아이템 타입 (파생 클래스 OnEnable에서 자동 설정)
     public Sprite Icon;          // 아이콘
 
+    [Tooltip("월드에 드롭될 때 생성되는 모델 프리팹")]
+    public GameObject DropPrefab;
+
     public List<IngredientInfo> IngredientList; // 제작 재료 리스트
 
     /// <summary>파생 클래스에서 override하여 _Type을 자동 설정합니다.</summary>

@@ -11,9 +11,9 @@ public sealed class HealthSystem : MonoBehaviour
     [Header("Health")]
     [SerializeField] private float _maxHp = 10f;
 
-    [Header("Hit Flash (SpriteGlow Shader)")]
+    [Header("Hit Flash")]
     [Tooltip("피격 플래시가 유지되는 시간 (초)")]
-    [SerializeField] private float _flashDuration = 0.15f;
+    [SerializeField] private float _flashDuration = 0.75f;
 
     // Inspector(Normal 모드)에서 실시간 HP / 생존 여부 확인용
     [SerializeField] private float _currentHealth;
@@ -34,19 +34,30 @@ public sealed class HealthSystem : MonoBehaviour
     private SpriteRenderer        _spriteRenderer;
     private MaterialPropertyBlock _mpb;
     private float                 _flashTimer;
+    private StatSystem            _statSystem;
     private static readonly int   HashFlashAmount = Shader.PropertyToID("_FlashAmount");
 
     private void Awake()
     {
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+        _statSystem     = GetComponent<StatSystem>();
+
+        // StatSystem이 있으면 초기 최대 체력을 동기화
+        if (_statSystem != null)
+        {
+            _maxHp = _statSystem.TotalMaxHP;
+            _statSystem.OnStatsChanged += SyncMaxHp;
+        }
+
         _currentHealth  = _maxHp;
         _isAlive        = true;
         IsInvulnerable  = false;
-        _spriteRenderer = GetComponent<SpriteRenderer>();
 
         // SpriteRenderer가 없는 엔티티(비가시 트리거 등)도 허용 – null 체크로 방어
         if (_spriteRenderer != null)
             _mpb = new MaterialPropertyBlock();
     }
+
 
     private void Update()
     {
@@ -79,6 +90,13 @@ public sealed class HealthSystem : MonoBehaviour
             OnDied?.Invoke();
     }
 
+    /// <summary>현재 점멸 타이머를 외부에서 덮어씌웁니다. 스턴 시간과 동기화할 때 사용.</summary>
+    public void OverrideFlashTimer(float duration)
+    {
+        SetFlashShader(1f);
+        _flashTimer = duration;
+    }
+
     public void Heal(float amount)
     {
         if (!IsAlive) return;
@@ -96,10 +114,39 @@ public sealed class HealthSystem : MonoBehaviour
 
     public void SetMaxHp(float newMax, bool refill = false)
     {
-        _maxHp         = newMax;
-        _currentHealth = refill ? _maxHp : Mathf.Min(_currentHealth, _maxHp);
-        _isAlive       = _currentHealth > 0f;
+        if (newMax <= 0) return;
+
+        // 현재 체력 비율 유지 (예: 50%일 때 최대체력이 늘어나도 계속 50% 유지)
+        float hpRatio = _maxHp > 0 ? _currentHealth / _maxHp : 1f;
+
+        _maxHp = newMax;
+        
+        if (refill)
+        {
+            _currentHealth = _maxHp;
+        }
+        else
+        {
+            _currentHealth = _maxHp * hpRatio;
+        }
+
+        _isAlive = _currentHealth > 0f;
         OnHpChanged?.Invoke(_currentHealth, _maxHp);
+    }
+
+    private void SyncMaxHp()
+    {
+        if (_statSystem == null) return;
+        
+        // StatSystem으로부터 합산된 최대 체력을 가져와 설정
+        SetMaxHp(_statSystem.TotalMaxHP, false);
+    }
+
+
+    private void OnDestroy()
+    {
+        if (_statSystem != null)
+            _statSystem.OnStatsChanged -= SyncMaxHp;
     }
 
     // ── 내부 ────────────────────────────────────────────────────────
@@ -114,3 +161,6 @@ public sealed class HealthSystem : MonoBehaviour
         _spriteRenderer.SetPropertyBlock(_mpb);
     }
 }
+
+
+

@@ -8,9 +8,10 @@ using TMPro; // 🌟 텍스트매쉬 프로(TMP) 전용 네임스페이스 추�
 public class DamageText : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private float _lifetime = 1f; // 떠있는 시간
-    [SerializeField] private float _floatSpeed = 2f; // 위로 올라가는 속도
-    [SerializeField] private Vector3 _randomScatter = new Vector3(0.5f, 0.5f, 0f); // 무작위 분산
+    [SerializeField] private float _lifetime = 1f;
+    [SerializeField] private float _floatSpeed = 2f;
+    [SerializeField] private Vector3 _randomScatter = new Vector3(0.5f, 0.5f, 0f);
+    [SerializeField] private float _fontSize = 8f;
     
     // 기존 TextMesh 대신 압도적인 화질의 TMP를 사용합니다!
     private TextMeshPro _textMesh;
@@ -26,6 +27,7 @@ public class DamageText : MonoBehaviour
             _textMesh.sortingLayerID = SortingLayer.NameToID("Default");
             _textMesh.sortingOrder = 9999; // Z-가림 완벽 방지
             
+            _textMesh.fontSize = _fontSize;
             _textMesh.text = damage.ToString();
             _originalColor = _textMesh.color;
             _originalColor.a = 1f; // 풀링 재사용 시 알파값 초기화

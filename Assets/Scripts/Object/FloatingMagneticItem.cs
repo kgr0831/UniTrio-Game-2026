@@ -42,6 +42,13 @@ public class FloatingMagneticItem : MonoBehaviour
         _currentState = State.Dropping;
     }
 
+    private void OnEnable()
+    {
+        // 최적화: 풀링에서 꺼내어질 때마다 초기 상태 강제
+        _currentState = State.Dropping;
+        _currentMagneticSpeed = 0f;
+    }
+
     private void Update()
     {
         // 플레이어를 매번 찾지 않고 한 번 캐싱해둠
@@ -128,7 +135,15 @@ public class FloatingMagneticItem : MonoBehaviour
 
     private void CollectItem()
     {
-        // TODO: 향후 플레이어의 인벤토리에 나무를 더하는 로직 등을 이곳에 연결할 수 있습니다.
-        Destroy(gameObject);
+        var identity = GetComponent<DroppedItemIdentity>();
+        if (identity != null && identity.ItemData != null)
+        {
+            // SOLID: 이벤트를 통해 수집 사실을 알리기만 합니다. 
+            // 누가 이 데이터를 처리할지는 관심사가 아닙니다 (Decoupling).
+            Core.ItemEvents.TriggerItemCollected(identity.ItemData, identity.ItemCount);
+        }
+        
+        // 풀에 반납 가능성이 높으므로 비활성화
+        gameObject.SetActive(false);
     }
 }

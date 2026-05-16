@@ -1,0 +1,3 @@
+﻿event: message
+data: {"jsonrpc":"2.0","id":10,"result":{"content":[{"type":"text","text":"2 validation errors for call[manage_scene]\nscope\n  Unexpected keyword argument [type=unexpected_keyword_argument, input_value='children', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/unexpected_keyword_argument\ninstance_id\n  Unexpected keyword argument [type=unexpected_keyword_argument, input_value=50182, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/unexpected_keyword_argument"}],"isError":true}}
+

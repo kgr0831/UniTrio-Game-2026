@@ -1,47 +1,11 @@
-# 프로젝트 개요 (Project Overview)
-- **프로젝트 명:** Unitrio 2D Top-Down Action (Unity 3D URP 기반)
-- **장르:** 2D 탑다운 액션 / 샌드박스
-- **환경:** Unity 3D Core, Universal Render Pipeline (URP), C#
-- **특징:** 3D URP 환경을 사용하지만 시각적/구조적으로는 2D 탑다운 시점을 구현함. 액션 게임이므로 빠르고 정확한 판정과 부드러운 프레임 유지가 필수.
-
-# AI 코딩 가이드라인 및 규칙 (AI Coding Guidelines & Rules)
-이 프로젝트의 코드를 작성하거나 수정할 때, 다음의 엄격한 규칙들을 반드시 준수하여 코드를 제안해야 합니다.
-
-## 1. 퍼포먼스와 메모리 관리 (Performance & Memory Management)
-- **가비지 컬렉션(GC) 최소화:** `Update()`, `FixedUpdate()`, `LateUpdate()` 등 매 프레임 호출되는 메서드 내에서 새로운 객체(`new`)를 생성하거나 문자열을 조합(`+`)하지 마세요.
-- **오브젝트 풀링(Object Pooling) 필수:** 총알, 이펙트(VFX), 몬스터, 데미지 텍스트 등 빈번하게 생성/파괴되는 모든 객체는 반드시 Object Pool 패턴을 사용하여 구현하세요. `Instantiate`와 `Destroy`는 게임 플레이 도중에 절대로 남발해서는 안 됩니다.
-- **LINQ 사용 금지:** 성능 저하와 불필요한 메모리 할당을 유발하는 LINQ(`Where`, `ToList`, `Select` 등)는 런타임 게임 루프 안에서 사용하지 마세요. 반드시 `for` 또는 `foreach` 루프를 사용하세요.
-- **캐싱(Caching):** `GetComponent<T>()`, `Camera.main`, `FindObjectOfType<T>()`, `GameObject.Find()` 등은 무거운 연산입니다. 반드시 `Awake()`나 `Start()`에서 호출하여 변수에 캐싱한 뒤 사용하세요.
-- **코루틴 최적화:** `yield return new WaitForSeconds()`는 매번 새로운 객체를 생성합니다. 캐싱해두고 재사용하거나, 타이머 변수를 활용한 `Update` 방식, 또는 UniTask(도입 시)를 권장합니다.
-
-## 2. 아키텍처 및 디자인 패턴 (Architecture & Design Patterns)
-- **싱글톤(Singleton) 남용 방지:** GameManager, AudioManager 등 전역 접근이 꼭 필요한 매니저 클래스에만 제한적으로 사용하세요. 컴포넌트 간의 결합도를 낮추기 위해 이벤트 기반 아키텍처(C# `event`, `Action` 또는 Observer 패턴)를 적극 활용하세요.
-- **데이터와 로직의 분리:** 몬스터 스탯, 아이템 정보, 웨폰 데이터 등 변하지 않는 기획 데이터는 프리팹 내부에 하드코딩하지 말고 반드시 `ScriptableObject`를 사용하여 관리하세요.
-- **상태 관리 (State Machine):** 플레이어와 보스 몬스터의 행동 패턴(Idle, Move, Attack, Dash 등)은 `switch-case`로 떡칠하지 말고, 유한 상태 기계(FSM, Finite State Machine) 패턴이나 State 패턴을 적용하여 확장 가능하게 작성하세요.
-
-## 3. URP 및 3D 탑다운 액션 특화 규칙 (URP & Top-Down Action Rules)
-- **물리 연산 (Physics):** `Rigidbody2D` + `Collider2D` 또는 `Rigidbody` + `Collider` 중 하나만 일관되게 사용하세요. 혼용 금지. 레이어는 `Player` / `Enemy` / `Projectile_P` / `Projectile_E` / `Obstacle` / `Wall`로 분리하고 Layer Collision Matrix에서 불필요한 충돌 연산을 차단하세요.
-- **Z축/Y축 깊이 정렬 (Depth Sorting):** 캐릭터나 오브젝트가 겹칠 때 Y축(또는 Z축) 위치에 따라 렌더링 순서를 결정하세요. 관련 로직 작성 시 항상 고려하세요.
-- **벡터 연산 주의:** 거리 비교 시 `sqrMagnitude` 우선. `Distance` / `Magnitude`는 루프 안에서 비용이 큽니다.
-- **MaterialPropertyBlock 사용:** 셰이더 프로퍼티 변경 시 `material` 직접 접근 금지. `MaterialPropertyBlock`으로 SRP Batching을 유지하세요.
-- **NonAlloc Physics:** 범위 판정 시 `OverlapCircleNonAlloc`, `RaycastNonAlloc` 등 NonAlloc API를 사용해 GC를 방지하세요.
-- **Update 루프 최소화:** 매 프레임 폴링 대신 상태 변화 시점에 `event` / `Action`으로 알리고 구독자가 처리하는 방식을 사용하세요.
-
-## 4. 코드 스타일 및 응답 형식 (Code Style & Output Format)
-- **명명 규칙:** - 클래스 및 메서드: `PascalCase`
-  - 퍼블릭 필드 및 프로퍼티: `PascalCase`
-  - 프라이빗/프로텍티드 필드: `_camelCase`
-  - 로컬 변수 및 매개변수: `camelCase`
-- **방어적 프로그래밍:** 널(null) 참조 오류를 방지하기 위해 필요한 곳에 널 체크(`?.`, `??`, `if (obj == null)`)를 포함하세요.
-- **설명과 주석:** 코드를 제공할 때 "왜 이렇게 작성하는 것이 성능에 좋은지" 핵심 이유를 짧게 주석이나 설명으로 덧붙여주세요. 쓸데없이 장황한 부연 설명은 생략하고, 코드 자체의 품질과 구조에 집중하세요.
-- **이상한 컴포넌트/플러그인 지양:** 기본 Unity API만으로 해결할 수 있는 문제에 대해 무거운 외부 라이브러리나 복잡한 우회 코드를 제안하지 마세요. 직관적이고 표준화된 방식을 최우선으로 합니다.
-
-## 5. 렌더링과 데이터의 분리 (Rendering & Data Separation)
-- **데이터 클래스는 순수 데이터만:** `ScriptableObject` 및 데이터 클래스(`ItemData` 등)는 수치·상태 값만 보유하세요. `Use()`, `Render()` 등 행동·출력 로직을 데이터 클래스 안에 작성하지 마세요.
-- **렌더링은 호출하는 쪽에서:** UI 갱신, 스프라이트 변경, 파티클 재생 등 시각 출력은 View 역할의 컴포넌트(`MonoBehaviour`)가 담당하세요. 데이터가 변하면 `event` / `Action`으로 알리고, 렌더링 쪽이 구독하여 처리하세요.
-- **MonoBehaviour도 동일:** 데이터 상태와 시각 효과를 한 클래스에 섞지 마세요. `HealthSystem`(데이터)과 스프라이트 플래시 제어(렌더링)처럼 책임을 분리하세요.
-
-## 6. 의존성 주입 및 컴포넌트 참조 (Dependency & Reference)
-- **Find 계열 함수 절대 사용 금지:** `GameObject.Find()`, `FindObjectOfType()`, `FindGameObjectWithTag()` 등 씬 전체를 순회하며 오브젝트를 찾는 메서드는 런타임은 물론이고 `Awake()`나 `Start()`에서도 최대한 사용을 피하세요.
-- **명시적 참조 (Explicit Reference) 우선:** 컴포넌트나 다른 클래스의 참조가 필요할 경우, 억지로 스크립트 안에서 찾으려 하지 말고 반드시 `[SerializeField]`를 사용하여 유니티 인스펙터(Inspector) 창에서 직접 할당(Drag & Drop)받도록 코드를 작성하세요.
-- **결합도 낮추기:** 서로 다른 게임 오브젝트 간의 통신이 필요할 때는 직접 참조를 엮기보다는 C# `event`, `Action`을 이용한 이벤트 기반 통신이나 `ScriptableObject`를 채널로 활용하는 방식을 우선적으로 제안하세요.
+당신은 10년차 시니어 Unity 프로그래머로, 아래의 규칙을 적용하여 사용자의 요구에 맞게 개발하세요. 
+모든 사용자의 요구에 대한 행동에 아래 규칙을 적용하세요.
+규칙 : 
+1. 지시가 틀렸다면 이유를 설명하라 (반박)
+2. 지시가 모호하면 추가 설명을 요청하라 (명확화)
+3. 그 외에는 즉시 실행하라 (실행)
+4. 단, 무언가를 삭제하거나 커밋, 리펙토링 하는 경우 반드시 질문하라(신중)
+5. 사용자에게 질문을 할 때는 구체적으로, 쉽게, 많이 질문하라(정확)
+6. 모든 행동은 절대 한 번에 진행하지말고 step-by-step으로 진행하며, 매 단계마다 사용자에게 허가 또는 질문을 받아라(단계)
+7. 2026년 05월 기준으로 코드를 작성하고, 현재 유니티 버전이 6.3이며, 3D URP 환경임을 인지하고 개발하라(최신화)
+8. 사용자도 모르거나 애매한 부분의 경우 웹서핑을 통해 찾아라(웹서핑)

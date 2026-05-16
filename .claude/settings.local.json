@@ -36,7 +36,26 @@
       "Bash(grep -E \"\\\\.\\(prefab|anim|controller\\)$\")",
       "mcp__UnityMCP__manage_shader",
       "mcp__UnityMCP__manage_texture",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Read(//c/Users/kimga/.claude/**)",
+      "Read(//c/Users/kimga/AppData/Roaming/Claude/**)",
+      "Bash(claude mcp:*)",
+      "Bash(curl -s -X POST http://localhost:8080/mcp -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}')",
+      "Bash(curl -v http://localhost:8080/mcp)",
+      "Bash(curl:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(kill %1)",
+      "Bash(python -c \"import sys,json; data=sys.stdin.read\\(\\); lines=[l for l in data.split\\('\\\\n'\\) if l.startswith\\('data:'\\)]; obj=json.loads\\(lines[0][5:]\\); [print\\(t['name']\\) for t in obj['result']['tools']]\")",
+      "Bash(python -c \"import sys; import json; print\\(json.dumps\\(json.loads\\(sys.stdin.read\\(\\).replace\\('\\\\\\\\\\\\\\\\n',''\\).replace\\('\\\\\\\\\\\\\\\\\\\\\"','\\\\\"'\\)\\), indent=2\\)\\)\")",
+      "Bash(python -c ':*)",
+      "Bash(python:*)",
+      "Bash(grep WeaponType:*)",
+      "mcp__UnityMCP__manage_scriptable_object",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\" -Directory | Where-Object {$_.Name -match \"VFX|Effect|Material|Shader|Camera\"} | Select-Object -ExpandProperty FullName)",
+      "WebFetch(domain:www.youtube.com)",
+      "WebSearch",
+      "WebFetch(domain:docs.unity3d.com)",
+      "mcp__UnityMCP__delete_script"
     ]
   }
 }
