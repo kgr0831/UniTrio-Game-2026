@@ -12,6 +12,21 @@ public class HitVfxAutoReturn : MonoBehaviour
     private void Awake()
     {
         _animator = GetComponent<Animator>();
+
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            Shader vfxLitShader = Shader.Find("Custom/VFXLit2D");
+            if (vfxLitShader != null)
+            {
+                Material mat = new Material(vfxLitShader);
+                mat.SetColor("_EmissionColor", new Color(1f, 1f, 1f, 1f));
+                mat.SetFloat("_EmissionIntensity", 3f);
+                mat.SetFloat("_LightInfluence", 0.5f);
+                mat.SetFloat("_AmbientLight", 0.2f);
+                sr.material = mat;
+            }
+        }
     }
 
     private void OnEnable()

@@ -61,11 +61,20 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
     /// </summary>
     public virtual float PivotRotationOffset => 0f;
 
+    /// <summary>
+    /// 무기 자체적으로 위치/회전을 제어하여 FloatingWeaponMotion의 기본 위치/회전/크기 제어를 비활성화할지 여부.
+    /// 활의 오프셋 소환이나 지팡이의 즉시 발사 모드 등에서 true를 반환해야 합니다.
+    /// </summary>
+    public virtual bool DisableFloatingMotion => false;
+
     /// <summary>현재 공격 중인 스윙에 적용될 강타(Bash) 배율입니다. (히트박스에서 읽음)</summary>
     public float CurrentSwingBashMultiplier { get; protected set; } = 1f;
 
     /// <summary>강타 시각 효과(블룸, 스프라이트 교체 등)를 활성화/비활성화 합니다.</summary>
     public virtual void SetBashEffectActive(bool active) { }
+
+    /// <summary>장착된 WeaponData의 Icon 스프라이트를 무기 비주얼에 반영합니다.</summary>
+    public virtual void SetWeaponSprite(Sprite sprite) { }
 
     /// <summary>공격 시작. comboStep에 이번에 실행할 타수(1, 2, ...)를 넘깁니다.</summary>
     public abstract void BeginAttack(int comboStep);

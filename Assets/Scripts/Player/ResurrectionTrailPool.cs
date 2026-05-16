@@ -40,12 +40,17 @@ public class ResurrectionTrailPool : MonoBehaviour
 
     // ── 내부 상태 ─────────────────────────────────────────────────────────
 
-    private SpriteRenderer[] _pool;
-    private float[]          _poolTimers;
-    private int              _nextIdx     = 0;
-    private bool             _isActive    = false;
-    private float            _emitTimer   = 0f;
-    private float            _activeTimer = 0f;
+    private static readonly int AlphaID = Shader.PropertyToID("_Alpha");
+    private static readonly int EmissionIntensityID = Shader.PropertyToID("_EmissionIntensity");
+
+    private SpriteRenderer[]      _pool;
+    private MaterialPropertyBlock _mpb;
+    private float[]               _poolTimers;
+    private int                   _nextIdx     = 0;
+    private bool                  _isActive    = false;
+    private float                 _emitTimer   = 0f;
+    private float                 _activeTimer = 0f;
+    private Material              _vfxLitMaterial;
 
     // ── 생명주기 ──────────────────────────────────────────────────────────
 
@@ -53,17 +58,18 @@ public class ResurrectionTrailPool : MonoBehaviour
     {
         _pool       = new SpriteRenderer[_poolSize];
         _poolTimers = new float[_poolSize];
+        _mpb        = new MaterialPropertyBlock();
+        _vfxLitMaterial = Resources.Load<Material>("Materials/VFXLit2DMat");
 
         for (int i = 0; i < _poolSize; i++)
         {
             var go = new GameObject($"ResurrectTrailGhost_{i}");
-            // 씬 루트에 배치 → 플레이어 이동/스케일 영향 없음
             go.transform.SetParent(null, false);
 
             var sr = go.AddComponent<SpriteRenderer>();
-            // 플레이어 레이어와 동일, 플레이어 아래로 정렬
             sr.sortingLayerID = _playerSprite != null ? _playerSprite.sortingLayerID : 0;
             sr.sortingOrder   = _playerSprite != null ? _playerSprite.sortingOrder - 1 : 0;
+            if (_vfxLitMaterial != null) sr.sharedMaterial = _vfxLitMaterial;
 
             go.SetActive(false);
             _pool[i]       = sr;
@@ -106,11 +112,16 @@ public class ResurrectionTrailPool : MonoBehaviour
                 continue;
             }
 
-            // 선형 알파 페이드아웃
-            float alpha = Mathf.Clamp01(_poolTimers[i] / _ghostLifetime) * _ghostColor.a;
+            float t = Mathf.Clamp01(_poolTimers[i] / _ghostLifetime);
+            float alpha = t * _ghostColor.a;
             Color c = sr.color;
             c.a = alpha;
             sr.color = c;
+
+            sr.GetPropertyBlock(_mpb);
+            _mpb.SetFloat(AlphaID, t);
+            _mpb.SetFloat(EmissionIntensityID, t * 3f);
+            sr.SetPropertyBlock(_mpb);
         }
     }
 

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
+using System;
 
 public class BossAI : MonoBehaviour
 {
@@ -12,8 +13,17 @@ public class BossAI : MonoBehaviour
     public float attackRange = 2.5f;
     public float detectionRange = 10.0f;
     public string playerTag = "Player";
+    public GameObject indicator;
+    public Action OnAttackPoint;
+    
+    [Header("Indicator Sprites")]
+    public Sprite circleSprite;
+    public Sprite squareSprite;
+    public Sprite halfCircleSprite;
+    public Sprite halfAndhalfCircleSprite;
+    public GameObject rockPrefeb;
 
-    void Start()
+    public virtual void Start()
     {
         blackboard = new BossBlackboard
         {
@@ -23,17 +33,27 @@ public class BossAI : MonoBehaviour
             moveSpeed = this.moveSpeed,
             attackRange = this.attackRange,
             detectionRange = this.detectionRange,
-            bossAI = this
+            bossAI = this,
+            indicator = this.indicator,
         };
         
         GameObject player = GameObject.FindGameObjectWithTag(playerTag);
         if (player != null) blackboard.playerTarget = player.transform;
         
+        // 스킬 추가
+        List<Node> skillPool = new List<Node> 
+        {
+            new SkillExecuteNode(blackboard, new SlamSkill()),
+            new SkillExecuteNode(blackboard, new RushSkill()),
+            new SkillExecuteNode(blackboard, new ThrowSkill()),
+        };
+        
         Sequence attackSequence = new Sequence(blackboard, new List<Node>
         {
             new CheckPlayerDistance(blackboard, blackboard.attackRange),
-            new RandomSkillNode(blackboard)
+            new RandomSkillSelector(blackboard, skillPool) 
         });
+        
         
         Sequence followSequence = new Sequence(blackboard, new List<Node>
         {
@@ -45,49 +65,24 @@ public class BossAI : MonoBehaviour
         {
             attackSequence,
             followSequence,
-            new ActionNode_Idle(blackboard) // 아래 보너스 코드 참고
+            new ActionNode_Idle(blackboard) 
         });
     }
 
     void Update()
     {
-        // 3. 매 프레임 트리의 'Evaluate'를 호출하여 AI 가동
         if (rootNode != null)
         {
             rootNode.Evaluate();
         }
+        
+        float direction = blackboard.playerTarget.position.x - transform.position.x;
+        
     }
-
-    public void RandomSkill()
+    
+    public void TriggerAttack()
     {
-        int skillIdx = Random.Range(1, 3);
-        switch (skillIdx)
-        {
-            case 1:
-                StartCoroutine(Skill1());
-                break;
-            case 2:
-                StartCoroutine(Skill2());
-                break;
-            case 3:
-                StartCoroutine(Skill3());
-                break;
-        }
+        OnAttackPoint?.Invoke();
     }
-
-
-    public virtual IEnumerator Skill1()
-    {
-        return null;
-    } 
     
-    public virtual IEnumerator Skill2()
-    {
-        return null;
-    } 
-    
-    public virtual IEnumerator Skill3()
-    {
-        return null;
-    } 
 }
