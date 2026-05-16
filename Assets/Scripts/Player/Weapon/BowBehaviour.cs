@@ -71,31 +71,9 @@ public class BowBehaviour : WeaponBehaviourBase
     [SerializeField] private GameObject _aimShootArrowPrefab;
 
 
-    [Header("새로운 오프셋 시스템 (Offset System)")]
-    [Tooltip("체크하면 새로운 오프셋 소환 시스템을 사용합니다. 해제 시 기존 시스템(회전축 기준)을 사용합니다.")]
-    [SerializeField] private bool _useOffsetSystem = true;
-    
-    [Header("   ↳ 고정 위치 시스템 추가 옵션")]
-    [Tooltip("체크하면 활의 위치가 커서를 따라다니지 않고 아래 설정된 X, Y 로컬 위치로 고정됩니다. (회전만 커서를 향함)")]
-    [SerializeField] private bool _useFixedPosition = false;
-    [Tooltip("고정 소환 위치 (캐릭터 중심 기준, Use Fixed Position 체크 시 적용)")]
-    [SerializeField] private Vector2 _fixedSpawnPosition = new Vector2(0.5f, 0.5f);
-
-    [Header("   ↳ 동적 위치 시스템 (기존 새로운 시스템) 옵션")]
-    [Tooltip("캐릭터 중심에서 활이 소환될 반경 거리")]
-    [SerializeField] private float _spawnRadius = 1.5f;
-    [Tooltip("커서 방향을 기준으로 반시계 방향으로 틀어질 각도 (도)")]
-    [SerializeField] private float _offsetAngle = 45f;
-    [Tooltip("공격 종료 후 활이 화면에서 사라지기까지의 대기 시간 (초)")]
-    [SerializeField] private float _hideDelay = 0.5f;
-
     // ── WeaponBehaviourBase 오버라이드 ───────────────────────────
     public override WeaponType WeaponType          => WeaponType.Bow;
-    public override float PivotRotationOffset      => -45f;
-    
-    // 오프셋 시스템 사용 시 FloatingWeaponMotion의 위치 제어 비활성화
-    public override bool DisableFloatingMotion => _useOffsetSystem;
-
+    public override float PivotRotationOffset      => 0f;
     // 왼쪽을 향할 때 피봇 Y-scale을 -1로 반전해 스프라이트를 mirror 처리.
     // false(순수 회전)이면 180° 뒤집혀 비대칭하게 보여 좌측에서 크기가 달라 보임.
     public override bool  UseYScaleFlip            => true;
@@ -154,9 +132,6 @@ public class BowBehaviour : WeaponBehaviourBase
     private AimedShotArrow _aimedShotArrowScript;    // AImArrow의 스크립트 참조
     private float          _aimedShotArrowSpawnTime; // AImArrow 생성 시간 (블룸 램프용)
 
-    private Camera         _mainCamera;
-    private float          _lastAttackEndTime;
-    private Vector3        _shakeOffset; // 차징 떨림 오프셋
 
     private void Awake()
     {
@@ -185,8 +160,6 @@ public class BowBehaviour : WeaponBehaviourBase
             _aimUpVfxAnimator = _aimUpVfx.GetComponent<Animator>();
             _aimUpVfx.SetActive(false); // 시작 시 꺼둡니다.
         }
-
-        _mainCamera = Camera.main;
     }
 
     /// <summary>이름으로 자식 Transform을 재귀 탐색합니다.</summary>
@@ -213,8 +186,6 @@ public class BowBehaviour : WeaponBehaviourBase
         // 원본으로 강제 복원합니다. SwordBehaviour의 localEulerAngles 리셋과 동일한 패턴.
         if (_weaponAnimator != null)
             _weaponAnimator.transform.localScale = _weaponAnimatorScale;
-
-        UpdateOffsetTransform();
     }
 
     // ── Skill Logic ─────────────────────────────────────────────
@@ -449,20 +420,7 @@ public class BowBehaviour : WeaponBehaviourBase
         {
             float shakeX = Mathf.Sin(Time.time * _shakeFrequency)         * _shakeAmplitude;
             float shakeY = Mathf.Sin(Time.time * _shakeFrequency * 1.3f)  * _shakeAmplitude;
-            
-            if (_useOffsetSystem)
-            {
-                _shakeOffset = new Vector3(shakeX, shakeY, 0f);
-                // 위치 갱신은 UpdateOffsetTransform()에서 처리됩니다.
-            }
-            else
-            {
-                _aimedShotBowInstance.transform.localPosition = transform.localPosition + new Vector3(shakeX, shakeY, 0f);
-            }
-        }
-        else
-        {
-            _shakeOffset = Vector3.zero;
+            _aimedShotBowInstance.transform.localPosition = transform.localPosition + new Vector3(shakeX, shakeY, 0f);
         }
     }
 
@@ -673,7 +631,6 @@ public class BowBehaviour : WeaponBehaviourBase
 
         _bowState   = BowState.Idle;
         IsAttacking = false;
-        _lastAttackEndTime = Time.time;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -681,18 +638,6 @@ public class BowBehaviour : WeaponBehaviourBase
     // ─────────────────────────────────────────────────────────────
     private void HandleCharge()
     {
-        // [변경 후] 새로운 오프셋 시스템(목표 지점 기반 소환)이 활성화된 상태에서는 우클릭(차징) 공격 기능을 비활성화합니다.
-        // [변경 전] 기존 시스템(회전축 기준)에서는 우클릭 시 차징하여 강력한 화살을 발사할 수 있었습니다.
-        if (_useOffsetSystem)
-        {
-            // 만약 오프셋 시스템 켜짐 상태에서 예기치 않게 차징 중이라면 즉시 취소/발사 처리
-            if (_bowState == BowState.Charging)
-            {
-                ReleaseCharge();
-            }
-            return;
-        }
-
         // 우클릭 시작
         if (Input.GetMouseButtonDown(1) && _bowState == BowState.Idle && _bowState != BowState.AimedShot)
         {
@@ -758,20 +703,11 @@ public class BowBehaviour : WeaponBehaviourBase
             {
                 float shakeX = Mathf.Sin(Time.time * _shakeFrequency)         * _shakeAmplitude;
                 float shakeY = Mathf.Sin(Time.time * _shakeFrequency * 1.3f)  * _shakeAmplitude;
-                
-                if (_useOffsetSystem)
-                {
-                    _shakeOffset = new Vector3(shakeX, shakeY, 0f);
-                }
-                else
-                {
-                    _weaponTransform.localPosition = _weaponLocalOrigin + new Vector3(shakeX, shakeY, 0f);
-                }
+                _weaponTransform.localPosition = _weaponLocalOrigin + new Vector3(shakeX, shakeY, 0f);
             }
             else
             {
-                if (_useOffsetSystem) _shakeOffset = Vector3.zero;
-                else _weaponTransform.localPosition = _weaponLocalOrigin;
+                _weaponTransform.localPosition = _weaponLocalOrigin;
             }
 
             // 우클릭을 놓으면 발사
@@ -908,7 +844,6 @@ public class BowBehaviour : WeaponBehaviourBase
 
             IsAttacking = false;
             _bowState   = BowState.Idle;
-            _lastAttackEndTime = Time.time;
 
             if (_weaponAnimator != null)
             {
@@ -931,8 +866,6 @@ public class BowBehaviour : WeaponBehaviourBase
     {
         _hasFired = true;
         if (_arrowPrefab == null || _arrowPos == null) return;
-
-        UpdateOffsetTransform();
 
         // 속도, 데미지 보간 (무기 데미지 + 플레이어 Atk 보너스)
         float speed       = Mathf.Lerp(_minArrowSpeed, _maxArrowSpeed, chargeRatio);
@@ -960,7 +893,6 @@ public class BowBehaviour : WeaponBehaviourBase
         _bowState   = BowState.Idle;
         IsAttacking = false;
         _hasFired   = false;
-        _lastAttackEndTime = 0f; // 비활성화 시 즉시 숨김
         ResetChargeEffects();
 
         if (_weaponAnimator != null)
@@ -975,105 +907,6 @@ public class BowBehaviour : WeaponBehaviourBase
 
     /// <summary>현재 조준 사격 차징 중인지 반환합니다.</summary>
     public bool IsAimedShotCharging => _bowState == BowState.AimedShot;
-
-    // ─────────────────────────────────────────────────────────────
-    // 오프셋 소환 위치 갱신 로직 (Offset System)
-    // ─────────────────────────────────────────────────────────────
-    private void UpdateOffsetTransform()
-    {
-        if (!_useOffsetSystem)
-        {
-            // 기존 시스템 복구
-            if (_spriteRenderer != null && _bowState != BowState.AimedShot)
-                _spriteRenderer.enabled = true;
-
-            if (_bowState == BowState.Idle || _bowState == BowState.NormalAttack)
-            {
-                transform.localPosition = Vector3.zero;
-                transform.localRotation = Quaternion.identity;
-                // scale은 PlayerWeaponController가 제어
-            }
-            return;
-        }
-
-        if (_mainCamera == null) return;
-
-        bool isAttackingState = _bowState != BowState.Idle;
-        bool isVisible = isAttackingState || (Time.time - _lastAttackEndTime < _hideDelay);
-
-        if (_bowState == BowState.AimedShot)
-            isVisible = false;
-
-        if (_spriteRenderer != null)
-            _spriteRenderer.enabled = isVisible;
-
-        if (!isVisible && !isAttackingState) return;
-
-        Vector3 center = transform.parent != null ? transform.parent.position : transform.position;
-        Vector3 mouseScreenPos = Input.mousePosition;
-        mouseScreenPos.z = Mathf.Abs(_mainCamera.transform.position.z - center.z);
-        Vector3 mouseWorld = _mainCamera.ScreenToWorldPoint(mouseScreenPos);
-
-        Vector3 mainDir = mouseWorld - center;
-        mainDir.z = 0;
-
-        if (mainDir.sqrMagnitude > 0.0001f)
-        {
-            mainDir.Normalize();
-
-            // 2. 오프셋 방향 및 최종 소환 위치 결정
-            Vector3 finalPos;
-            if (_useFixedPosition)
-            {
-                // [이번에 추가된 시스템] 캐릭터 위치 기준 고정된 x, y 좌표 소환
-                finalPos = center + new Vector3(_fixedSpawnPosition.x, _fixedSpawnPosition.y, 0f) + _shakeOffset;
-            }
-            else
-            {
-                // [이전 추가된 시스템] 커서 방향 기준 반시계 회전 및 반경 소환
-                float rad = _offsetAngle * Mathf.Deg2Rad;
-                float cos = Mathf.Cos(rad);
-                float sin = Mathf.Sin(rad);
-                Vector3 offsetDir = new Vector3(
-                    mainDir.x * cos - mainDir.y * sin,
-                    mainDir.x * sin + mainDir.y * cos,
-                    0f
-                );
-                finalPos = center + offsetDir * _spawnRadius + _shakeOffset;
-            }
-            
-            // 4. 회전: 마우스 위치 바라보기
-            Vector3 toMouse = mouseWorld - finalPos;
-            toMouse.z = 0;
-            if (toMouse.sqrMagnitude > 0.0001f)
-            {
-                toMouse.Normalize();
-                float angle = Mathf.Atan2(toMouse.y, toMouse.x) * Mathf.Rad2Deg;
-
-                // 일반 상태의 활 트랜스폼 적용
-                if (_bowState != BowState.AimedShot)
-                {
-                    transform.position = finalPos;
-                    transform.rotation = Quaternion.Euler(0, 0, angle);
-
-                    float parentScaleY = transform.parent != null ? transform.parent.localScale.y : 1f;
-                    float desiredScaleY = toMouse.x < 0f ? -1f : 1f;
-                    transform.localScale = new Vector3(1f, desiredScaleY * parentScaleY, 1f);
-                }
-                
-                // 조준 사격용 인스턴스에도 적용
-                if (_bowState == BowState.AimedShot && _aimedShotBowInstance != null)
-                {
-                    _aimedShotBowInstance.transform.position = finalPos;
-                    _aimedShotBowInstance.transform.rotation = Quaternion.Euler(0, 0, angle);
-
-                    float parentScaleY = transform.parent != null ? transform.parent.localScale.y : 1f;
-                    float desiredScaleY = toMouse.x < 0f ? -1f : 1f;
-                    _aimedShotBowInstance.transform.localScale = new Vector3(1f, desiredScaleY * parentScaleY, 1f);
-                }
-            }
-        }
-    }
 
     /// <summary>
     /// 매우 짧은 시간 동안 게임 내 시간을 강제로 늦춰(Hit Stop) 타격감을 극대화합니다.

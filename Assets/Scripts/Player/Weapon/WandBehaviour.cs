@@ -54,12 +54,6 @@ public class WandBehaviour : WeaponBehaviourBase
     [Tooltip("플레이어 중심으로부터 완드가 떨어지는 거리.")]
     [SerializeField] private float _orbitRadius = 0.2f;
 
-    [Header("Instant Cast Mode")]
-    [Tooltip("체크 시 지팡이 모션 없이 즉시 마법구를 발사합니다.")]
-    [SerializeField] private bool _isInstantCastMode = false;
-    [Tooltip("즉시 발사 모드일 때 다음 공격까지의 딜레이(쿨타임).")]
-    [SerializeField] private float _instantCastDelay = 0.5f;
-
     // ── WeaponBehaviourBase 오버라이드 ──────────────────────────────
     public override WeaponType WeaponType          => WeaponType.Staff;
     public override bool  UseYScaleFlip            => true;
@@ -70,7 +64,6 @@ public class WandBehaviour : WeaponBehaviourBase
     public override float ComboWindow              => 0f;
     public override int   MaxComboSteps            => 1;
     public override float PivotRotationOffset      => 0f;
-    public override bool  DisableFloatingMotion    => _isInstantCastMode;
 
     // ── 내부 상태 ──────────────────────────────────────────────────
     private bool    _hasFired;
@@ -98,18 +91,6 @@ public class WandBehaviour : WeaponBehaviourBase
 
         // 매터리얼 설정 확인 (디버깅 지원)
         ValidateMaterialSettings();
-
-        // 즉시 발사 모드일 경우 외형(렌더러, 애니메이터, 둥실 모션)을 모두 끕니다.
-        if (_isInstantCastMode)
-        {
-            var renderers = GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < renderers.Length; i++) renderers[i].enabled = false;
-
-            if (_weaponAnimator != null) _weaponAnimator.enabled = false;
-
-            var floatingMotion = GetComponent<FloatingWeaponMotion>();
-            if (floatingMotion != null) floatingMotion.enabled = false;
-        }
     }
 
     private void UpdateGlow(float intensity)
@@ -155,12 +136,7 @@ public class WandBehaviour : WeaponBehaviourBase
         _hasFired        = false;
         CurrentComboStep = 1;
 
-        if (_isInstantCastMode)
-        {
-            FireProjectile();
-            _hasFired = true;
-        }
-        else if (_weaponAnimator != null)
+        if (_weaponAnimator != null)
         {
             _weaponAnimator.SetTrigger("Attack");
         }
@@ -168,17 +144,6 @@ public class WandBehaviour : WeaponBehaviourBase
 
     public override bool PollFinished(float attackStartTime)
     {
-        // 즉시 발사 모드
-        if (_isInstantCastMode)
-        {
-            if (Time.time - attackStartTime >= _instantCastDelay)
-            {
-                IsAttacking = false;
-                return true;
-            }
-            return false;
-        }
-
         if (_weaponAnimator == null) { IsAttacking = false; return true; }
         if (Time.time - attackStartTime < 0.05f) return false;
 
@@ -234,15 +199,11 @@ public class WandBehaviour : WeaponBehaviourBase
     {
         IsAttacking = false;
         _hasFired   = false;
-        
-        if (!_isInstantCastMode)
+        SetGlow(0f);
+        if (_weaponAnimator != null)
         {
-            SetGlow(0f);
-            if (_weaponAnimator != null)
-            {
-                _weaponAnimator.Play("Idle", 0, 0f);
-                _weaponAnimator.Update(0f);
-            }
+            _weaponAnimator.Play("Idle", 0, 0f);
+            _weaponAnimator.Update(0f);
         }
     }
 

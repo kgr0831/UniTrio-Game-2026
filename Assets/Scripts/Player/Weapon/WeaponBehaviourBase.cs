@@ -61,12 +61,6 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
     /// </summary>
     public virtual float PivotRotationOffset => 0f;
 
-    /// <summary>
-    /// 무기 자체적으로 위치/회전을 제어하여 FloatingWeaponMotion의 기본 위치/회전/크기 제어를 비활성화할지 여부.
-    /// 활의 오프셋 소환이나 지팡이의 즉시 발사 모드 등에서 true를 반환해야 합니다.
-    /// </summary>
-    public virtual bool DisableFloatingMotion => false;
-
     /// <summary>현재 공격 중인 스윙에 적용될 강타(Bash) 배율입니다. (히트박스에서 읽음)</summary>
     public float CurrentSwingBashMultiplier { get; protected set; } = 1f;
 
