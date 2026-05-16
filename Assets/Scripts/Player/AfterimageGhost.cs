@@ -2,19 +2,26 @@ using UnityEngine;
 
 /// <summary>
 /// 잔상 VFX 1개. Setup() 호출 시 활성화, FadeDuration 후 자동 비활성화.
+/// VFXLit2D 셰이더의 _Alpha와 _EmissionIntensity를 MaterialPropertyBlock으로 애니메이션.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 public class AfterimageGhost : MonoBehaviour
 {
     private const float FadeDuration = 0.3f;
     private const float InitialAlpha = 0.85f;
+    private const float InitialEmission = 2f;
 
-    private SpriteRenderer _sr;
-    private float          _timer;
+    private static readonly int AlphaID = Shader.PropertyToID("_Alpha");
+    private static readonly int EmissionIntensityID = Shader.PropertyToID("_EmissionIntensity");
+
+    private SpriteRenderer       _sr;
+    private MaterialPropertyBlock _mpb;
+    private float                 _timer;
 
     private void Awake()
     {
-        _sr = GetComponent<SpriteRenderer>();
+        _sr  = GetComponent<SpriteRenderer>();
+        _mpb = new MaterialPropertyBlock();
     }
 
     public void Setup(Sprite sprite, Vector3 worldPos, Vector3 worldScale,
@@ -30,6 +37,11 @@ public class AfterimageGhost : MonoBehaviour
         baseColor.a = InitialAlpha;
         _sr.color   = baseColor;
 
+        _sr.GetPropertyBlock(_mpb);
+        _mpb.SetFloat(AlphaID, 1f);
+        _mpb.SetFloat(EmissionIntensityID, InitialEmission);
+        _sr.SetPropertyBlock(_mpb);
+
         _timer = 0f;
         gameObject.SetActive(true);
     }
@@ -37,10 +49,16 @@ public class AfterimageGhost : MonoBehaviour
     private void Update()
     {
         _timer += Time.deltaTime;
+        float t = _timer / FadeDuration;
 
         Color c = _sr.color;
-        c.a       = Mathf.Lerp(InitialAlpha, 0f, _timer / FadeDuration);
+        c.a       = Mathf.Lerp(InitialAlpha, 0f, t);
         _sr.color = c;
+
+        _sr.GetPropertyBlock(_mpb);
+        _mpb.SetFloat(AlphaID, Mathf.Lerp(1f, 0f, t));
+        _mpb.SetFloat(EmissionIntensityID, Mathf.Lerp(InitialEmission, 0f, t));
+        _sr.SetPropertyBlock(_mpb);
 
         if (_timer >= FadeDuration)
             gameObject.SetActive(false);

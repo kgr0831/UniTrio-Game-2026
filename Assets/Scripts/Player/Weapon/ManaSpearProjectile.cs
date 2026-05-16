@@ -38,13 +38,12 @@ public class ManaSpearProjectile : MonoBehaviour
         _collider = GetComponent<Collider2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
 
-        // 1. 투사체 본체에 블룸 효과(SpriteGlow) 적용
         if (_spriteRenderer != null)
         {
-            Material spearMat = new Material(Shader.Find("Custom/SpriteGlow"));
-            spearMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-            spearMat.SetFloat("_GlowIntensity", 3f);
-            spearMat.SetColor("_GlowColor", new Color(0.2f, 0.6f, 1f, 1f)); // 마나를 띄는 파란색 계열
+            Material spearMat = new Material(Shader.Find("Custom/VFXLit2D"));
+            spearMat.SetFloat("_EmissionIntensity", 3f);
+            spearMat.SetColor("_EmissionColor", new Color(0.2f, 0.6f, 1f, 1f));
+            spearMat.SetFloat("_LightInfluence", 0.3f);
             _spriteRenderer.material = spearMat;
         }
 
@@ -71,10 +70,10 @@ public class ManaSpearProjectile : MonoBehaviour
         shape.radiusThickness = 0.1f;
 
         var psRenderer = _gatheringParticle.GetComponent<ParticleSystemRenderer>();
-        Material gatherMat = new Material(Shader.Find("Custom/SpriteGlow"));
-        gatherMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-        gatherMat.SetFloat("_GlowIntensity", 4f);
-        gatherMat.SetColor("_GlowColor", new Color(0.2f, 0.6f, 1f, 1f));
+        Material gatherMat = new Material(Shader.Find("Custom/VFXLit2D"));
+        gatherMat.SetFloat("_EmissionIntensity", 4f);
+        gatherMat.SetColor("_EmissionColor", new Color(0.2f, 0.6f, 1f, 1f));
+        gatherMat.SetFloat("_LightInfluence", 0.3f);
         psRenderer.material = gatherMat;
         psRenderer.sortingLayerName = "Weapons";
         psRenderer.sortingOrder = 10;

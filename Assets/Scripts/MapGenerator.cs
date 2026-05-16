@@ -34,22 +34,31 @@ public class MapGenerator : MonoBehaviour
     public int renderDistance = 3;
     
     private Dictionary<Vector2Int, TerrainChunk> chunks = new Dictionary<Vector2Int, TerrainChunk>();
-    private IObjectPool<GameObject> objectPool;
+    private IObjectPool<GameObject> _objectPool;
+    private IObjectPool<GameObject> objectPool
+    {
+        get
+        {
+            if (_objectPool == null)
+            {
+                _objectPool = new ObjectPool<GameObject>(
+                    createFunc: () => new GameObject("PooledObject"),
+                    actionOnGet: (obj) => obj.SetActive(true),
+                    actionOnRelease: (obj) => {
+                        foreach (Transform child in obj.transform) Destroy(child.gameObject);
+                        obj.SetActive(false);
+                    },
+                    collectionCheck: false,
+                    defaultCapacity: 100,
+                    maxSize: 1000
+                );
+            }
+            return _objectPool;
+        }
+    }
 
     void Awake()
     {
-        objectPool = new ObjectPool<GameObject>(
-            createFunc: () => new GameObject("PooledObject"),
-            actionOnGet: (obj) => obj.SetActive(true),
-            actionOnRelease: (obj) => {
-                foreach (Transform child in obj.transform) Destroy(child.gameObject);
-                obj.SetActive(false);
-            },
-            collectionCheck: false,
-            defaultCapacity: 100,
-            maxSize: 1000
-        );
-
         CalculateThresholds();
     }
 

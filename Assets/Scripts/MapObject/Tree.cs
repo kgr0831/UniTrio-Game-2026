@@ -37,11 +37,11 @@ public class Tree : BaseMapObject
     public override IEnumerator Gimic()
     {
         Debug.Log("코루틴실행");
-        GameObject indicator = IndicatorManager.Instance.SpawnIndicator(data.indicatorSprite);
-        indicator.transform.localScale = new Vector3(3, 3, 1);
-        indicator.transform.position = transform.position;
+        //GameObject indicator = IndicatorManager.Instance.SpawnIndicator(data.indicatorSprite);
+        //indicator.transform.localScale = new Vector3(3, 3, 1);
+       // indicator.transform.position = transform.position;
         yield return new WaitForSeconds(2.0f);
-        StartCoroutine(IndicatorManager.Instance.AttackBasedIndicator(indicator));
+        //StartCoroutine(IndicatorManager.Instance.AttackBasedIndicator(indicator));
         yield return base.Gimic();
     }
     

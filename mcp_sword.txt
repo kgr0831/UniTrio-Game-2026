@@ -1,0 +1,3 @@
+﻿event: message
+data: {"jsonrpc":"2.0","id":7,"result":{"content":[{"type":"text","text":"{\"success\":true,\"message\":\"Found GameObjects\",\"data\":{\"instanceIDs\":[],\"pageSize\":50,\"cursor\":0,\"nextCursor\":null,\"totalCount\":0,\"hasMore\":false}}"}],"structuredContent":{"success":true,"message":"Found GameObjects","data":{"instanceIDs":[],"pageSize":50,"cursor":0,"nextCursor":null,"totalCount":0,"hasMore":false}},"isError":false}}
+
