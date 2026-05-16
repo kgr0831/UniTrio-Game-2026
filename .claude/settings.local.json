@@ -50,7 +50,12 @@
       "Bash(python -c ':*)",
       "Bash(python:*)",
       "Bash(grep WeaponType:*)",
-      "mcp__UnityMCP__manage_scriptable_object"
+      "mcp__UnityMCP__manage_scriptable_object",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\" -Directory | Where-Object {$_.Name -match \"VFX|Effect|Material|Shader|Camera\"} | Select-Object -ExpandProperty FullName)",
+      "WebFetch(domain:www.youtube.com)",
+      "WebSearch",
+      "WebFetch(domain:docs.unity3d.com)",
+      "mcp__UnityMCP__delete_script"
     ]
   }
 }

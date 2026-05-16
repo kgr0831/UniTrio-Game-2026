@@ -42,8 +42,8 @@ public class ExplosionEffect : MonoBehaviour
     private MaterialPropertyBlock _propBlock;
     private float                 _elapsed;
 
-    private static readonly int _glowIntensityId = Shader.PropertyToID("_GlowIntensity");
-    private static readonly int _glowColorId     = Shader.PropertyToID("_GlowColor");
+    private static readonly int _emissionIntensityId = Shader.PropertyToID("_EmissionIntensity");
+    private static readonly int _emissionColorId    = Shader.PropertyToID("_EmissionColor");
 
     // 최적화: 물리 검출 시 가비지를 생성하지 않도록 정적 배열 사용 (ContactFilter2D + OverlapCircle 오버로드)
     private static readonly Collider2D[] _overlapResults = new Collider2D[100];
@@ -143,8 +143,8 @@ public class ExplosionEffect : MonoBehaviour
         if (_glowRenderer != null)
         {
             _glowRenderer.GetPropertyBlock(_propBlock);
-            _propBlock.SetColor(_glowColorId,     _glowColor);
-            _propBlock.SetFloat(_glowIntensityId, intensity);
+            _propBlock.SetColor(_emissionColorId, _glowColor);
+            _propBlock.SetFloat(_emissionIntensityId, intensity);
             _glowRenderer.SetPropertyBlock(_propBlock);
         }
 

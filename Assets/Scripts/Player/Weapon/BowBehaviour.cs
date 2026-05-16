@@ -105,6 +105,12 @@ public class BowBehaviour : WeaponBehaviourBase
     public override float ComboWindow              => 0f;
     public override int   MaxComboSteps            => 1;
 
+    public override void SetWeaponSprite(Sprite sprite)
+    {
+        if (_spriteRenderer != null && sprite != null)
+            _spriteRenderer.sprite = sprite;
+    }
+
     // ── 내부 상태 ────────────────────────────────────────────────
     private enum BowState { Idle, NormalAttack, Charging, AimedShot }
     private BowState _bowState = BowState.Idle;
@@ -126,8 +132,8 @@ public class BowBehaviour : WeaponBehaviourBase
 
     private SpriteRenderer       _spriteRenderer;
     private MaterialPropertyBlock _propBlock;
-    private static readonly int  _glowIntensityId = Shader.PropertyToID("_GlowIntensity");
-    private static readonly int  _glowColorId     = Shader.PropertyToID("_GlowColor");
+    private static readonly int  _glowIntensityId = Shader.PropertyToID("_EmissionIntensity");
+    private static readonly int  _glowColorId     = Shader.PropertyToID("_EmissionColor");
 
     // ── 조준 사격 상태 ────────────────────────────────────────────
     private GameObject     _aimedShotBowInstance;
@@ -269,12 +275,11 @@ public class BowBehaviour : WeaponBehaviourBase
             _aimedShotBowRendererMain = _aimedShotBowInstance.GetComponent<SpriteRenderer>();
             _aimedShotBowPropBlock    = new MaterialPropertyBlock();
 
-            // AimedShot_Bow 자체에 보랏빛 블룸 셰이더 적용
             if (_aimedShotBowRendererMain != null)
             {
-                Material glowMat = new Material(Shader.Find("Custom/SpriteGlow"));
-                glowMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-                _aimedShotBowRendererMain.material = glowMat;
+                Material vfxMat = new Material(Shader.Find("Custom/VFXLit2D"));
+                vfxMat.SetFloat("_LightInfluence", 0.3f);
+                _aimedShotBowRendererMain.material = vfxMat;
             }
 
             Transform arrowChild  = _aimedShotBowInstance.transform.Find("AimedShot_Arrow");
@@ -310,10 +315,10 @@ public class BowBehaviour : WeaponBehaviourBase
                 shape.radiusThickness = 0.1f; // 표면에서 발생
 
                 var psRenderer = _aimedShotGatherParticle.GetComponent<ParticleSystemRenderer>();
-                Material gatherMat = new Material(Shader.Find("Custom/SpriteGlow"));
-                gatherMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-                gatherMat.SetFloat("_GlowIntensity", 3f);
-                gatherMat.SetColor("_GlowColor", _glowColor);
+                Material gatherMat = new Material(Shader.Find("Custom/VFXLit2D"));
+                gatherMat.SetFloat("_EmissionIntensity", 3f);
+                gatherMat.SetColor("_EmissionColor", _glowColor);
+                gatherMat.SetFloat("_LightInfluence", 0.3f);
                 psRenderer.material = gatherMat;
                 psRenderer.sortingLayerName = "Weapons";
                 psRenderer.sortingOrder = 15;
@@ -372,8 +377,8 @@ public class BowBehaviour : WeaponBehaviourBase
             }
             
             _aimedShotBowRendererMain.GetPropertyBlock(_aimedShotBowPropBlock);
-            _aimedShotBowPropBlock.SetFloat("_GlowIntensity", bowGlow);
-            _aimedShotBowPropBlock.SetColor("_GlowColor", _glowColor);
+            _aimedShotBowPropBlock.SetFloat("_EmissionIntensity", bowGlow);
+            _aimedShotBowPropBlock.SetColor("_EmissionColor", _glowColor);
             _aimedShotBowRendererMain.SetPropertyBlock(_aimedShotBowPropBlock);
         }
 
@@ -482,13 +487,12 @@ public class BowBehaviour : WeaponBehaviourBase
 
         _aimedShotArrowScript = _aimedShotArrowInstance.GetComponent<AimedShotArrow>();
 
-        // SpriteGlow 셸이더 적용 (투명 배경 제외 부분에 블룸)
         SpriteRenderer arrowRenderer = _aimedShotArrowInstance.GetComponent<SpriteRenderer>();
         if (arrowRenderer != null)
         {
-            Material glowMat = new Material(Shader.Find("Custom/SpriteGlow"));
-            glowMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-            arrowRenderer.material = glowMat;
+            Material vfxMat = new Material(Shader.Find("Custom/VFXLit2D"));
+            vfxMat.SetFloat("_LightInfluence", 0.3f);
+            arrowRenderer.material = vfxMat;
         }
 
         Debug.Log("[BowBehaviour] AImArrow 생성 완료! (발사 대기 중)");

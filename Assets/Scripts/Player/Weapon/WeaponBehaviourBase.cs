@@ -73,6 +73,9 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
     /// <summary>강타 시각 효과(블룸, 스프라이트 교체 등)를 활성화/비활성화 합니다.</summary>
     public virtual void SetBashEffectActive(bool active) { }
 
+    /// <summary>장착된 WeaponData의 Icon 스프라이트를 무기 비주얼에 반영합니다.</summary>
+    public virtual void SetWeaponSprite(Sprite sprite) { }
+
     /// <summary>공격 시작. comboStep에 이번에 실행할 타수(1, 2, ...)를 넘깁니다.</summary>
     public abstract void BeginAttack(int comboStep);
 

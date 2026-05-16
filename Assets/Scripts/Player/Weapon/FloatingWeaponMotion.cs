@@ -24,10 +24,31 @@ public class FloatingWeaponMotion : MonoBehaviour
     [SerializeField] private float _equipSpeed = 2f; // 속도를 낮춰 페이드 인이 눈에 띄게 조정
 
     [Header("Slash Arc Settings (Sword)")]
-    [SerializeField] private float _slashDistance = -0.1f; // 검과 플레이어의 거리 (인스펙터에서 조절 가능)
-    [SerializeField] private float _slashScale = 1.2f;    // 검의 크기 (인스펙터에서 조절 가능)
-    [SerializeField] private float _slashEasePower = 4.0f; // 비선형 감속 강도 (빠르게 벤 후 점점 느려짐)
+    [SerializeField] private float _slashDistance = -0.1f;
+    [SerializeField] private float _slashScale = 1.2f;
+    [SerializeField] private float _slashEasePower = 4.0f;
     [SerializeField] private float _attackSpeedMultiplier = 1.0f;
+
+    [Header("Spear Thrust Settings (창)")]
+    [Tooltip("찌르기 전체 시간 (초). 낮을수록 빠름")]
+    [SerializeField] private float _spearDuration = 0.15f;
+    [Tooltip("생성 위치: 커서 수직 방향 거리 (커서 오른쪽이면 위로 이만큼 올라감)")]
+    [SerializeField] private float _spearWorldUpOffset = 2.0f;
+    [Tooltip("생성 위치: 커서 반대 방향(Local X-) 오프셋")]
+    [SerializeField] private float _spearStartBack = 0.3f;
+    [Tooltip("찌르기 크기 배율")]
+    [SerializeField] private float _spearScale = 2.0f;
+    [Tooltip("찌르기 중 추가 크기 (sin 피크)")]
+    [SerializeField] private float _spearScalePunch = 0.3f;
+    [Tooltip("스프라이트의 날(blade)이 가리키는 방향 (z=0, 자식 회전 0 기준, 도). 기본 45 = 우상단")]
+    [SerializeField] private float _spearBladeAngle = 45f;
+    [Tooltip("날 끝 보정: 스프라이트 중심에서 날 끝까지의 거리. 날 끝이 커서에 도달하도록 목표를 당깁니다")]
+    [SerializeField] private float _spearTipOffset = 0.8f;
+    [Tooltip("찌르기 속도 커브 (X=시간 0~1, Y=진행도 0~1). 가속 → 도달")]
+    [SerializeField] private AnimationCurve _spearThrustCurve = new AnimationCurve(
+        new Keyframe(0f, 0f, 0f, 0f),
+        new Keyframe(1f, 1f, 2f, 0f)
+    );
 
     private WeaponBehaviourBase _weapon;
     
@@ -42,6 +63,7 @@ public class FloatingWeaponMotion : MonoBehaviour
     
     private float _timeOffset;
     private float _currentLunge;
+    private float _currentLungeY;
     private float _equipDropOffset;
 
     // 부드러운 전환을 위한 보간 변수
@@ -84,7 +106,7 @@ public class FloatingWeaponMotion : MonoBehaviour
                     _attackLungeDistance = 0.5f; 
                     break;
                 case WeaponType.Spear:
-                    _attackLungeDistance = 0.7f;
+                    _attackLungeDistance = 3.0f;
                     break;
                 case WeaponType.Bow:
                     _attackLungeDistance = 0.1f;
@@ -111,10 +133,8 @@ public class FloatingWeaponMotion : MonoBehaviour
                 string objName = r.gameObject.name.ToLower();
                 bool isVfx = objName.Contains("vfx") || objName.Contains("effect") || objName.Contains("trail");
 
-                if (isVfx) 
+                if (isVfx)
                 {
-                    // VFX도 알파 페이딩(소멸 효과)을 위해 렌더러 목록에는 포함시킵니다.
-                    // 다만 머티리얼 교체(Glow)는 하지 않고 원래 머티리얼을 유지합니다.
                 }
                 else if (glowShader != null)
                 {
@@ -193,21 +213,22 @@ public class FloatingWeaponMotion : MonoBehaviour
         if (ghost == null)
         {
             GameObject obj = new GameObject("WeaponGhost");
-            obj.transform.SetParent(null); 
+            obj.transform.SetParent(null);
             ghost = obj.AddComponent<SpriteRenderer>();
-            
-            Shader glowShader = Shader.Find("Custom/SpriteGlow");
-            if (glowShader != null)
+            obj.AddComponent<GhostFade>();
+
+            Shader glowShader2 = Shader.Find("Custom/SpriteGlow");
+            if (glowShader2 != null)
             {
-                Material ghostMat = new Material(glowShader);
+                Material ghostMat = new Material(glowShader2);
                 ghostMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
                 ghostMat.SetFloat("_GlowIntensity", 2.5f);
                 ghostMat.SetColor("_GlowColor", GetWeaponAuraColor() * 3f);
                 ghost.material = ghostMat;
             }
-            
+
             ghost.sortingLayerID = _mainSpriteRenderer.sortingLayerID;
-            ghost.sortingOrder = _mainSpriteRenderer.sortingOrder - 1; 
+            ghost.sortingOrder = _mainSpriteRenderer.sortingOrder - 1;
         }
 
         ghost.gameObject.SetActive(true);
@@ -220,40 +241,48 @@ public class FloatingWeaponMotion : MonoBehaviour
         ghost.flipY = _mainSpriteRenderer.flipY;
 
         _activeGhosts.Add(ghost);
-        StartCoroutine(FadeGhostCoroutine(ghost));
+
+        float startAlpha = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.7f : 0.4f;
+        float lifeTime = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.4f : _ghostLifeTime;
+        Color baseColor = GetWeaponAuraColor();
+
+        var fader = ghost.GetComponent<GhostFade>();
+        fader.Play(ghost, lifeTime, startAlpha, baseColor, _activeGhosts, _ghostPool);
     }
 
-    private System.Collections.IEnumerator FadeGhostCoroutine(SpriteRenderer ghost)
+    private class GhostFade : MonoBehaviour
     {
-        float elapsed = 0f;
-        Color baseColor = GetWeaponAuraColor();
-        // 3타는 더 잘 보이도록 기본 알파를 약간 높임
-        float startAlpha = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.7f : 0.4f;
-        float lifeTime = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.28f : _ghostLifeTime;
+        private SpriteRenderer _sr;
+        private float _life, _startAlpha, _elapsed;
+        private Color _baseColor;
+        private System.Collections.Generic.List<SpriteRenderer> _activeList;
+        private System.Collections.Generic.Queue<SpriteRenderer> _pool;
 
-        while (elapsed < lifeTime)
+        public void Play(SpriteRenderer sr, float life, float startAlpha, Color baseColor,
+            System.Collections.Generic.List<SpriteRenderer> activeList,
+            System.Collections.Generic.Queue<SpriteRenderer> pool)
         {
-            elapsed += Time.deltaTime;
-            float t = elapsed / lifeTime;
-            
-            // 검(Sword)인 경우 레트로 느낌을 위해 알파값을 4단계로 뚝뚝 끊어지게 스텝 처리
-            if (_weapon != null && _weapon.WeaponType == WeaponType.Sword)
-            {
-                int steps = 4;
-                t = Mathf.Floor(t * steps) / steps;
-            }
-            
-            // 알파 페이드 (크기 확장은 사용자 요청으로 제거)
-            Color c = baseColor;
-            c.a = Mathf.Lerp(startAlpha, 0f, t);
-            ghost.color = c;
-            
-            yield return null;
+            _sr = sr; _life = life; _startAlpha = startAlpha;
+            _baseColor = baseColor; _activeList = activeList; _pool = pool;
+            _elapsed = 0f; enabled = true;
         }
 
-        ghost.gameObject.SetActive(false);
-        _activeGhosts.Remove(ghost);
-        _ghostPool.Enqueue(ghost);
+        private void Update()
+        {
+            _elapsed += Time.deltaTime;
+            float t = _elapsed / _life;
+            if (t >= 1f)
+            {
+                gameObject.SetActive(false);
+                _activeList?.Remove(_sr);
+                _pool?.Enqueue(_sr);
+                enabled = false;
+                return;
+            }
+            Color c = _baseColor;
+            c.a = Mathf.Lerp(_startAlpha, 0f, t);
+            if (_sr != null) _sr.color = c;
+        }
     }
 
     private void EmitSwordParticles(int count)
@@ -360,16 +389,7 @@ public class FloatingWeaponMotion : MonoBehaviour
             }
         }
 
-        // 잔상 즉시 제거
-        StopAllCoroutines();
-        for (int i = _activeGhosts.Count - 1; i >= 0; i--)
-        {
-            if (_activeGhosts[i] != null)
-            {
-                _activeGhosts[i].gameObject.SetActive(false);
-                _ghostPool.Enqueue(_activeGhosts[i]);
-            }
-        }
+        // 잔상은 GhostFade 컴포넌트가 자체적으로 페이드 처리 — 여기서 제거하지 않음
         _activeGhosts.Clear();
     }
 
@@ -377,6 +397,11 @@ public class FloatingWeaponMotion : MonoBehaviour
     private float _attackPhaseTime;
     private bool  _wasAttacking;
     private int   _lastComboStep = -1; // 콤보 스텝 변화 감지용
+
+    // 창 찌르기 공격 컨텍스트 (공격 시작 시 1회 계산)
+    private Vector2 _spearSpawnLocal;
+    private Vector2 _spearTargetLocal;
+    private float   _spearThrustRotZ;
 
     private void LateUpdate()
     {
@@ -415,10 +440,42 @@ public class FloatingWeaponMotion : MonoBehaviour
         {
             _attackPhaseTime = 0f;
             _currentLunge = 0f;
+            _currentLungeY = 0f;
             _currentScalePunch = 1f;
-            
+
             _lastGhostLocalPos = transform.localPosition;
             triggerStartParticle = true;
+
+            if (_weapon != null && _weapon.WeaponType == WeaponType.Spear)
+            {
+                float cursorDist = _attackLungeDistance;
+                Camera cam = Camera.main;
+                if (cam != null)
+                {
+                    Vector3 mScreen = Input.mousePosition;
+                    mScreen.z = Mathf.Abs(cam.transform.position.z - transform.position.z);
+                    Vector3 mWorld = cam.ScreenToWorldPoint(mScreen);
+                    Vector3 pivotWorld = transform.parent != null ? transform.parent.position : transform.position;
+                    cursorDist = Vector2.Distance(mWorld, pivotWorld);
+                }
+                cursorDist = Mathf.Clamp(cursorDist, 1f, _attackLungeDistance);
+
+                // 가까울수록 Y 오프셋(수직 거리) 증가 — 가까이서 크게 휘둘러 오는 느낌
+                float normalizedDist = Mathf.Clamp01(cursorDist / _attackLungeDistance);
+                float yOffset = _spearWorldUpOffset * Mathf.Lerp(3f, 1f, normalizedDist);
+
+                _spearSpawnLocal = new Vector2(-_spearStartBack, yOffset);
+
+                Vector2 cursorLocal = new Vector2(cursorDist, 0f);
+                Vector2 thrustDir = (cursorLocal - _spearSpawnLocal).normalized;
+                _spearTargetLocal = cursorLocal - thrustDir * _spearTipOffset;
+
+                float thrustAngleLocal = Mathf.Atan2(thrustDir.y, thrustDir.x) * Mathf.Rad2Deg;
+                _spearThrustRotZ = thrustAngleLocal - _spearBladeAngle;
+
+                // 잔상 시작점을 스폰 위치로 설정 (기본 위치→스폰 위치 사이 잘못된 잔상 방지)
+                _lastGhostLocalPos = _savedBasePos + new Vector3(_spearSpawnLocal.x, _spearSpawnLocal.y, 0f);
+            }
         }
         else if (!isAttacking && _wasAttacking)
         {
@@ -484,19 +541,33 @@ public class FloatingWeaponMotion : MonoBehaviour
                     scaleMult = _slashScale; 
                 }
             }
+            else if (_weapon != null && _weapon.WeaponType == WeaponType.Spear)
+            {
+                // ── 창 전용: 가속하며 커서까지 직선 찌르기 ──
+                float p = Mathf.Clamp01(t / _spearDuration);
+                float ease = _spearThrustCurve.Evaluate(p);
+
+                lungeX = Mathf.Lerp(_spearSpawnLocal.x, _spearTargetLocal.x, ease);
+                lungeY = Mathf.Lerp(_spearSpawnLocal.y, _spearTargetLocal.y, ease);
+
+                slashRotZ = _spearThrustRotZ;
+
+                float scalePeak = Mathf.Sin(p * Mathf.PI);
+                scaleMult = _spearScale + scalePeak * _spearScalePunch;
+            }
             else
             {
-                // ── 창, 활, 지팡이용 기본 직선/반동 공격 로직 ──
+                // ── 활, 지팡이용 기본 직선/반동 공격 로직 ──
                 float minRot = -30f;
                 float maxRot = 40f;
                 float startRot = 0f;
-                
+
                 if (_weapon != null && _weapon.CurrentComboStep % 2 == 0)
                 {
                     startRot = maxRot;
                     float temp = minRot;
-                    minRot = maxRot + 15f; 
-                    maxRot = temp;         
+                    minRot = maxRot + 15f;
+                    maxRot = temp;
                 }
 
                 if (t < 0.06f)
@@ -504,25 +575,25 @@ public class FloatingWeaponMotion : MonoBehaviour
                     float p = t / 0.06f;
                     float ease = p * p;
                     lungeX = Mathf.Lerp(0f, -dist * 0.4f, ease);
-                    slashRotZ = Mathf.Lerp(startRot, minRot, ease); 
+                    slashRotZ = Mathf.Lerp(startRot, minRot, ease);
                     scaleMult = Mathf.Lerp(1f, 0.9f, ease);
                 }
                 else if (t < 0.18f)
                 {
                     float p = (t - 0.06f) / 0.12f;
                     float ease = 1f - Mathf.Pow(2f, -10f * p);
-                    lungeX = Mathf.Lerp(-dist * 0.4f, dist * 1.3f, ease); 
-                    lungeY = Mathf.Sin(p * Mathf.PI) * dist * 0.15f; 
-                    slashRotZ = Mathf.Lerp(minRot, maxRot, ease); 
-                    scaleMult = Mathf.Lerp(0.9f, 2.5f, ease); 
+                    lungeX = Mathf.Lerp(-dist * 0.4f, dist * 1.3f, ease);
+                    lungeY = Mathf.Sin(p * Mathf.PI) * dist * 0.15f;
+                    slashRotZ = Mathf.Lerp(minRot, maxRot, ease);
+                    scaleMult = Mathf.Lerp(0.9f, 2.5f, ease);
                 }
                 else if (t < 0.30f)
                 {
                     float p = (t - 0.18f) / 0.12f;
                     float overshoot = Mathf.Sin(p * Mathf.PI) * 0.3f;
                     lungeX = Mathf.Lerp(dist * 1.3f, dist * 0.6f, p) + overshoot * dist;
-                    slashRotZ = Mathf.Lerp(maxRot, maxRot - (maxRot - startRot) * 0.15f, p); 
-                    scaleMult = Mathf.Lerp(2.5f, 1.05f, p); 
+                    slashRotZ = Mathf.Lerp(maxRot, maxRot - (maxRot - startRot) * 0.15f, p);
+                    scaleMult = Mathf.Lerp(2.5f, 1.05f, p);
                 }
                 else
                 {
@@ -541,15 +612,17 @@ public class FloatingWeaponMotion : MonoBehaviour
             // 공격 중이 아닐 때: 원래 상태로 복귀하지 않고 그 자리에서 소멸 (사용자 요청)
             // 복구(Lerp) 로직을 제거하여 애니메이션 종료 지점에서 그대로 사라지게 함
             lungeX = _currentLunge;
+            lungeY = _currentLungeY;
             slashRotZ = _currentSlashRot;
-            
+
             // 소멸 중일 때 크기 보존
             scaleMult = _currentScalePunch;
         }
 
-        if (isAttacking) 
+        if (isAttacking)
         {
             _currentLunge = lungeX;
+            _currentLungeY = lungeY;
             _currentSlashRot = slashRotZ;
         }
         _currentScalePunch = scaleMult;
@@ -620,9 +693,14 @@ public class FloatingWeaponMotion : MonoBehaviour
             newPos.y += lungeY;
             newPos = Quaternion.Euler(0, 0, _orbitAngle) * newPos;
         }
+        else if (_weapon != null && _weapon.WeaponType == WeaponType.Spear)
+        {
+            // 창 전용: 위치는 직접 적용 (slashRotZ는 시각 회전에만 사용)
+            newPos += new Vector3(lungeX, lungeY, 0f);
+        }
         else
         {
-            // 기존 창/지팡이용 직선 돌진 및 로컬 회전
+            // 활/지팡이용 직선 돌진 및 로컬 회전
             Quaternion rot = Quaternion.Euler(0, 0, _currentTiltZ + slashRotZ);
             Vector3 lungeVec = rot * new Vector3(lungeX, lungeY, 0f);
             newPos += lungeVec;
@@ -646,6 +724,10 @@ public class FloatingWeaponMotion : MonoBehaviour
         // 오프셋이 적용되었음을 표시 (다음 프레임에서 복원 필요)
         _hasAppliedOffset = true;
 
+        // 히트박스 물리 동기화: 위치/회전 적용 직후 실행하여 콜라이더가 최신 위치에서 충돌 판정
+        if (isAttacking)
+            Physics2D.SyncTransforms();
+
         // 🌟 4. 무기 위치가 완벽히 적용된 직후에 잔상을 생성해야 제 위치에 생성됩니다!
         if (isAttacking && _weapon != null && _weapon.WeaponType == WeaponType.Sword)
         {
@@ -656,6 +738,10 @@ public class FloatingWeaponMotion : MonoBehaviour
                 int combo = _weapon.CurrentComboStep;
                 float duration = (combo == 1) ? 0.35f : (combo == 2) ? 0.45f : 0.40f;
                 t_p = Mathf.Clamp01(_attackPhaseTime / duration);
+            }
+            else if (_weapon != null && _weapon.WeaponType == WeaponType.Spear)
+            {
+                t_p = Mathf.Clamp01(_attackPhaseTime / _spearDuration);
             }
 
             float dynamicThreshold = _ghostSpawnDistance;
@@ -677,13 +763,19 @@ public class FloatingWeaponMotion : MonoBehaviour
                 // 최대 생성 수 제한을 10으로 낮춤 (너무 빽빽하지 않게)
                 spawnCount = Mathf.Min(spawnCount, 10); 
 
+                // 자식 스프라이트(Spear 등)의 월드 오프셋 보정
+                Vector3 childWorldOffset = Vector3.zero;
+                if (_mainSpriteRenderer != null)
+                    childWorldOffset = _mainSpriteRenderer.transform.position - transform.position;
+
                 for (int i = 1; i <= spawnCount; i++)
                 {
                     float lerpVal = (float)i / spawnCount;
                     Vector3 localSpawnPos = Vector3.Lerp(_lastGhostLocalPos, currentLocalPos, lerpVal);
-                    // 월드 좌표로 변환하여 생성 (잔상은 그 자리에 머물러야 하므로)
                     Vector3 worldSpawnPos = transform.parent != null ? transform.parent.TransformPoint(localSpawnPos) : transform.TransformPoint(localSpawnPos);
-                    SpawnGhostTrail(worldSpawnPos, transform.rotation);
+                    worldSpawnPos += childWorldOffset;
+                    Quaternion ghostRot = _mainSpriteRenderer != null ? _mainSpriteRenderer.transform.rotation : transform.rotation;
+                    SpawnGhostTrail(worldSpawnPos, ghostRot);
                 }
                 _lastGhostLocalPos = currentLocalPos;
             }

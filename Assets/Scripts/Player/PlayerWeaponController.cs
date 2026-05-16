@@ -149,6 +149,9 @@ public class PlayerWeaponController : MonoBehaviour
         // 배열: [0:Sword, 1:Spear, 2:Bow, 3:Staff]
         int index = (int)data.WeaponType - 1;
         TryEquipWeapon(index);
+
+        if (index >= 0 && index < _weaponBehaviours.Length && _weaponBehaviours[index] != null)
+            _weaponBehaviours[index].SetWeaponSprite(data.Icon);
     }
 
     private void UpdateWeaponBonus(WeaponData data)
@@ -278,7 +281,12 @@ public class PlayerWeaponController : MonoBehaviour
         // - 캐릭터 바라보는 방향 파라미터(DirX, DirY)는 이제 PlayerMovement.cs에서 설정함 -
 
         // 공격 중에는 피봇 각도를 고정 (주로 근접 무기). 설정에 따라 활처럼 조준을 유지할 수도 있습니다.
-        if (_activeBehaviour != null && _activeBehaviour.IsAttacking && _activeBehaviour.LockRotationDuringAttack) return;
+        if (_activeBehaviour != null && _activeBehaviour.LockRotationDuringAttack)
+        {
+            if (_activeBehaviour.IsAttacking) return;
+            // 공격 종료 후 페이드아웃 동안 피봇 회전 잠금 (위치/각도 점프 방지)
+            if (Time.time - _lastAttackEndTime < 0.15f) return;
+        }
 
         float angle     = Mathf.Atan2(dy, dx) * Mathf.Rad2Deg;
         float rotOffset = _activeBehaviour != null ? _activeBehaviour.PivotRotationOffset : 0f;
@@ -316,8 +324,17 @@ public class PlayerWeaponController : MonoBehaviour
         // "GetMouseButtonDown" (최초 클릭)으로 변경하여 꾹 누르기 자동 연사 제거
         if (Input.GetMouseButtonDown(0))
         {
-            _attackQueued    = true;
-            _attackQueueTime = Time.time;
+            // 단타 무기(창 등): 공격 중 클릭 무시 (버퍼링 차단)
+            if (_activeBehaviour != null && _activeBehaviour.IsAttacking
+                && _activeBehaviour.MaxComboSteps <= 1)
+            {
+                // 무시
+            }
+            else
+            {
+                _attackQueued    = true;
+                _attackQueueTime = Time.time;
+            }
         }
 
         // 버퍼 유효 시간(0.3초) 초과 시 파기 (연사 중에는 계속 갱신됨)
@@ -344,14 +361,19 @@ public class PlayerWeaponController : MonoBehaviour
             // 🔮 무기 소환 거리 동적 보정 (검, 창)
             if (_activeBehaviour.WeaponType == WeaponType.Sword || _activeBehaviour.WeaponType == WeaponType.Spear)
             {
-                float maxDist = (_activeBehaviour.WeaponType == WeaponType.Spear) ? 3.5f : 2.5f;
-                float targetDist = (_activeBehaviour.WeaponType == WeaponType.Sword)
-                    ? maxDist
-                    : Mathf.Min(_cursorDistance, maxDist);
+                float finalDist;
+                if (_activeBehaviour.WeaponType == WeaponType.Spear)
+                {
+                    // 창: 피봇 중심에서 시작 (FloatingWeaponMotion이 생성 위치 + 찌르기 궤적 전체 담당)
+                    finalDist = 0f;
+                }
+                else
+                {
+                    float maxDist = 2.5f;
+                    float weaponLengthOffset = 0.8f;
+                    finalDist = Mathf.Max(1.0f, maxDist - weaponLengthOffset);
+                }
 
-                float weaponLengthOffset = (_activeBehaviour.WeaponType == WeaponType.Spear) ? 1.5f : 0.8f;
-                float finalDist = Mathf.Max(1.0f, targetDist - weaponLengthOffset); 
-                
                 var floating = _activeBehaviour.GetComponent<FloatingWeaponMotion>();
                 if (floating != null)
                 {
@@ -359,8 +381,20 @@ public class PlayerWeaponController : MonoBehaviour
                 }
             }
 
-            // LockRotationDuringAttack 무기는 BeginAttack 이후 UpdateCursorDirection이 early return하므로
-            // 공격 시작 직전에 콤보 flip scale을 미리 세팅합니다.
+            // LockRotationDuringAttack 무기: 새 공격 시작 전 피봇을 현재 커서 방향으로 강제 갱신
+            // (이전 공격의 페이드아웃 잠금이 남아있어도 새 공격은 새 커서 방향으로 시작)
+            if (_activeBehaviour.LockRotationDuringAttack && _mainCamera != null)
+            {
+                Vector3 mScreen = Input.mousePosition;
+                mScreen.z = _camToWorldZ;
+                Vector3 mWorld = _mainCamera.ScreenToWorldPoint(mScreen);
+                float adx = mWorld.x - transform.position.x;
+                float ady = mWorld.y - transform.position.y;
+                float aAngle = Mathf.Atan2(ady, adx) * Mathf.Rad2Deg;
+                float aRotOffset = _activeBehaviour.PivotRotationOffset;
+                _weaponPivot.localEulerAngles = new Vector3(0f, 0f, aAngle + aRotOffset);
+            }
+
             ApplyAttackStartScale(_comboStep);
 
             // 공격 시 커서 방향으로 순간 이동
