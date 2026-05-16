@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6764913075219902712}
   - component: {fileID: 7483045696725760729}
   - component: {fileID: 6632740875744982694}
+  - component: {fileID: 2883854663442188943}
   m_Layer: 0
   m_Name: Golem
   m_TagString: Untagged
@@ -28,8 +29,8 @@ Transform:
   m_GameObject: {fileID: 8992042086741285878}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -9.01926, y: -24.2042, z: 0}
-  m_LocalScale: {x: 10, y: 10, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 3, y: 3, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -132,7 +133,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 10
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 0cd590130b07f0345991e04b942986b8, type: 3}
+  m_Sprite: {fileID: -1911073792, guid: 19e6531baba026a42a6334acfa7261ab, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -142,3 +143,24 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &2883854663442188943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8992042086741285878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84c910c311ba4634395e37d10e7c0a04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossAI
+  moveSpeed: 3
+  attackRange: 15
+  detectionRange: 20
+  playerTag: Player
+  indicator: {fileID: 0}
+  circleSprite: {fileID: 21300000, guid: 46196d734a8e92d4aafe6beb4c178d08, type: 3}
+  squareSprite: {fileID: 21300000, guid: 984ee8bd016d41446acd10a84872f035, type: 3}
+  halfCircleSprite: {fileID: 21300000, guid: 638fc9e329dbe0d4b96afd6d53011257, type: 3}
+  halfAndhalfCircleSprite: {fileID: 21300000, guid: 2922590ca02e8a24a9ceee558bc4b192, type: 3}
