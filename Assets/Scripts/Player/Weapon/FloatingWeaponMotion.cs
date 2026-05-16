@@ -84,7 +84,7 @@ public class FloatingWeaponMotion : MonoBehaviour
 
     [Header("Ghost Trail (Afterimage)")]
     [SerializeField] private float _ghostSpawnDistance = 0.015f; // 너무 빽빽하지 않게 간격 약간 확대
-    private float _ghostLifeTime = 0.25f;
+    private float _ghostLifeTime = 0.18f;
     private Vector3 _lastGhostLocalPos;
     private SpriteRenderer _mainSpriteRenderer;
     private System.Collections.Generic.Queue<SpriteRenderer> _ghostPool = new System.Collections.Generic.Queue<SpriteRenderer>();
@@ -642,7 +642,7 @@ public class FloatingWeaponMotion : MonoBehaviour
         {
             // 무기 교체 시: 서서히 사라짐
             _currentAlpha = Mathf.MoveTowards(_currentAlpha, 0f, Time.deltaTime * 5f);
-            if (_currentAlpha <= 0.001f) 
+            if (_currentAlpha <= 0.001f && _activeGhosts.Count == 0) 
             {
                 gameObject.SetActive(false);
                 return;
@@ -654,7 +654,8 @@ public class FloatingWeaponMotion : MonoBehaviour
             _currentAlpha = Mathf.MoveTowards(_currentAlpha, 0f, Time.deltaTime * 10f);
             
             // 완전히 사라지면 오브젝트 끄기 (사용자 요청: 공격 끝나면 무조건 사라져야 함)
-            if (_currentAlpha <= 0.001f)
+            // 단, 활성화된 잔상이 남아있을 경우 잔상이 다 사라질 때까지 대기
+            if (_currentAlpha <= 0.001f && _activeGhosts.Count == 0)
             {
                 gameObject.SetActive(false);
                 return;
@@ -673,6 +674,12 @@ public class FloatingWeaponMotion : MonoBehaviour
                     _renderers[i].color = c;
                 }
             }
+        }
+
+        if (_weapon != null && _weapon.DisableFloatingMotion)
+        {
+            _hasAppliedOffset = false;
+            return;
         }
 
         // 3. 새 오프셋 계산 (현재 transform.localPosition이 원본 상태임)
@@ -722,7 +729,7 @@ public class FloatingWeaponMotion : MonoBehaviour
             Physics2D.SyncTransforms();
 
         // 🌟 4. 무기 위치가 완벽히 적용된 직후에 잔상을 생성해야 제 위치에 생성됩니다!
-        if (isAttacking)
+        if (isAttacking && _weapon != null && _weapon.WeaponType == WeaponType.Sword)
         {
             // 속도가 빠를수록(초반에 p가 작을 때) 더 촘촘하게 생성되도록 간격 가변 적용
             float t_p = 0.5f;
@@ -775,8 +782,11 @@ public class FloatingWeaponMotion : MonoBehaviour
         }
 
         // 🌟 5. 파티클 역시 궤적 계산이 모두 끝난 뒤에 생성해야 무기 끝/시작 지점과 일치합니다!
-        if (triggerStartParticle) EmitSwordParticles(15);
-        if (triggerEndParticle) EmitSwordParticles(50);
+        if (_weapon != null && _weapon.WeaponType == WeaponType.Sword)
+        {
+            if (triggerStartParticle) EmitSwordParticles(15);
+            if (triggerEndParticle) EmitSwordParticles(50);
+        }
 
         // 🌟 6. 알파값 적용 (이미 상단에서 처리됨 - 중복 제거 가능하지만 안전을 위해 유지하거나 상단 로직과 통합)
         // 위에서 이미 _renderers 컬러를 _currentAlpha에 맞춰 업데이트했습니다.
