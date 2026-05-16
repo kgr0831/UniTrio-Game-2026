@@ -26,6 +26,7 @@ public class DamageText : MonoBehaviour
             // TMP는 SortingOrder 설정이 컴포넌트 내부에 직관적으로 들어있습니다.
             _textMesh.sortingLayerID = SortingLayer.NameToID("Default");
             _textMesh.sortingOrder = 9999; // Z-가림 완벽 방지
+            _textMesh.enableWordWrapping = false; // 자동 줄바꿈(Wrap) 비활성화
             
             _textMesh.fontSize = _fontSize;
             _textMesh.text = damage.ToString();
