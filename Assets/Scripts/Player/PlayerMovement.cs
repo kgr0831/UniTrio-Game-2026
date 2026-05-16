@@ -25,6 +25,7 @@ public class PlayerMovement : MonoBehaviour
     private float       _camToWorldZ;
     private StatSystem  _statSystem; // optional – 없으면 moveSpeed 사용
     private Vector2     _recoilVelocity; // 반동/넉백용 내부 속도
+    private PlayerWeaponController _weaponController;
 
     private static readonly int HashIsMoving = Animator.StringToHash("IsMoving");
     private static readonly int HashDirX     = Animator.StringToHash("DirX");
@@ -38,6 +39,7 @@ public class PlayerMovement : MonoBehaviour
         if (_mainCamera != null)
             _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
         _statSystem = GetComponent<StatSystem>(); // nullable
+        _weaponController = GetComponent<PlayerWeaponController>();
     }
 
     void Update()
@@ -45,7 +47,8 @@ public class PlayerMovement : MonoBehaviour
         float x = Input.GetAxisRaw("Horizontal");
         float y = Input.GetAxisRaw("Vertical");
         Vector2 raw = new Vector2(x, y);
-        MoveInput = raw.sqrMagnitude > 0.001f ? raw.normalized : Vector2.zero;
+        bool attacking = _weaponController != null && _weaponController.IsAttacking;
+        MoveInput = (!attacking && raw.sqrMagnitude > 0.001f) ? raw.normalized : Vector2.zero;
 
         if (_anim != null)
         {

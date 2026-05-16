@@ -33,10 +33,9 @@ public class AimedShotArrow : MonoBehaviour
     private Rigidbody2D    _rb;
     private ParticleSystem _trailParticle;
 
-    // ── 블룸(SpriteGlow) ──────────────────────────────────────────
     private MaterialPropertyBlock _propBlock;
-    private static readonly int  _glowIntensityId = Shader.PropertyToID("_GlowIntensity");
-    private static readonly int  _glowColorId     = Shader.PropertyToID("_GlowColor");
+    private static readonly int  _glowIntensityId = Shader.PropertyToID("_EmissionIntensity");
+    private static readonly int  _glowColorId     = Shader.PropertyToID("_EmissionColor");
 
     /// <summary>BowBehaviour에서 발사 시 속도/데미지를 주입합니다.</summary>
     public void SetStats(float speed, float damage)
@@ -45,7 +44,7 @@ public class AimedShotArrow : MonoBehaviour
         _damage = damage;
     }
 
-    /// <summary>SpriteGlow 강도를 설정합니다 (차징 비례).</summary>
+    /// <summary>Emission 강도를 설정합니다 (차징 비례).</summary>
     public void SetGlowIntensity(float intensity, Color glowColor)
     {
         if (_spriteRenderer == null) return;
@@ -96,10 +95,10 @@ public class AimedShotArrow : MonoBehaviour
 
         var psRenderer = _trailParticle.GetComponent<ParticleSystemRenderer>();
         // 강한 보라빛 글로우 머티리얼 적용
-        Material trailMat = new Material(Shader.Find("Custom/SpriteGlow"));
-        trailMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-        trailMat.SetFloat("_GlowIntensity", 4f);
-        trailMat.SetColor("_GlowColor", new Color(0.7f, 0f, 1f, 1f)); 
+        Material trailMat = new Material(Shader.Find("Custom/VFXLit2D"));
+        trailMat.SetFloat("_EmissionIntensity", 4f);
+        trailMat.SetColor("_EmissionColor", new Color(0.7f, 0f, 1f, 1f));
+        trailMat.SetFloat("_LightInfluence", 0.3f);
         psRenderer.material = trailMat;
         psRenderer.sortingLayerName = "Weapons";
         psRenderer.sortingOrder = 9;

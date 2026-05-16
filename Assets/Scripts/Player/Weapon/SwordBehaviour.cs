@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -14,6 +13,13 @@ public class SwordBehaviour : WeaponBehaviourBase
 
     [Header("Hitbox")]
     [SerializeField] private Collider2D _hitboxCollider;
+    [SerializeField] private SwordHitbox _swordHitbox;
+
+    [Header("Hitbox Size Per Combo")]
+    [Tooltip("1,2타용 히트박스 크기 (BoxCollider2D 기준)")]
+    [SerializeField] private Vector2 _normalHitboxSize = new Vector2(1.6f, 1.0f);
+    [Tooltip("3타용 히트박스 크기 (더 넓은 범위)")]
+    [SerializeField] private Vector2 _finisherHitboxSize = new Vector2(2.2f, 1.4f);
 
     [Header("Bash Effect")]
     [Tooltip("검 스프라이트의 SpriteRenderer (강타 발동 시 붉은 블룸 색조 적용)")]
@@ -32,7 +38,7 @@ public class SwordBehaviour : WeaponBehaviourBase
     public override WeaponType WeaponType => WeaponType.Sword;
 
     public override float ComboWindow        => 0.5f;
-    public override int   MaxComboSteps      => 2;
+    public override int   MaxComboSteps      => 3;
     // 콤보 flip은 이 클래스 내부(this.transform Y-scale)에서 처리하므로 컨트롤러 레벨 flip 불필요
     public override bool  FlipComboDirection => false;
 
@@ -62,6 +68,13 @@ public class SwordBehaviour : WeaponBehaviourBase
 
         // SwordWeapon 루트의 초기 스케일 저장
         _restLocalScale = transform.localScale;
+
+        // 사용자의 요청으로 애니메이터 VFX는 비활성화합니다. (대신 스크립트로 잔상 생성)
+        if (_vfxAnimator != null)
+        {
+            _vfxAnimator.transform.localScale = Vector3.one;
+            _vfxAnimator.gameObject.SetActive(false); // 다시 끕니다
+        }
 
         if (_weaponAnimator != null)
             _weaponRestLocalPos = _weaponAnimator.transform.localPosition;
@@ -94,11 +107,11 @@ public class SwordBehaviour : WeaponBehaviourBase
         _bashTrail.startWidth = 1.0f;
         _bashTrail.endWidth = 0.0f;
         
-        Material glowMat = new Material(Shader.Find("Custom/SpriteGlow"));
-        glowMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-        glowMat.SetFloat("_GlowIntensity", 4f);
-        glowMat.SetColor("_GlowColor", _bashSwordColor);
-        _bashTrail.material = glowMat;
+        Material vfxMat = new Material(Shader.Find("Custom/VFXLit2D"));
+        vfxMat.SetFloat("_EmissionIntensity", 4f);
+        vfxMat.SetColor("_EmissionColor", _bashSwordColor);
+        vfxMat.SetFloat("_LightInfluence", 0.3f);
+        _bashTrail.material = vfxMat;
         
         _bashTrail.sortingLayerName = "Weapons";
         _bashTrail.sortingOrder = 5;
@@ -116,20 +129,25 @@ public class SwordBehaviour : WeaponBehaviourBase
 
     private void LateUpdate()
     {
-        // 애니메이터가 매 프레임 덮어쓰는 localPosition을 원래 값으로 복원
         if (_weaponAnimator != null)
-            _weaponAnimator.transform.localPosition = _weaponRestLocalPos;
-        if (_vfxAnimator != null)
-            _vfxAnimator.transform.localPosition = _vfxRestLocalPos;
-
-        // 비공격 상태에서는 자식 회전도 원복
-        if (!IsAttacking)
         {
-            if (_weaponAnimator != null)
-                _weaponAnimator.transform.localEulerAngles = Vector3.zero;
-            if (_vfxAnimator != null)
-                _vfxAnimator.transform.localEulerAngles = Vector3.zero;
+            // 검 스프라이트는 수동 수식(FloatingWeaponMotion)에 완벽하게 종속되도록 고정
+            _weaponAnimator.transform.localPosition = _weaponRestLocalPos;
+            _weaponAnimator.transform.localEulerAngles = Vector3.zero;
+            // 애니메이션 키프레임에 의해 검의 크기가 찌그러지는 현상을 방지 (모든 프레임에서 일정한 크기 유지)
+            _weaponAnimator.transform.localScale = Vector3.one;
         }
+
+        if (_vfxAnimator != null)
+        {
+            // 사용하지 않지만 기본 로컬 위치로 고정
+            _vfxAnimator.transform.localPosition = _vfxRestLocalPos;
+            _vfxAnimator.transform.localEulerAngles = Vector3.zero;
+        }
+
+        // 이동 중 공격 시 히트박스 위치 동기화 (AutoSyncTransforms=0 환경)
+        if (IsAttacking && _hitboxCollider != null && _hitboxCollider.enabled)
+            Physics2D.SyncTransforms();
 
         // 강타 스택 변화 감지 및 비주얼 효과 동기화
         SyncBashEffect();
@@ -192,6 +210,12 @@ public class SwordBehaviour : WeaponBehaviourBase
         }
     }
 
+    public override void SetWeaponSprite(Sprite sprite)
+    {
+        if (_swordRenderer != null && sprite != null)
+            _swordRenderer.sprite = sprite;
+    }
+
     /// <summary>BashSkillData.Execute()에서 호출 — 강타 효과를 즉시 활성화합니다.</summary>
     public override void SetBashEffectActive(bool active)
     {
@@ -225,19 +249,28 @@ public class SwordBehaviour : WeaponBehaviourBase
         // 스윙 시작 시 강타 스택 소모 (적중 여부 무관하게 1회 차감)
         CurrentSwingBashMultiplier = _statSystem != null ? _statSystem.UseBashStack() : 1f;
 
-        // 2타는 SwordWeapon 루트(this.transform)의 Y-scale을 반전해 스윙 방향을 뒤집습니다.
-        float flipY = (comboStep == 2) ? -1f : 1f;
+        // 2타, 3타는 스윙 궤적과 시계방향 오르빗에 맞춰 칼날이 밖을 향하도록 Y를 뒤집습니다.
+        float flipY = (comboStep >= 2) ? -1f : 1f;
         transform.localScale = new Vector3(
             _restLocalScale.x, _restLocalScale.y * flipY, _restLocalScale.z);
+
+        // 히트박스 크기 조절 및 활성화
+        if (_hitboxCollider is BoxCollider2D box)
+            box.size = (comboStep >= 3) ? _finisherHitboxSize : _normalHitboxSize;
+
+        if (_swordHitbox != null) _swordHitbox.ResetSwingHits();
+        if (_hitboxCollider != null) _hitboxCollider.enabled = true;
+        Physics2D.SyncTransforms();
 
         // 공격 속도 연동 (StatSystem 반영)
         float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
         if (speed <= 0) speed = 1f;
 
+        _weaponAnimator.ResetTrigger("Attack");
         _weaponAnimator.speed = speed;
         _weaponAnimator.SetTrigger("Attack");
 
-        if (_vfxAnimator != null)
+        if (_vfxAnimator != null && _vfxAnimator.gameObject.activeInHierarchy)
         {
             _vfxAnimator.speed = speed;
             _vfxAnimator.SetTrigger("Attack");
@@ -247,40 +280,35 @@ public class SwordBehaviour : WeaponBehaviourBase
 
     public override bool PollFinished(float attackStartTime)
     {
-        // 첫 0.05초는 Play() 호출 직후 상태가 갱신되지 않아 오탐이 생길 수 있으므로 대기
-        if (Time.time - attackStartTime < 0.05f) return false;
+        float elapsed = Time.time - attackStartTime;
+        if (elapsed < 0.05f) return false;
 
-        AnimatorStateInfo info = _weaponAnimator.GetCurrentAnimatorStateInfo(0);
-
-        // 애니메이션 1/4 지점에서 히트박스 1프레임 활성화
-        if (info.IsName("Attack") && info.normalizedTime >= 0.25f && !_hitboxFired)
+        float orbitDuration;
+        switch (CurrentComboStep)
         {
-            _hitboxFired = true;
-            if (_hitboxCollider != null)
-            {
-                _hitboxCollider.enabled = true;
-                StartCoroutine(DisableHitboxNextPhysicsUpdate());
-            }
+            case 1:  orbitDuration = 0.35f / 1.0f; break;
+            case 2:  orbitDuration = 0.45f / 1.0f; break;
+            default: orbitDuration = 0.40f / (1.0f * 0.8f); break;
         }
 
-        // 95% 이상 재생 시 즉시 Idle로 강제 전환 (전이 딜레이 없애기)
-        if (!info.IsName("Attack") || info.normalizedTime >= 0.95f)
+        float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
+        if (speed > 0f) orbitDuration /= speed;
+
+        if (elapsed >= orbitDuration)
         {
             IsAttacking = false;
-            if (info.IsName("Attack"))
+            if (_hitboxCollider != null) _hitboxCollider.enabled = false;
+
+            _weaponAnimator.ResetTrigger("Attack");
+            _weaponAnimator.Play("Idle", 0, 0f);
+
+            if (_vfxAnimator != null)
             {
-                _weaponAnimator.Play("Idle", 0, 0f);
-                // 강타 활성 중이면 BashIdle로, 아니면 Idle로 복귀
-                if (_vfxAnimator != null)
-                {
-                    string vfxState = _bashEffectActive && !string.IsNullOrEmpty(_bashVfxStateName)
-                        ? _bashVfxStateName : "Idle";
-                    if (!_vfxAnimator.HasState(0, Animator.StringToHash(vfxState))) vfxState = "Idle";
-                    _vfxAnimator.Play(vfxState, 0, 0f);
-                }
+                string vfxState = _bashEffectActive && !string.IsNullOrEmpty(_bashVfxStateName)
+                    ? _bashVfxStateName : "Idle";
+                if (!_vfxAnimator.HasState(0, Animator.StringToHash(vfxState))) vfxState = "Idle";
+                _vfxAnimator.Play(vfxState, 0, 0f);
             }
-            // Idle 전환 직후 animation 커브 갱신 전에 rotation·scale을 리셋.
-            ResetChildTransforms();
             return true;
         }
         return false;
@@ -290,23 +318,11 @@ public class SwordBehaviour : WeaponBehaviourBase
     {
         IsAttacking  = false;
         _hitboxFired = false;
-        StopAllCoroutines();
 
-        transform.localScale = _restLocalScale;
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
         if (_weaponAnimator  != null) _weaponAnimator.Play("Idle", 0, 0f);
         if (_vfxAnimator     != null) _vfxAnimator.Play("Idle", 0, 0f);
-        ResetChildTransforms();
 
-        // 무기 교체 시 강타 비주얼도 원복 (BashCount는 StatSystem에 남아 다른 무기에서는 적용 안 됨)
         ApplyBashVisual(false);
-    }
-
-    // 물리 사이클 2회 후 히트박스 비활성화 (1 physics frame 온전히 보장)
-    private IEnumerator DisableHitboxNextPhysicsUpdate()
-    {
-        yield return new WaitForFixedUpdate();
-        yield return new WaitForFixedUpdate();
-        if (_hitboxCollider != null) _hitboxCollider.enabled = false;
     }
 }

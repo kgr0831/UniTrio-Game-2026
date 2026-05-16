@@ -50,9 +50,8 @@ public class CameraShakeController : MonoBehaviour
     {
         if (_impulseSource != null)
         {
-            // Cinemachine의 GenerateImpulse는 설정된 Signal 속성을 기반으로 충격을 가함
-            // force(magnitude) 값을 전달하여 강도를 조절
-            _impulseSource.GenerateImpulse(magnitude);
+            Vector3 dir = Random.insideUnitCircle.normalized;
+            _impulseSource.GenerateImpulse(dir * magnitude);
         }
     }
 }

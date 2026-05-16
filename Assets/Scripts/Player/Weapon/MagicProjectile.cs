@@ -54,8 +54,8 @@ public class MagicProjectile : MonoBehaviour
     private bool    _exploded;
 
     private MaterialPropertyBlock _propBlock;
-    private static readonly int   _glowIntensityId = Shader.PropertyToID("_GlowIntensity");
-    private static readonly int   _glowColorId     = Shader.PropertyToID("_GlowColor");
+    private static readonly int   _glowIntensityId = Shader.PropertyToID("_EmissionIntensity");
+    private static readonly int   _glowColorId     = Shader.PropertyToID("_EmissionColor");
 
     /// <summary>WandBehaviour에서 발사 시 호출. damage를 float으로 수신합니다.</summary>
     public void SetStats(float speed, float damage, Vector2 direction)

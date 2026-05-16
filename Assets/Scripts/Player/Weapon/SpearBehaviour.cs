@@ -10,11 +10,15 @@ using UnityEngine;
 public class SpearBehaviour : WeaponBehaviourBase
 {
     [Header("Animators")]
-    [SerializeField] private Animator _weaponAnimator; // 창 스프라이트 애니메이터
-    [SerializeField] private Animator _vfxAnimator;    // 찌르기 VFX 애니메이터
+    [SerializeField] private Animator _weaponAnimator;
+
+    [Header("Sprite Rotation")]
+    [Tooltip("창 스프라이트의 로컬 Z 회전. 날이 오른쪽(커서 방향)을 향하도록 조절하세요.")]
+    [SerializeField] private float _spriteRotationZ = -45f;
 
     [Header("Hitbox")]
     [SerializeField] private Collider2D _hitboxCollider;
+    [SerializeField] private SwordHitbox _spearHitbox;
 
     [Header("Bash Effect")]
     [Tooltip("창 스프라이트 (강타 발동 시 붉은 블룸 적용)")]
@@ -42,18 +46,23 @@ public class SpearBehaviour : WeaponBehaviourBase
     public override float OrbitRadius => _orbitRadius;
     public override bool UseGoBehind => _useGoBehind;
 
-    public override float ComboWindow   => 0f;  // 콤보 없으므로 의미 없음
-    public override int   MaxComboSteps => 1;   // 단타
+    [Header("Thrust Timing")]
+    [Tooltip("찌르기 전체 시간 (초). FloatingWeaponMotion의 Spear Duration과 맞춰주세요.")]
+    [SerializeField] private float _thrustDuration = 0.30f;
+
+    public override float ComboWindow   => 0f;
+    public override int   MaxComboSteps => 1;
 
     private bool             _hitboxFired;
-    private SpriteRenderer[] _vfxRenderers; // 자식 포함 전체 렌더러
+
+    // Animator 자식 트랜스폼 고정용 (FloatingWeaponMotion과 충돌 방지)
+    private Vector3 _weaponRestLocalPos;
 
     // 강타 효과 상태
     private StatSystem _statSystem;
     private Color      _originalSpearColor;
-    private Material   _originalSpearMaterial;
-    private Material[] _originalVfxMaterials;
-    private Material   _spearGlowMaterial;
+    private Color      _originalGlowColor;
+    private float      _originalGlowIntensity;
     private bool       _bashEffectActive;
     private TrailRenderer _bashTrail;
 
@@ -61,25 +70,56 @@ public class SpearBehaviour : WeaponBehaviourBase
     {
         CurrentComboStep = 1;
 
-        if (_vfxAnimator != null)
-        {
-            // GetComponent 대신 GetComponentsInChildren으로 자식까지 탐색
-            _vfxRenderers = _vfxAnimator.GetComponentsInChildren<SpriteRenderer>(true);
-            SetVfxVisible(false);
+        // VFX 자식 오브젝트 비활성화
+        Transform vfxChild = transform.Find("SpearVFX");
+        if (vfxChild != null)
+            vfxChild.gameObject.SetActive(false);
 
-            if (_vfxRenderers != null)
-            {
-                _originalVfxMaterials = new Material[_vfxRenderers.Length];
-                for (int i = 0; i < _vfxRenderers.Length; i++)
-                    _originalVfxMaterials[i] = _vfxRenderers[i].material;
-            }
+        // SpearHitBox를 찾아서 루트로 이동 후 물리 바디 재구성
+        Transform hitboxChild = null;
+        if (vfxChild != null) hitboxChild = vfxChild.Find("SpearHitBox");
+        if (hitboxChild == null) hitboxChild = transform.Find("SpearHitBox");
+
+        if (hitboxChild != null)
+        {
+            hitboxChild.SetParent(transform);
+            hitboxChild.localPosition = Vector3.zero;
+            hitboxChild.localEulerAngles = Vector3.zero;
+            hitboxChild.localScale = Vector3.one;
+
+            // 자식의 Rigidbody2D 제거 → 부모 Rigidbody2D에 자동 연결
+            Rigidbody2D childRb = hitboxChild.GetComponent<Rigidbody2D>();
+            if (childRb != null) Destroy(childRb);
         }
 
-        if (_hitboxCollider != null) _hitboxCollider.enabled = false;
+        // 루트에 Rigidbody2D 확보 (무기와 동일한 물리 위치 보장)
+        Rigidbody2D rootRb = GetComponent<Rigidbody2D>();
+        if (rootRb == null) rootRb = gameObject.AddComponent<Rigidbody2D>();
+        rootRb.bodyType = RigidbodyType2D.Kinematic;
+        rootRb.constraints = RigidbodyConstraints2D.FreezeAll;
+
+        // 콜라이더 탐색 및 설정
+        if (_hitboxCollider == null && hitboxChild != null)
+            _hitboxCollider = hitboxChild.GetComponent<Collider2D>();
+        if (_spearHitbox == null)
+            _spearHitbox = GetComponentInChildren<SwordHitbox>();
+
+        if (_hitboxCollider != null)
+        {
+            if (_hitboxCollider is BoxCollider2D box)
+            {
+                // 날 끝(45° 방향)으로 충분히 확장 (2x 스케일 기준 월드 도달 ~3유닛)
+                box.offset = new Vector2(0.7f, 0.7f);
+                box.size = new Vector2(1.0f, 1.0f);
+            }
+            _hitboxCollider.enabled = false;
+        }
+
+        if (_weaponAnimator != null)
+            _weaponRestLocalPos = _weaponAnimator.transform.localPosition;
 
         _statSystem = GetComponentInParent<StatSystem>();
 
-        // 인스펙터에서 할당 누락 시 자동 찾기
         if (_spearRenderer == null)
         {
             Transform spearTransform = transform.Find("Spear");
@@ -89,19 +129,11 @@ public class SpearBehaviour : WeaponBehaviourBase
         if (_spearRenderer != null)
         {
             _originalSpearColor = _spearRenderer.color;
-            _originalSpearMaterial = _spearRenderer.material;
-            
-            // 붉은 블룸 범용 머티리얼 구성
-            _spearGlowMaterial = new Material(Shader.Find("Custom/SpriteGlow"));
-            _spearGlowMaterial.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-            _spearGlowMaterial.SetFloat("_GlowIntensity", 4f);
-            
-            // 너무 어두운 색이면 강제로 증폭
-            Color bloomCol = _bashSpearColor;
-            if (bloomCol.r < 1f && bloomCol.g < 1f && bloomCol.b < 1f) bloomCol *= 2f;
-            _spearGlowMaterial.SetColor("_GlowColor", bloomCol);
+            Material mat = _spearRenderer.material;
+            _originalGlowColor = mat.HasProperty("_GlowColor") ? mat.GetColor("_GlowColor") : Color.white;
+            _originalGlowIntensity = mat.HasProperty("_GlowIntensity") ? mat.GetFloat("_GlowIntensity") : 1f;
         }
-        
+
         CreateBashTrail();
     }
 
@@ -109,24 +141,11 @@ public class SpearBehaviour : WeaponBehaviourBase
     {
         if (_spearRenderer == null) return;
 
-        // 궤적 생성 위치 기준을 수동 오프셋 추측이 아닌 명확한 자식 오브젝트로 고정합니다.
         Transform trailParent = _spearRenderer.transform;
-        
-        // 찌르기 이펙트(VFX, 검기)가 터지는 중심이 가장 이상적인 궤적 발생점
-        if (_vfxRenderers != null && _vfxRenderers.Length > 0 && _vfxRenderers[0] != null)
-        {
-            trailParent = _vfxRenderers[0].transform;
-        }
-        else if (_hitboxCollider != null)
-        {
-            // 이펙트를 못 찾으면 타격 판정(Hitbox)의 중심을 활용
-            trailParent = _hitboxCollider.transform;
-        }
 
         GameObject trailObj = new GameObject("BashTrail");
         trailObj.transform.SetParent(trailParent);
-        // 부모 오브젝트의 딱 정중앙(0,0,0)에 부착 (위치 노가다 X)
-        trailObj.transform.localPosition = Vector3.zero; 
+        trailObj.transform.localPosition = new Vector3(0, 1.2f, 0);
 
         _bashTrail = trailObj.AddComponent<TrailRenderer>();
         _bashTrail.time = 0.25f;
@@ -134,7 +153,11 @@ public class SpearBehaviour : WeaponBehaviourBase
         _bashTrail.startWidth = 1.0f;
         _bashTrail.endWidth = 0.0f;
 
-        _bashTrail.material = _spearGlowMaterial;
+        Material trailMat = new Material(Shader.Find("Custom/VFXLit2D"));
+        trailMat.SetFloat("_EmissionIntensity", 4f);
+        trailMat.SetColor("_EmissionColor", _bashSpearColor);
+        trailMat.SetFloat("_LightInfluence", 0.3f);
+        _bashTrail.material = trailMat;
 
         _bashTrail.sortingLayerName = "Weapons";
         _bashTrail.sortingOrder = 5;
@@ -150,6 +173,18 @@ public class SpearBehaviour : WeaponBehaviourBase
 
     private void LateUpdate()
     {
+        if (_weaponAnimator != null)
+        {
+            _weaponAnimator.transform.localPosition = _weaponRestLocalPos;
+            // 자식 회전 항상 0: 무기는 아이들 시 비가시 상태이므로 _spriteRotationZ 불필요
+            // 공격 중 날 방향은 FloatingWeaponMotion의 slashRotZ가 무기 루트 회전으로 전담
+            _weaponAnimator.transform.localEulerAngles = Vector3.zero;
+            _weaponAnimator.transform.localScale = Vector3.one;
+        }
+
+        if (IsAttacking && _hitboxCollider != null && _hitboxCollider.enabled)
+            Physics2D.SyncTransforms();
+
         SyncBashEffect();
         if (_bashTrail != null)
         {
@@ -171,25 +206,31 @@ public class SpearBehaviour : WeaponBehaviourBase
     private void ApplyBashVisual(bool active)
     {
         _bashEffectActive = active;
-        if (_spearRenderer != null)
-        {
-            // 단순 붉은 색조 대신 완전한 블룸 머티리얼로 통째로 스왑
-            _spearRenderer.material = active ? _spearGlowMaterial : _originalSpearMaterial;
-            _spearRenderer.color = active ? Color.white : _originalSpearColor;
-        }
+        if (_spearRenderer == null) return;
 
-        if (_vfxRenderers != null && _originalVfxMaterials != null)
+        Material mat = _spearRenderer.material;
+        if (active)
         {
-            for (int i = 0; i < _vfxRenderers.Length; i++)
-            {
-                var r = _vfxRenderers[i];
-                if (r == null) continue;
-                
-                r.material = active ? _spearGlowMaterial : _originalVfxMaterials[i];
-                // 머티리얼이 교체되므로 본래 색상(흰색)으로 유지
-                r.color = Color.white; 
-            }
+            if (mat.HasProperty("_GlowColor"))
+                mat.SetColor("_GlowColor", _bashSpearColor);
+            if (mat.HasProperty("_GlowIntensity"))
+                mat.SetFloat("_GlowIntensity", 4f);
+            _spearRenderer.color = Color.white;
         }
+        else
+        {
+            if (mat.HasProperty("_GlowColor"))
+                mat.SetColor("_GlowColor", _originalGlowColor);
+            if (mat.HasProperty("_GlowIntensity"))
+                mat.SetFloat("_GlowIntensity", _originalGlowIntensity);
+            _spearRenderer.color = _originalSpearColor;
+        }
+    }
+
+    public override void SetWeaponSprite(Sprite sprite)
+    {
+        if (_spearRenderer != null && sprite != null)
+            _spearRenderer.sprite = sprite;
     }
 
     public override void SetBashEffectActive(bool active)
@@ -197,69 +238,41 @@ public class SpearBehaviour : WeaponBehaviourBase
         ApplyBashVisual(active);
     }
 
-    private void SetVfxVisible(bool visible)
-    {
-        if (_vfxRenderers == null) return;
-        for (int i = 0; i < _vfxRenderers.Length; i++)
-            _vfxRenderers[i].enabled = visible;
-    }
-
     public override void BeginAttack(int comboStep)
     {
         IsAttacking      = true;
         _hitboxFired     = false;
-        CurrentComboStep = 1; // 단타이므로 항상 1
+        CurrentComboStep = 1;
 
-        // 공격 시작 시 강타 스택 사용
         CurrentSwingBashMultiplier = _statSystem != null ? _statSystem.UseBashStack() : 1f;
 
-        SetVfxVisible(true);
+        if (_spearHitbox != null) _spearHitbox.ResetSwingHits();
+        if (_hitboxCollider != null) _hitboxCollider.enabled = true;
+        Physics2D.SyncTransforms();
 
-        // StatSystem 연동 (기본 속도 복원)
         float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
         if (speed <= 0) speed = 1f;
 
         _weaponAnimator.speed = speed;
         _weaponAnimator.SetTrigger("Attack");
-        
-        if (_vfxAnimator != null)
-        {
-            _vfxAnimator.speed = speed;
-            _vfxAnimator.SetTrigger("Attack");
-        }
     }
 
     public override bool PollFinished(float attackStartTime)
     {
-        if (Time.time - attackStartTime < 0.05f) return false;
+        float elapsed = Time.time - attackStartTime;
+        if (elapsed < 0.05f) return false;
 
-        AnimatorStateInfo info = _weaponAnimator.GetCurrentAnimatorStateInfo(0);
+        float thrustDuration = _thrustDuration;
+        float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
+        if (speed > 0f) thrustDuration /= speed;
 
-        // 찌르기 무기: 0.2f 지점에서 히트박스 활성화 (검 0.25f보다 살짝 빠름)
-        if (info.IsName("Attack") && info.normalizedTime >= 0.2f && !_hitboxFired)
-        {
-            _hitboxFired = true;
-            if (_hitboxCollider != null)
-            {
-                _hitboxCollider.enabled = true;
-                // 찌르기 히트박스는 3 physics update 유지 (관통감)
-                StartCoroutine(DisableHitboxAfterThrust());
-            }
-        }
-
-        // 95% 이상 재생 시 즉시 Idle 강제 전환
-        if (!info.IsName("Attack") || info.normalizedTime >= 0.95f)
+        if (elapsed >= thrustDuration)
         {
             IsAttacking = false;
-            SetVfxVisible(false);
+            if (_hitboxCollider != null) _hitboxCollider.enabled = false;
 
-            // 무기가 Attack 상태에 있을 때만 Idle로 강제 전환 (이미 전환된 경우 중복 호출 방지)
-            if (info.IsName("Attack"))
-                _weaponAnimator.Play("Idle", 0, 0f);
-
-            // VFX는 무기 전환 여부와 무관하게 항상 Idle로 복귀
-            if (_vfxAnimator != null)
-                _vfxAnimator.Play("Idle", 0, 0f);
+            _weaponAnimator.ResetTrigger("Attack");
+            _weaponAnimator.Play("Idle", 0, 0f);
 
             return true;
         }
@@ -272,27 +285,14 @@ public class SpearBehaviour : WeaponBehaviourBase
         _hitboxFired = false;
         StopAllCoroutines();
 
-        SetVfxVisible(false);
         if (_hitboxCollider != null) _hitboxCollider.enabled = false;
-        if (_weaponAnimator  != null) 
+        if (_weaponAnimator  != null)
         {
             _weaponAnimator.Play("Idle", 0, 0f);
             _weaponAnimator.Update(0f);
-        }
-        if (_vfxAnimator != null) 
-        {
-            _vfxAnimator.Play("Idle", 0, 0f);
-            _vfxAnimator.Update(0f);
         }
 
         ApplyBashVisual(false);
     }
 
-    private IEnumerator DisableHitboxAfterThrust()
-    {
-        yield return new WaitForFixedUpdate();
-        yield return new WaitForFixedUpdate();
-        yield return new WaitForFixedUpdate();
-        if (_hitboxCollider != null) _hitboxCollider.enabled = false;
-    }
 }

@@ -80,8 +80,8 @@ public class WandBehaviour : WeaponBehaviourBase
     private MaterialPropertyBlock _propBlock;
     private MaterialPropertyBlock _glowPropBlock;
 
-    private static readonly int _glowIntensityId = Shader.PropertyToID("_GlowIntensity");
-    private static readonly int _glowColorId     = Shader.PropertyToID("_GlowColor");
+    private static readonly int _glowIntensityId = Shader.PropertyToID("_EmissionIntensity");
+    private static readonly int _glowColorId     = Shader.PropertyToID("_EmissionColor");
 
     private void Awake()
     {
@@ -221,6 +221,12 @@ public class WandBehaviour : WeaponBehaviourBase
             return true;
         }
         return false;
+    }
+
+    public override void SetWeaponSprite(Sprite sprite)
+    {
+        if (_spriteRenderer != null && sprite != null)
+            _spriteRenderer.sprite = sprite;
     }
 
     public override void OnDeactivated()

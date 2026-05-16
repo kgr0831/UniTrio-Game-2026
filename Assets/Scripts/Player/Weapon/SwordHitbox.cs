@@ -1,12 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// 검(및 창)의 히트박스 판정 전담 스크립트.
-/// IDamageable 인터페이스를 통해 적에게 데미지를 주며,
-/// PlayerEntity에서 공격력을 가져와 DamageCalculator 공식으로 최종 데미지를 산출합니다.
-///
-/// 공격 공식: (PlayerEntity.TotalAtk + _baseDamage) * 1.0
-/// </summary>
 public class SwordHitbox : MonoBehaviour
 {
     [Header("Stats")]
@@ -26,10 +20,16 @@ public class SwordHitbox : MonoBehaviour
     [SerializeField] private GameObject _damageTextPrefab;
 
     private WeaponBehaviourBase _weaponBehaviour;
+    private readonly HashSet<int> _hitThisSwing = new HashSet<int>();
 
     private void Awake()
     {
         _weaponBehaviour = GetComponentInParent<WeaponBehaviourBase>();
+    }
+
+    public void ResetSwingHits()
+    {
+        _hitThisSwing.Clear();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -48,9 +48,13 @@ public class SwordHitbox : MonoBehaviour
         }
         if (!isValidTag) return;
 
-        // Enemy → IDamageable 로 접근해 결합도를 낮춤
         IDamageable target = other.GetComponentInParent<IDamageable>();
         if (target == null || !target.IsAlive) return;
+
+        Component targetComp = target as Component;
+        if (targetComp == null) return;
+        int targetId = targetComp.gameObject.GetInstanceID();
+        if (!_hitThisSwing.Add(targetId)) return;
 
         // (StatAtk + WeaponBaseDmg) * 1.0 * (BashMultiplier)
         float atk    = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
@@ -67,23 +71,26 @@ public class SwordHitbox : MonoBehaviour
 
         target.TakeDamage(damage, gameObject);
 
-        // 강타 이펙트 (히트 스톱 및 카메라 쉐이크)
         if (isBashActive)
         {
             if (CameraShakeController.Instance != null)
-            {
-                // 일반 공격보다 더 강한 흔들림 연출 (기간: 0.2초, 강도: 0.4f)
-                CameraShakeController.Instance.Shake(0.2f, 0.4f);
-            }
+                CameraShakeController.Instance.Shake(0.15f, 0.25f);
             if (HitStopManager.Instance != null)
-            {
-                // 0.25초 동안 타격 정지 연출로 극강의 묵직함 부여
-                HitStopManager.Instance.TriggerHitStop(0.25f);
-            }
+                HitStopManager.Instance.TriggerHitStop(0.12f);
 
-            // 강타 전용 3종 이펙트(왜곡/충격파, 크레이터, 파편) 생성
             SpawnBashImpactVFX(other);
         }
+        else
+        {
+            if (CameraShakeController.Instance != null)
+                CameraShakeController.Instance.Shake(0.06f, 0.05f);
+            if (HitStopManager.Instance != null)
+                HitStopManager.Instance.TriggerHitStop(0.02f);
+        }
+
+        float stunDuration = (GetAttackDuration() + 0.05f) * 0.67f;
+        ApplyHitStun(other, stunDuration);
+        ApplyFlashSync(other, stunDuration);
 
         SpawnHitVFX(other);
         SpawnDamageText(other, damage);
@@ -97,10 +104,10 @@ public class SwordHitbox : MonoBehaviour
         bashVfxObj.transform.position = hitPoint;
         Destroy(bashVfxObj, 2f);
 
-        Material glowMat = new Material(Shader.Find("Custom/SpriteGlow"));
-        glowMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-        glowMat.SetFloat("_GlowIntensity", 4f);
-        glowMat.SetColor("_GlowColor", new Color(1f, 0.2f, 0.1f, 1f));
+        Material glowMat = new Material(Shader.Find("Custom/VFXLit2D"));
+        glowMat.SetFloat("_EmissionIntensity", 4f);
+        glowMat.SetColor("_EmissionColor", new Color(1f, 0.2f, 0.1f, 1f));
+        glowMat.SetFloat("_LightInfluence", 0.3f);
 
         // 1. Shockwave (원형 충격파)
         GameObject shockObj = new GameObject("Shockwave");
@@ -180,10 +187,40 @@ public class SwordHitbox : MonoBehaviour
         float   actualOffset = Mathf.Min(_vfxOffsetTowardsEnemy, maxDist * 0.5f);
         Vector3 spawnPos     = closestHitPoint + dirToCenter * actualOffset;
 
-        // 최적화: Instantiate 대신 SimpleObjectPool에서 가져옵니다.
-        // 자식에 붙은 HitVfxAutoReturn.cs가 애니메이션 후 자동으로 Release를 호출합니다.
+        // 피격 방향 기반 회전 (검 → 적 방향)
+        Vector3 hitDir = (enemyCenter - transform.position).normalized;
+        float angle = Mathf.Atan2(hitDir.y, hitDir.x) * Mathf.Rad2Deg;
+
         GameObject prefab = _hitVfxPrefabs[Random.Range(0, _hitVfxPrefabs.Length)];
-        SimpleObjectPool.Instance.Get(prefab, spawnPos, Quaternion.Euler(0f, 0f, Random.Range(0f, 360f)));
+        SimpleObjectPool.Instance.Get(prefab, spawnPos, Quaternion.Euler(0f, 0f, angle + Random.Range(-15f, 15f)));
+    }
+
+    private float GetAttackDuration()
+    {
+        int combo = _weaponBehaviour != null ? _weaponBehaviour.CurrentComboStep : 1;
+        float baseDur;
+        float speedMult = 1.0f;
+        switch (combo)
+        {
+            case 1:  baseDur = 0.35f / speedMult; break;
+            case 2:  baseDur = 0.45f / speedMult; break;
+            default: baseDur = 0.40f / (speedMult * 0.8f); break;
+        }
+        return baseDur;
+    }
+
+    private void ApplyHitStun(Collider2D enemyCollider, float duration)
+    {
+        HitStaggerHandler stagger = enemyCollider.GetComponentInParent<HitStaggerHandler>();
+        if (stagger != null)
+            stagger.ApplyStagger(duration);
+    }
+
+    private void ApplyFlashSync(Collider2D enemyCollider, float duration)
+    {
+        HealthSystem hp = enemyCollider.GetComponentInParent<HealthSystem>();
+        if (hp != null)
+            hp.OverrideFlashTimer(duration);
     }
 
     private void SpawnDamageText(Collider2D enemyCollider, float damageAmount)
@@ -192,8 +229,6 @@ public class SwordHitbox : MonoBehaviour
 
         Vector3 spawnPos = enemyCollider.bounds.center + Vector3.up * 0.5f;
 
-        // 최적화: Instantiate 대신 SimpleObjectPool에서 가져옵니다.
-        // DamageText.cs 에도 자동 풀 반환 로직이 추가될 예정입니다.
         GameObject textObj = SimpleObjectPool.Instance.Get(_damageTextPrefab, spawnPos, Quaternion.identity);
         DamageText dmgText = textObj.GetComponent<DamageText>();
         if (dmgText != null) dmgText.Setup(Mathf.RoundToInt(damageAmount));

@@ -41,6 +41,7 @@ public class PlayerWeaponController : MonoBehaviour
     private bool  _attackQueued;
     private float _attackQueueTime;
     private float _attackStartTime;
+    private float _attackCooldownEndTime; // 공격 후 최소 대기 프레임 강제
     private StatSystem _stats;
     private WeaponData _lastRegisteredBonus; // 현재 등록된 보너스 추적
 
@@ -148,6 +149,9 @@ public class PlayerWeaponController : MonoBehaviour
         // 배열: [0:Sword, 1:Spear, 2:Bow, 3:Staff]
         int index = (int)data.WeaponType - 1;
         TryEquipWeapon(index);
+
+        if (index >= 0 && index < _weaponBehaviours.Length && _weaponBehaviours[index] != null)
+            _weaponBehaviours[index].SetWeaponSprite(data.Icon);
     }
 
     private void UpdateWeaponBonus(WeaponData data)
@@ -179,7 +183,13 @@ public class PlayerWeaponController : MonoBehaviour
 
         for (int i = 0; i < _weaponObjects.Length; i++)
         {
-            if (_weaponObjects[i] != null) _weaponObjects[i].SetActive(false);
+            if (_weaponObjects[i] == null) continue;
+            
+            var motion = _weaponObjects[i].GetComponent<FloatingWeaponMotion>();
+            if (motion != null && _weaponObjects[i].activeSelf)
+                motion.StartFadeOut();
+            else
+                _weaponObjects[i].SetActive(false);
         }
 
         UpdateWeaponBonus(null); // 보너스 모두 제거
@@ -213,11 +223,21 @@ public class PlayerWeaponController : MonoBehaviour
         // 이전 무기 정리
         _activeBehaviour?.OnDeactivated();
 
-        // 무기 오브젝트 표시 전환
+        // 무기 오브젝트 표시 전환 (소멸 시에는 페이드 아웃 적용)
         for (int i = 0; i < _weaponObjects.Length; i++)
         {
-            if (_weaponObjects[i] != null)
-                _weaponObjects[i].SetActive(i == index);
+            if (_weaponObjects[i] == null) continue;
+
+            if (i == index)
+            {
+                _weaponObjects[i].SetActive(true);
+            }
+            else if (_weaponObjects[i].activeSelf)
+            {
+                var motion = _weaponObjects[i].GetComponent<FloatingWeaponMotion>();
+                if (motion != null) motion.StartFadeOut();
+                else _weaponObjects[i].SetActive(false);
+            }
         }
 
         _currentSlotIndex = index;
@@ -261,7 +281,12 @@ public class PlayerWeaponController : MonoBehaviour
         // - 캐릭터 바라보는 방향 파라미터(DirX, DirY)는 이제 PlayerMovement.cs에서 설정함 -
 
         // 공격 중에는 피봇 각도를 고정 (주로 근접 무기). 설정에 따라 활처럼 조준을 유지할 수도 있습니다.
-        if (_activeBehaviour != null && _activeBehaviour.IsAttacking && _activeBehaviour.LockRotationDuringAttack) return;
+        if (_activeBehaviour != null && _activeBehaviour.LockRotationDuringAttack)
+        {
+            if (_activeBehaviour.IsAttacking) return;
+            // 공격 종료 후 페이드아웃 동안 피봇 회전 잠금 (위치/각도 점프 방지)
+            if (Time.time - _lastAttackEndTime < 0.15f) return;
+        }
 
         float angle     = Mathf.Atan2(dy, dx) * Mathf.Rad2Deg;
         float rotOffset = _activeBehaviour != null ? _activeBehaviour.PivotRotationOffset : 0f;
@@ -299,17 +324,26 @@ public class PlayerWeaponController : MonoBehaviour
         // "GetMouseButtonDown" (최초 클릭)으로 변경하여 꾹 누르기 자동 연사 제거
         if (Input.GetMouseButtonDown(0))
         {
-            _attackQueued    = true;
-            _attackQueueTime = Time.time;
+            // 단타 무기(창 등): 공격 중 클릭 무시 (버퍼링 차단)
+            if (_activeBehaviour != null && _activeBehaviour.IsAttacking
+                && _activeBehaviour.MaxComboSteps <= 1)
+            {
+                // 무시
+            }
+            else
+            {
+                _attackQueued    = true;
+                _attackQueueTime = Time.time;
+            }
         }
 
         // 버퍼 유효 시간(0.3초) 초과 시 파기 (연사 중에는 계속 갱신됨)
         if (_attackQueued && Time.time - _attackQueueTime > 0.3f)
             _attackQueued = false;
 
-        // 공격 중이면 대기 (애니메이터 상태가 다시 전이 가능해질 때까지 기다림)
-        // 무기가 없으면(ActiveBehaviour == null) 공격 불가
+        // 공격 중이거나 쿨다운 중이면 대기 (최소 2프레임 간격 보장)
         if (_activeBehaviour == null || _activeBehaviour.IsAttacking) return;
+        if (Time.time < _attackCooldownEndTime) return;
 
 
         // 콤보 유효 시간이 지났으면 1타로 리셋
@@ -327,13 +361,19 @@ public class PlayerWeaponController : MonoBehaviour
             // 🔮 무기 소환 거리 동적 보정 (검, 창)
             if (_activeBehaviour.WeaponType == WeaponType.Sword || _activeBehaviour.WeaponType == WeaponType.Spear)
             {
-                float maxDist = (_activeBehaviour.WeaponType == WeaponType.Spear) ? 3.5f : 2.5f;
-                float targetDist = Mathf.Min(_cursorDistance, maxDist); // 커서 위치까지만
-                
-                // 피격 판정의 가운데가 커서 위치에 오도록 무기 본체를 약간 뒤로 당김
-                float weaponLengthOffset = (_activeBehaviour.WeaponType == WeaponType.Spear) ? 1.5f : 0.8f;
-                float finalDist = Mathf.Max(0.5f, targetDist - weaponLengthOffset); // 캐릭터와 너무 겹치지 않게 최소거리 제한
-                
+                float finalDist;
+                if (_activeBehaviour.WeaponType == WeaponType.Spear)
+                {
+                    // 창: 피봇 중심에서 시작 (FloatingWeaponMotion이 생성 위치 + 찌르기 궤적 전체 담당)
+                    finalDist = 0f;
+                }
+                else
+                {
+                    float maxDist = 2.5f;
+                    float weaponLengthOffset = 0.8f;
+                    finalDist = Mathf.Max(1.0f, maxDist - weaponLengthOffset);
+                }
+
                 var floating = _activeBehaviour.GetComponent<FloatingWeaponMotion>();
                 if (floating != null)
                 {
@@ -341,10 +381,32 @@ public class PlayerWeaponController : MonoBehaviour
                 }
             }
 
-            // LockRotationDuringAttack 무기는 BeginAttack 이후 UpdateCursorDirection이 early return하므로
-            // 공격 시작 직전에 콤보 flip scale을 미리 세팅합니다.
+            // LockRotationDuringAttack 무기: 새 공격 시작 전 피봇을 현재 커서 방향으로 강제 갱신
+            // (이전 공격의 페이드아웃 잠금이 남아있어도 새 공격은 새 커서 방향으로 시작)
+            if (_activeBehaviour.LockRotationDuringAttack && _mainCamera != null)
+            {
+                Vector3 mScreen = Input.mousePosition;
+                mScreen.z = _camToWorldZ;
+                Vector3 mWorld = _mainCamera.ScreenToWorldPoint(mScreen);
+                float adx = mWorld.x - transform.position.x;
+                float ady = mWorld.y - transform.position.y;
+                float aAngle = Mathf.Atan2(ady, adx) * Mathf.Rad2Deg;
+                float aRotOffset = _activeBehaviour.PivotRotationOffset;
+                _weaponPivot.localEulerAngles = new Vector3(0f, 0f, aAngle + aRotOffset);
+            }
+
             ApplyAttackStartScale(_comboStep);
 
+            // 공격 시 커서 방향으로 순간 이동
+            if (_activeBehaviour.WeaponType == WeaponType.Sword)
+            {
+                var pm = GetComponent<PlayerMovement>();
+                if (pm != null)
+                    transform.position += (Vector3)(pm.FacingDirection * 0.3f);
+            }
+
+            // 공격 시 무기 오브젝트 활성화 보장 (페이드 아웃으로 꺼졌을 수 있음)
+            _activeBehaviour.gameObject.SetActive(true);
             _activeBehaviour.BeginAttack(_comboStep);
 
             // 다음 클릭/연사를 위해 스텝 순환
@@ -378,6 +440,7 @@ public class PlayerWeaponController : MonoBehaviour
         if (_activeBehaviour.PollFinished(_attackStartTime))
         {
             _lastAttackEndTime = Time.time;
+            _attackCooldownEndTime = Time.time + 0.05f; // 공격 종료 후 최소 0.05초(약 3프레임) 대기
         }
     }
 
@@ -410,12 +473,13 @@ public class PlayerWeaponController : MonoBehaviour
         _convergeGradients = new Gradient[5];
         _flashGradients = new Gradient[5];
 
+        // 레퍼런스 기반 통합 팔레트: 황금 코어 + 연녹색 테두리
         Color[] baseColors = new Color[5] {
-            new Color(0.9f, 0.9f, 1f, 1f), // None
-            new Color(1f, 0.3f, 0.2f, 1f), // Sword
-            new Color(0.3f, 0.6f, 1f, 1f), // Spear
-            new Color(0.7f, 0.3f, 1f, 1f), // Bow
-            new Color(0.3f, 0.9f, 1f, 1f)  // Staff
+            new Color(1f, 0.9f, 0.4f, 1f),   // None: 기본 황금
+            new Color(1f, 0.85f, 0.3f, 1f),  // Sword: 순수 황금
+            new Color(0.8f, 0.95f, 0.4f, 1f),// Spear: 황금+연녹
+            new Color(0.9f, 0.8f, 0.5f, 1f), // Bow: 따뜻한 황금
+            new Color(0.7f, 0.95f, 0.5f, 1f) // Staff: 연녹 강조
         };
 
         for (int i = 0; i < 5; i++)
