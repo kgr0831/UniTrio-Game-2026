@@ -36,12 +36,7 @@ public class SpearBehaviour : WeaponBehaviourBase
     [Tooltip("무기가 뒤로 숨는 로직을 끌지 결정합니다 (공전할 때는 끄는게 보통 자연스럽습니다).")]
     [SerializeField] private bool _useGoBehind = false;
 
-    // 창 스프라이트가 기본적으로 대각선이나 가로로 세팅되어 있음. 
-    // 커서 방향과 완벽히 일치시키기 위해 오프셋을 0으로 둡니다. (로컬 Z값이 이 역할을 함)
-    public override float PivotRotationOffset => 0f;
 
-    // 창은 360도 회전으로만 방향 표현 → Y-scale 반전 없음
-    public override bool  UseYScaleFlip => false;
 
     // 새로 추가된 공전 보정 매커니즘
     public override float OrbitRadius => _orbitRadius;
@@ -150,9 +145,12 @@ public class SpearBehaviour : WeaponBehaviourBase
 
         _bashTrail = trailObj.AddComponent<TrailRenderer>();
         _bashTrail.time = 0.25f;
-        _bashTrail.minVertexDistance = 0.05f;
-        _bashTrail.startWidth = 1.0f;
-        _bashTrail.endWidth = 0.0f;
+        _bashTrail.minVertexDistance = 0.01f;
+
+        AnimationCurve widthCurve = new AnimationCurve();
+        widthCurve.AddKey(new Keyframe(0f, 1.2f, 0f, -2f));
+        widthCurve.AddKey(new Keyframe(1f, 0.0f));
+        _bashTrail.widthCurve = widthCurve;
 
         Material trailMat = new Material(Shader.Find("Custom/VFXLit2D"));
         trailMat.SetFloat("_EmissionIntensity", 4f);
@@ -170,6 +168,33 @@ public class SpearBehaviour : WeaponBehaviourBase
         );
         _bashTrail.colorGradient = g;
         _bashTrail.emitting = false;
+    }
+
+    private bool _isFlippedY;
+
+    public override void SetFlipY(bool flip, bool isAimingLeft)
+    {
+        base.SetFlipY(flip, isAimingLeft);
+        _isFlippedY = flip;
+        if (_spearRenderer != null)
+        {
+            _spearRenderer.flipY = flip;
+        }
+        if (_bashTrail != null)
+        {
+            float yOff = flip ? -1.2f : 1.2f;
+            _bashTrail.transform.localPosition = new Vector3(0f, yOff, 0f);
+        }
+    }
+
+    public override void AddTrailPosition(Vector3 rendererWorldPos, Quaternion rendererRot)
+    {
+        if (_bashTrail != null && _bashTrail.emitting)
+        {
+            float yOff = _isFlippedY ? -1.2f : 1.2f;
+            Vector3 tipWorldPos = rendererWorldPos + rendererRot * new Vector3(0, yOff, 0);
+            _bashTrail.AddPosition(tipWorldPos);
+        }
     }
 
     private void LateUpdate()
@@ -253,6 +278,9 @@ public class SpearBehaviour : WeaponBehaviourBase
 
     public override void BeginAttack(int comboStep)
     {
+        if (_bashTrail != null)
+            _bashTrail.Clear();
+
         IsAttacking      = true;
         _hitboxFired     = false;
         CurrentComboStep = 1;

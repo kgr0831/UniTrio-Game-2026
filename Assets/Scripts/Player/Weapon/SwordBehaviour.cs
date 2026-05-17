@@ -39,8 +39,7 @@ public class SwordBehaviour : WeaponBehaviourBase
 
     public override float ComboWindow        => 0.5f;
     public override int   MaxComboSteps      => 3;
-    // 콤보 flip은 이 클래스 내부(this.transform Y-scale)에서 처리하므로 컨트롤러 레벨 flip 불필요
-    public override bool  FlipComboDirection => false;
+    public override bool  FlipComboDirection => true;
 
     private bool    _hitboxFired;
 
@@ -102,10 +101,13 @@ public class SwordBehaviour : WeaponBehaviourBase
 
         _bashTrail = trailObj.AddComponent<TrailRenderer>();
         _bashTrail.time = 0.25f;
-        _bashTrail.minVertexDistance = 0.05f;
+        _bashTrail.minVertexDistance = 0.01f;
         
-        _bashTrail.startWidth = 1.0f;
-        _bashTrail.endWidth = 0.0f;
+        // 날렵한 테이퍼링 (끝으로 갈수록 얇아지게)
+        AnimationCurve widthCurve = new AnimationCurve();
+        widthCurve.AddKey(new Keyframe(0f, 1.2f, 0f, -2f));
+        widthCurve.AddKey(new Keyframe(1f, 0.0f));
+        _bashTrail.widthCurve = widthCurve;
         
         Material vfxMat = new Material(Shader.Find("Custom/VFXLit2D"));
         vfxMat.SetFloat("_EmissionIntensity", 4f);
@@ -124,6 +126,33 @@ public class SwordBehaviour : WeaponBehaviourBase
         _bashTrail.colorGradient = g;
         
         _bashTrail.emitting = false;
+    }
+
+    private bool _isFlippedY;
+
+    public override void SetFlipY(bool flip, bool isAimingLeft)
+    {
+        base.SetFlipY(flip, isAimingLeft);
+        _isFlippedY = flip;
+        if (_swordRenderer != null)
+        {
+            _swordRenderer.flipY = flip;
+        }
+        if (_bashTrail != null)
+        {
+            float yOff = flip ? -1.2f : 1.2f;
+            _bashTrail.transform.localPosition = new Vector3(0f, yOff, 0f);
+        }
+    }
+
+    public override void AddTrailPosition(Vector3 rendererWorldPos, Quaternion rendererRot)
+    {
+        if (_bashTrail != null && _bashTrail.emitting)
+        {
+            float yOff = _isFlippedY ? -1.2f : 1.2f;
+            Vector3 tipWorldPos = rendererWorldPos + rendererRot * new Vector3(0, yOff, 0);
+            _bashTrail.AddPosition(tipWorldPos);
+        }
     }
 
 
@@ -225,8 +254,9 @@ public class SwordBehaviour : WeaponBehaviourBase
     /// <summary>Idle 전환 직후 애니메이터가 갱신되기 전에 rotation과 루트 스케일을 리셋합니다.</summary>
     private void ResetChildTransforms()
     {
-        // SwordWeapon 루트 스케일 복원 (콤보 flip 해제)
+        // SwordWeapon 스케일/회전 리셋
         transform.localScale = _restLocalScale;
+        transform.localRotation = Quaternion.identity;
 
         if (_weaponAnimator != null)
         {
@@ -242,6 +272,9 @@ public class SwordBehaviour : WeaponBehaviourBase
 
     public override void BeginAttack(int comboStep)
     {
+        if (_bashTrail != null)
+            _bashTrail.Clear();
+
         IsAttacking      = true;
         _hitboxFired     = false;
         CurrentComboStep = comboStep;
@@ -249,10 +282,9 @@ public class SwordBehaviour : WeaponBehaviourBase
         // 스윙 시작 시 강타 스택 소모 (적중 여부 무관하게 1회 차감)
         CurrentSwingBashMultiplier = _statSystem != null ? _statSystem.UseBashStack() : 1f;
 
-        // 2타, 3타는 스윙 궤적과 시계방향 오르빗에 맞춰 칼날이 밖을 향하도록 Y를 뒤집습니다.
-        float flipY = (comboStep >= 2) ? -1f : 1f;
-        transform.localScale = new Vector3(
-            _restLocalScale.x, _restLocalScale.y * flipY, _restLocalScale.z);
+        // 회전/스케일 강제 영구 고정 (음수 스케일/회전 대칭 방지)
+        transform.localRotation = Quaternion.identity;
+        transform.localScale = _restLocalScale;
 
         // 히트박스 크기 조절 및 활성화
         if (_hitboxCollider is BoxCollider2D box)

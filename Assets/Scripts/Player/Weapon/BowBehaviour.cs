@@ -96,9 +96,6 @@ public class BowBehaviour : WeaponBehaviourBase
     // 오프셋 시스템 사용 시 FloatingWeaponMotion의 위치 제어 비활성화
     public override bool DisableFloatingMotion => _useOffsetSystem;
 
-    // 왼쪽을 향할 때 피봇 Y-scale을 -1로 반전해 스프라이트를 mirror 처리.
-    // false(순수 회전)이면 180° 뒤집혀 비대칭하게 보여 좌측에서 크기가 달라 보임.
-    public override bool  UseYScaleFlip            => true;
     public override float OrbitRadius              => _orbitRadius;
     public override bool  UseGoBehind             => _useGoBehind;
     public override bool  LockRotationDuringAttack => false;

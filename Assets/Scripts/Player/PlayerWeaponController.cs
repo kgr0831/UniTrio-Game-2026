@@ -290,17 +290,14 @@ public class PlayerWeaponController : MonoBehaviour
 
         float angle     = Mathf.Atan2(dy, dx) * Mathf.Rad2Deg;
         float rotOffset = _activeBehaviour != null ? _activeBehaviour.PivotRotationOffset : 0f;
-        // goBehind / Y-scale 계산은 원본 커서 각도 기준, 피봇 회전에만 오프셋 적용
+        
         _weaponPivot.localEulerAngles = new Vector3(0f, 0f, angle + rotOffset);
+        _weaponPivot.localScale = Vector3.one;
 
-        // UseYScaleFlip=false 인 무기(창 등)는 항상 scale (1,1,1) — 반전 없음
-        // 콤보 flip은 ApplyAttackStartScale에서 공격 시작 시점에 적용됩니다.
-        // 여기서는 비공격 상태(idle/ComboWindow)의 cursor 방향 flip만 처리합니다.
-        float baseScaleY = 1f;
-        if (_activeBehaviour == null || _activeBehaviour.UseYScaleFlip)
-            baseScaleY = (dx < 0f) ? -1f : 1f;
-
-        _weaponPivot.localScale = new Vector3(1f, baseScaleY, 1f);
+        if (_activeBehaviour != null)
+        {
+            _activeBehaviour.SetFlipY(dx < 0f, dx < 0f);
+        }
 
         // 무기가 등 뒤(위/좌 방향)일 때 Z를 +1 해 플레이어 뒤로 렌더링할지 결정
         // 🔮 마법 무기 컨셉: 공중에 떠다니므로 항상 캐릭터 앞에 렌더링하는 것이 자연스럽습니다.
@@ -422,13 +419,20 @@ public class PlayerWeaponController : MonoBehaviour
     private void ApplyAttackStartScale(int comboStep)
     {
         if (_activeBehaviour == null || !_activeBehaviour.LockRotationDuringAttack) return;
-        if (!_activeBehaviour.UseYScaleFlip) return;
 
-        bool   flipY     = _activeBehaviour.FlipComboDirection && comboStep == 2;
-        float  scaleY    = (_cursorDx < 0f) ? -1f : 1f;
-        if (flipY) scaleY *= -1f;
+        bool isAimingLeft = _cursorDx < 0f;
+        bool flipY = isAimingLeft;
+        
+        if (_activeBehaviour.FlipComboDirection && comboStep == 2)
+            flipY = !flipY;
 
-        _weaponPivot.localScale = new Vector3(1f, scaleY, 1f);
+        _activeBehaviour.SetFlipY(flipY, isAimingLeft);
+
+        Vector3 euler = _weaponPivot.localEulerAngles;
+        euler.x = 0f;
+        euler.y = 0f;
+        _weaponPivot.localEulerAngles = euler;
+        _weaponPivot.localScale = Vector3.one;
     }
 
     // ── 공격 종료 감시 ────────────────────────────────────

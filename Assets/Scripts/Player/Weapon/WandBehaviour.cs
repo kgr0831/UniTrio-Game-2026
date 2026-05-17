@@ -62,9 +62,7 @@ public class WandBehaviour : WeaponBehaviourBase
 
     // ── WeaponBehaviourBase 오버라이드 ──────────────────────────────
     public override WeaponType WeaponType          => WeaponType.Staff;
-    public override bool  UseYScaleFlip            => true;
     public override bool  LockRotationDuringAttack => true;
-    public override bool  FlipComboDirection       => false;
     public override bool  UseGoBehind              => true;
     public override float OrbitRadius              => _orbitRadius;
     public override float ComboWindow              => 0f;

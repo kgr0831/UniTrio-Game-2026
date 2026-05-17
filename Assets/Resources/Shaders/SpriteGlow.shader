@@ -34,7 +34,7 @@ Shader "Custom/SpriteGlow"
         Cull Off
         Lighting Off
         ZWrite Off
-        Blend One OneMinusSrcAlpha
+        Blend SrcAlpha One
 
         Pass
         {
@@ -92,6 +92,11 @@ Shader "Custom/SpriteGlow"
                 return OUT;
             }
 
+            float random(float2 uv)
+            {
+                return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453123);
+            }
+
             fixed4 frag(v2f_glow IN) : SV_Target
             {
                 // 1. 기본 색상 샘플링 (Base)
@@ -101,11 +106,10 @@ Shader "Custom/SpriteGlow"
                 float mask = 0;
 
                 #if defined(_USE_OUTLINE_GLOW)
-                    // 외곽선 전용 모드: 주변 픽셀 알파를 샘플링하여 가장자리만 감지
+                    // 외곽선 전용 모드
                     float2 texelSize = _MainTex_TexelSize.xy * _OutlineWidth;
                     float centerAlpha = SampleSpriteTexture(IN.texcoord).a;
                     
-                    // 주변 8방향 샘플링
                     float surroundAlpha = 0;
                     surroundAlpha += SampleSpriteTexture(IN.texcoord + float2( texelSize.x, 0)).a;
                     surroundAlpha += SampleSpriteTexture(IN.texcoord + float2(-texelSize.x, 0)).a;
@@ -117,26 +121,19 @@ Shader "Custom/SpriteGlow"
                     surroundAlpha += SampleSpriteTexture(IN.texcoord + float2(-texelSize.x, -texelSize.y)).a;
                     surroundAlpha /= 8.0;
                     
-                    // 가장자리 = 주변에 투명 픽셀이 있는 불투명 영역, 또는 주변에 불투명 픽셀이 있는 투명 영역
                     float edge = abs(centerAlpha - surroundAlpha);
-                    // 내부(centerAlpha 높고 surroundAlpha도 높음)는 edge가 0에 가까움
-                    // 외곽선(centerAlpha와 surroundAlpha 차이 큼)만 mask가 높아짐
                     mask = saturate(edge * 4.0);
                     
                 #elif defined(_USE_MAIN_ALPHA_AS_GLOW)
-                    // 전체 발광 모드
                     mask = c.a;
                 #else
-                    // 특정 마스크 텍스처를 사용할 때
                     fixed4 e = tex2D(_EmissionTex, IN.texcoord);
                     mask = e.r * e.a;
                 #endif
 
-                // 렌더러 알파가 0이면 글로우도 사라지도록 (공격 후 투명화 대응)
                 mask *= IN.color.a;
 
                 #if defined(_USE_OUTLINE_GLOW)
-                    // 내부 픽셀을 반투명하게 (외곽선만 빛나고 내부는 투과)
                     float interiorFactor = saturate(1.0 - mask * 2.0);
                     c.a *= lerp(1.0, _InteriorAlpha, interiorFactor * centerAlpha);
                 #endif
@@ -150,8 +147,12 @@ Shader "Custom/SpriteGlow"
                 // 5. 글로우 더하기
                 c.rgb += glow;
 
-                // 6. 투명도 보정 (글로우가 있다면 그 부분은 보이게 함)
+                // 6. 투명도 보정
                 c.a = saturate(c.a + (mask * _GlowIntensity * 0.1));
+
+                // ── 최대 밝기 제한 (Clamp) ──
+                // 여러 잔상이 겹쳐도 순백색으로 타버리지 않도록 억제
+                c.rgb = min(c.rgb, float3(2.5, 2.5, 2.5));
 
                 return c;
             }

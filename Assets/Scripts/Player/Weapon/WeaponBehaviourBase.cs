@@ -13,6 +13,9 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
     /// <summary>현재 공격 애니메이션이 재생 중인지 여부.</summary>
     public bool IsAttacking { get; protected set; }
 
+    /// <summary>수동으로 트레일(궤적)에 하위 프레임 정점을 추가합니다.</summary>
+    public virtual void AddTrailPosition(Vector3 rendererWorldPos, Quaternion rendererRot) {}
+
     /// <summary>현재 진행 중인 콤보 스텝 (1-based). 피봇 Y-scale 결정에 사용됨.</summary>
     public int CurrentComboStep { get; protected set; } = 1;
 
@@ -23,17 +26,9 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
     public abstract int MaxComboSteps { get; }
 
     /// <summary>
-    /// 2타 공격 시 Y-scale을 반전해 올려치기/내려치기 방향을 바꿀지 여부.
-    /// 검처럼 좌우 궤적을 교번하는 무기는 true, 창처럼 직선 찌르기는 false.
+    /// 2타 공격 시 무기 날 방향을 뒤집기 위해 SpriteRenderer.flipY를 반전할지 여부.
     /// </summary>
     public virtual bool FlipComboDirection => false;
-
-    /// <summary>
-    /// 커서가 왼쪽을 향할 때 피봇 Y-scale을 -1로 뒤집을지 여부.
-    /// 검처럼 스프라이트가 좌우 대칭이 필요한 무기는 true,
-    /// 창처럼 360도 회전만으로 방향을 표현하는 무기는 false (항상 scale 1,1,1).
-    /// </summary>
-    public virtual bool UseYScaleFlip => true;
 
     /// <summary>
     /// 무기가 플레이어를 중심으로 공전(Orbit)하는 거리 반경입니다.
@@ -75,6 +70,16 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
 
     /// <summary>장착된 WeaponData의 Icon 스프라이트를 무기 비주얼에 반영합니다.</summary>
     public virtual void SetWeaponSprite(Sprite sprite) { }
+
+    public bool IsFlipped { get; protected set; }
+    public bool IsAimingLeft { get; protected set; }
+
+    /// <summary>무기가 좌측을 향할 때 시각적으로 뒤집히도록(SpriteRenderer.flipY 등) 처리합니다.</summary>
+    public virtual void SetFlipY(bool flip, bool isAimingLeft) 
+    { 
+        IsFlipped = flip;
+        IsAimingLeft = isAimingLeft;
+    }
 
     /// <summary>공격 시작. comboStep에 이번에 실행할 타수(1, 2, ...)를 넘깁니다.</summary>
     public abstract void BeginAttack(int comboStep);

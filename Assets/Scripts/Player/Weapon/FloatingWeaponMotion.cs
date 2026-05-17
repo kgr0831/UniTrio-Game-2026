@@ -86,10 +86,12 @@ public class FloatingWeaponMotion : MonoBehaviour
     [SerializeField] private float _ghostSpawnDistance = 0.015f; // 너무 빽빽하지 않게 간격 약간 확대
     private float _ghostLifeTime = 0.18f;
     private Vector3 _lastGhostLocalPos;
+    private Quaternion _lastGhostLocalRot;
     private SpriteRenderer _mainSpriteRenderer;
     private System.Collections.Generic.Queue<SpriteRenderer> _ghostPool = new System.Collections.Generic.Queue<SpriteRenderer>();
     private System.Collections.Generic.List<SpriteRenderer> _activeGhosts = new System.Collections.Generic.List<SpriteRenderer>();
     private bool _isFadingOut = false;
+    private ElementalWeaponSystem _elementalSystem;
 
     private void Awake()
     {
@@ -176,11 +178,22 @@ public class FloatingWeaponMotion : MonoBehaviour
 
 
     /// <summary>
-    /// 레퍼런스 기반 통합 색상: 황금(Gold) 코어 + 연녹색(Pale Green) 테두리
-    /// 무기 타입별로 미세한 색조 변화만 줍니다.
+    /// 아우라 색상을 반환합니다.
+    /// ElementalWeaponSystem이 활성화되어 있으면 현재 속성 색상을 사용하고,
+    /// 없으면 기존 무기 타입별 기본 색상(황금/연녹)을 사용합니다.
     /// </summary>
     private Color GetWeaponAuraColor()
     {
+        // ElementalWeaponSystem이 있으면 속성 기반 색상 사용
+        if (_elementalSystem == null)
+            _elementalSystem = GetComponentInParent<ElementalWeaponSystem>();
+        if (_elementalSystem == null)
+            _elementalSystem = FindObjectOfType<ElementalWeaponSystem>();
+
+        if (_elementalSystem != null)
+            return _elementalSystem.GetCurrentAuraColor();
+
+        // 폴백: 기존 무기 타입별 기본 색상
         if (_weapon == null) return new Color(1f, 0.85f, 0.4f, 1f);
         switch (_weapon.WeaponType)
         {
@@ -222,13 +235,36 @@ public class FloatingWeaponMotion : MonoBehaviour
             {
                 Material ghostMat = new Material(glowShader2);
                 ghostMat.EnableKeyword("_USE_MAIN_ALPHA_AS_GLOW");
-                ghostMat.SetFloat("_GlowIntensity", 2.5f);
-                ghostMat.SetColor("_GlowColor", GetWeaponAuraColor() * 3f);
+
+                // ElementalWeaponSystem에서 극한 HDR 색상/강도 가져오기
+                Color glowCol = GetWeaponAuraColor() * 3f;
+                float glowInt = 2.5f;
+                if (_elementalSystem != null)
+                {
+                    glowCol = _elementalSystem.GetCurrentHDRColor();
+                    // Earth는 은은하게, Fire/Ice는 강하게
+                    glowInt = (_elementalSystem.CurrentElement == ElementType.Earth) ? 2.0f : 3.5f;
+                }
+
+                ghostMat.SetFloat("_GlowIntensity", glowInt);
+                ghostMat.SetColor("_GlowColor", glowCol);
                 ghost.material = ghostMat;
             }
 
             ghost.sortingLayerID = _mainSpriteRenderer.sortingLayerID;
             ghost.sortingOrder = _mainSpriteRenderer.sortingOrder - 1;
+        }
+        else
+        {
+            // 풀에서 재활용된 고스트도 현재 속성 색상으로 갱신
+            Material reusedMat = ghost.material;
+            if (reusedMat != null && _elementalSystem != null)
+            {
+                Color glowCol = _elementalSystem.GetCurrentHDRColor();
+                float glowInt = (_elementalSystem.CurrentElement == ElementType.Earth) ? 2.0f : 3.5f;
+                reusedMat.SetColor("_GlowColor", glowCol);
+                reusedMat.SetFloat("_GlowIntensity", glowInt);
+            }
         }
 
         ghost.gameObject.SetActive(true);
@@ -415,16 +451,21 @@ public class FloatingWeaponMotion : MonoBehaviour
         if (_hasAppliedOffset)
         {
             transform.localPosition = _savedBasePos;
-            transform.localRotation = _savedBaseRot;
+            Vector3 euler = _savedBaseRot.eulerAngles;
+            euler.x = 0f;
+            euler.y = 0f;
+            transform.localRotation = Quaternion.Euler(euler);
             // 스케일은 복원하지 않음! SwordBehaviour가 Update()에서 설정한 flipY를 보존
             _hasAppliedOffset = false;
         }
 
         // 2. 현재 위치/회전을 기본 상태로 캡처 (SwordBehaviour 변경사항 포함)
         _savedBasePos = transform.localPosition;
-        _savedBaseRot = transform.localRotation;
-        // 스케일에서 flipY 부호만 감지 (SwordBehaviour가 설정한 값)
-        float flipSign = Mathf.Sign(transform.localScale.y);
+        Vector3 currentEuler = transform.localEulerAngles;
+        currentEuler.x = 0f;
+        currentEuler.y = 0f;
+        _savedBaseRot = Quaternion.Euler(currentEuler);
+        float flipSign = 1f; // 더 이상 transform.localScale.y를 사용하지 않음
 
         // 3. 공격 상태 감지
         bool isAttacking = _weapon != null && _weapon.IsAttacking;
@@ -444,6 +485,7 @@ public class FloatingWeaponMotion : MonoBehaviour
             _currentScalePunch = 1f;
 
             _lastGhostLocalPos = transform.localPosition;
+            _lastGhostLocalRot = transform.localRotation;
             triggerStartParticle = true;
 
             if (_weapon != null && _weapon.WeaponType == WeaponType.Spear)
@@ -475,6 +517,7 @@ public class FloatingWeaponMotion : MonoBehaviour
 
                 // 잔상 시작점을 스폰 위치로 설정 (기본 위치→스폰 위치 사이 잘못된 잔상 방지)
                 _lastGhostLocalPos = _savedBasePos + new Vector3(_spearSpawnLocal.x, _spearSpawnLocal.y, 0f);
+                _lastGhostLocalRot = _savedBaseRot;
             }
         }
         else if (!isAttacking && _wasAttacking)
@@ -508,37 +551,31 @@ public class FloatingWeaponMotion : MonoBehaviour
                 float duration = (combo == 1) ? 0.35f : (combo == 2) ? 0.45f : 0.40f;
                 float p = Mathf.Clamp01(t / duration);
 
+                // 손목/날 기울기 각도: SpriteRenderer.flipY 상태에 맞추어 완벽하게 정대칭 보정 (+45/-45)
+                // flipY가 true이면 스프라이트 상의 검날 고유 각도가 +45에서 -45도로 반전되므로, 회전 보정 역시 +45도로 매칭해야 올곧게 정렬됩니다.
+                slashRotZ = (_weapon != null && _weapon.IsFlipped) ? 45f : -45f;
+                lungeX = dist * _slashDistance; 
+                scaleMult = _slashScale; // 1, 2, 3타 모두 동일한 크기(범위) 유지
+
                 if (combo == 1) // 1타: Top(90) -> Cursor(0) -> Bottom(-90) 180도 반원
                 {
                     // 비선형 이징 (초반 가속, 후반 감속)
                     float ease = 1f - Mathf.Pow(1f - p, _slashEasePower);
-                    
-                    _orbitAngle = Mathf.Lerp(90f, -90f, ease);
-                    slashRotZ = -45f; // 원본 스프라이트 45도 감안 보정
-                    
-                    lungeX = dist * _slashDistance; 
-                    scaleMult = _slashScale; // 1,2,3타 모두 동일한 크기 유지
+                    float sign = (_weapon != null && _weapon.IsAimingLeft) ? -1f : 1f;
+                    _orbitAngle = Mathf.Lerp(90f * sign, -90f * sign, ease);
                 }
                 else if (combo == 2) // 2타: Bottom(-90) -> Cursor(0) -> Top(90) 180도 반원
                 {
                     float ease = 1f - Mathf.Pow(1f - p, _slashEasePower);
-                    
-                    _orbitAngle = Mathf.Lerp(-90f, 90f, ease);
-                    slashRotZ = 45f; // SwordBehaviour에서 Y축이 반전(flipY=-1)되므로 45도 보정
-                    
-                    lungeX = dist * _slashDistance; 
-                    scaleMult = _slashScale; 
+                    float sign = (_weapon != null && _weapon.IsAimingLeft) ? -1f : 1f;
+                    _orbitAngle = Mathf.Lerp(-90f * sign, 90f * sign, ease);
                 }
                 else if (combo == 3) // 3타: 360도 대회전
                 {
                     // 3타는 초반 가속이 너무 심해 잔상이 안 보이는 문제를 해결하기 위해 이징 파워를 낮춤 (더 균일한 속도)
                     float ease = 1f - Mathf.Pow(1f - p, 2.0f); 
-                    
-                    _orbitAngle = Mathf.Lerp(90f, 90f - 360f, ease); 
-                    slashRotZ = 45f; 
-                    
-                    lungeX = dist * _slashDistance; 
-                    scaleMult = _slashScale; 
+                    float sign = (_weapon != null && _weapon.IsAimingLeft) ? -1f : 1f;
+                    _orbitAngle = Mathf.Lerp(90f * sign, (90f - 360f) * sign, ease); 
                 }
             }
             else if (_weapon != null && _weapon.WeaponType == WeaponType.Spear)
@@ -686,6 +723,8 @@ public class FloatingWeaponMotion : MonoBehaviour
         Vector3 basePos = transform.localPosition;
         Vector3 newPos = basePos;
 
+
+
         if (_weapon != null && _weapon.WeaponType == WeaponType.Sword)
         {
             // 검 전용: 플레이어 주변을 오르빗(Orbit)하는 궤적
@@ -712,12 +751,12 @@ public class FloatingWeaponMotion : MonoBehaviour
         float totalRotAngle = _currentTiltZ + _currentSlashRot + _orbitAngle;
         
         transform.localPosition = newPos;
-        transform.localRotation = _savedBaseRot * Quaternion.Euler(0, 0, totalRotAngle);
+        transform.localRotation = Quaternion.Euler(0f, 0f, _savedBaseRot.eulerAngles.z + totalRotAngle);
         
-        // 스케일: _restBaseScale + flipY 부호 + punch로 절대 계산 (누적/드리프트 없음)
+        // 스케일: _restBaseScale + punch로 절대 계산 (누적/드리프트/flipY 스케일 반전 없음)
         transform.localScale = new Vector3(
             _restBaseScale.x * _currentScalePunch,
-            _restBaseScale.y * flipSign * _currentScalePunch,
+            _restBaseScale.y * _currentScalePunch,
             _restBaseScale.z
         );
         
@@ -755,13 +794,14 @@ public class FloatingWeaponMotion : MonoBehaviour
             // [로컬 좌표계 기준 이동 거리 계산]
             // 플레이어가 이동할 때 잔상이 길게 늘어지는 현상을 방지하기 위해 로컬 좌표를 사용합니다.
             Vector3 currentLocalPos = transform.localPosition;
+            Quaternion currentLocalRot = transform.localRotation;
             float totalDist = Vector3.Distance(_lastGhostLocalPos, currentLocalPos);
             
             if (totalDist >= dynamicThreshold)
             {
                 int spawnCount = Mathf.FloorToInt(totalDist / dynamicThreshold);
-                // 최대 생성 수 제한을 10으로 낮춤 (너무 빽빽하지 않게)
-                spawnCount = Mathf.Min(spawnCount, 10); 
+                // 궤적 부드러움을 극대화하기 위해 서브 프레임 상한을 20으로 높임
+                spawnCount = Mathf.Min(spawnCount, 20); 
 
                 // 자식 스프라이트(Spear 등)의 월드 오프셋 보정
                 Vector3 childWorldOffset = Vector3.zero;
@@ -771,13 +811,29 @@ public class FloatingWeaponMotion : MonoBehaviour
                 for (int i = 1; i <= spawnCount; i++)
                 {
                     float lerpVal = (float)i / spawnCount;
-                    Vector3 localSpawnPos = Vector3.Lerp(_lastGhostLocalPos, currentLocalPos, lerpVal);
+                    
+                    // 곡선(호) 보간: 검처럼 플레이어 주위를 도는 무기는 Slerp 적용
+                    Vector3 localSpawnPos;
+                    if (_weapon != null && _weapon.WeaponType == WeaponType.Sword)
+                        localSpawnPos = Vector3.Slerp(_lastGhostLocalPos, currentLocalPos, lerpVal);
+                    else
+                        localSpawnPos = Vector3.Lerp(_lastGhostLocalPos, currentLocalPos, lerpVal);
+                        
+                    Quaternion localSpawnRot = Quaternion.Slerp(_lastGhostLocalRot, currentLocalRot, lerpVal);
+
                     Vector3 worldSpawnPos = transform.parent != null ? transform.parent.TransformPoint(localSpawnPos) : transform.TransformPoint(localSpawnPos);
                     worldSpawnPos += childWorldOffset;
-                    Quaternion ghostRot = _mainSpriteRenderer != null ? _mainSpriteRenderer.transform.rotation : transform.rotation;
+                    
+                    // 잔상의 방향(Rotation)도 Slerp 된 값을 기준으로 월드 회전 생성
+                    Quaternion ghostRot = transform.parent != null ? transform.parent.rotation * localSpawnRot : localSpawnRot;
+                    
                     SpawnGhostTrail(worldSpawnPos, ghostRot);
+                    
+                    if (_weapon != null)
+                        _weapon.AddTrailPosition(worldSpawnPos, ghostRot);
                 }
                 _lastGhostLocalPos = currentLocalPos;
+                _lastGhostLocalRot = currentLocalRot;
             }
         }
 
