@@ -506,14 +506,16 @@ public class FloatingWeaponMotion : MonoBehaviour
                 float normalizedDist = Mathf.Clamp01(cursorDist / _attackLungeDistance);
                 float yOffset = _spearWorldUpOffset * Mathf.Lerp(3f, 1f, normalizedDist);
 
-                _spearSpawnLocal = new Vector2(-_spearStartBack, yOffset);
+                // 왼쪽을 바라볼 때(Flipped) 생성 위치 및 타겟 방향 대칭 처리
+                bool isFlipped = _weapon != null && _weapon.IsFlipped;
+                _spearSpawnLocal = new Vector2(-_spearStartBack, isFlipped ? -yOffset : yOffset);
 
                 Vector2 cursorLocal = new Vector2(cursorDist, 0f);
                 Vector2 thrustDir = (cursorLocal - _spearSpawnLocal).normalized;
                 _spearTargetLocal = cursorLocal - thrustDir * _spearTipOffset;
 
                 float thrustAngleLocal = Mathf.Atan2(thrustDir.y, thrustDir.x) * Mathf.Rad2Deg;
-                _spearThrustRotZ = thrustAngleLocal - _spearBladeAngle;
+                _spearThrustRotZ = thrustAngleLocal - (isFlipped ? -_spearBladeAngle : _spearBladeAngle);
 
                 // 잔상 시작점을 스폰 위치로 설정 (기본 위치→스폰 위치 사이 잘못된 잔상 방지)
                 _lastGhostLocalPos = _savedBasePos + new Vector3(_spearSpawnLocal.x, _spearSpawnLocal.y, 0f);

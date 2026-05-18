@@ -180,6 +180,10 @@ public class SpearBehaviour : WeaponBehaviourBase
         {
             _spearRenderer.flipY = flip;
         }
+        if (_hitboxCollider != null && _hitboxCollider is BoxCollider2D box)
+        {
+            box.offset = new Vector2(box.offset.x, flip ? -Mathf.Abs(box.offset.y) : Mathf.Abs(box.offset.y));
+        }
         if (_bashTrail != null)
         {
             float yOff = flip ? -1.2f : 1.2f;
