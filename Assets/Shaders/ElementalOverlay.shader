@@ -229,29 +229,32 @@ Shader "Custom/ElementalOverlay"
 
                     effectAlpha = saturate(combined * 1.5) * _EffectIntensity;
                 }
-                // ──────────── ICE ─────────────
+                // ──────────── ICE (Frost Aura · 냉기 안개) ─────────────
                 else if (elem == 2)
                 {
-                    // 고밀도 Voronoi (Scale 24~30 → 촘촘한 얼음 파편)
-                    float dist1 = _Voronoi(pixUV * _IceVoronoiScale, 0.01);
-                    // 두 번째 레이어: 더 미세한 서리 결정
-                    float dist2 = _Voronoi(pixUV * _IceVoronoiScale * 1.7 + 3.7, 0.03);
+                    // 두 레이어의 Gradient Noise를 서로 다른 방향/속도로 느리게 스크롤
+                    // → 차가운 안개가 무기를 감싸며 일렁이는 효과
+                    float2 frostUV1 = pixUV;
+                    frostUV1.x += _Time.y * 0.25;
+                    frostUV1.y -= _Time.y * 0.15;
 
-                    // 테두리 추출 (두 레이어 합산)
-                    float edge1 = 1.0 - smoothstep(_EdgeThreshold - 0.08, _EdgeThreshold, dist1);
-                    float edge2 = 1.0 - smoothstep(_EdgeThreshold - 0.04, _EdgeThreshold * 0.8, dist2);
-                    float edge = saturate(edge1 + edge2 * 0.6);
+                    float2 frostUV2 = pixUV;
+                    frostUV2.x -= _Time.y * 0.18;
+                    frostUV2.y += _Time.y * 0.22;
 
-                    // 시간 기반 반짝임 (서리 미세 깜빡임)
-                    float shimmer = _GradientNoise(pixUV * 20.0 + _Time.y * 0.8);
-                    edge += shimmer * 0.2;
+                    // 부드러운 노이즈 혼합 (서로 다른 스케일로 겹쳐 안개 질감 생성)
+                    float frost1 = _GradientNoise(frostUV1 * 4.0);
+                    float frost2 = _GradientNoise(frostUV2 * 6.5 + 3.7);
+                    float combined = saturate(frost1 * 0.55 + frost2 * 0.45);
 
-                    // 내부 서리 텍스처 (약한 노이즈 → 반투명 얼음 질감)
-                    float frost = _GradientNoise(pixUV * _IceVoronoiScale * 0.5 + _Time.y * 0.1);
-                    edge = saturate(edge + frost * 0.15);
+                    // 쨍한 시안 ↔ 깊은 아이스 블루 HDR 그라데이션
+                    half3 sharpCyan = _IceColor.rgb * 2.5;              // 시안 HDR (인스펙터 색상 기반)
+                    half3 iceBlue   = half3(0.2, 0.45, 0.95) * 2.0;     // 깊은 아이스 블루 HDR
+                    effectColor = lerp(iceBlue, sharpCyan, combined);
 
-                    effectColor = _IceColor.rgb;
-                    effectAlpha = saturate(edge) * _EffectIntensity;
+                    // 느린 맥동: 차가운 기운이 숨쉬듯 부드럽게 일렁임
+                    float pulse = sin(_Time.y * 1.5 + frost1 * 3.0) * 0.12 + 0.88;
+                    effectAlpha = saturate(combined * 1.4 * pulse) * _EffectIntensity;
                 }
                 // ──────────── EARTH ───────────
                 else

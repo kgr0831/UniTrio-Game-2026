@@ -84,7 +84,7 @@ public class FloatingWeaponMotion : MonoBehaviour
 
     [Header("Ghost Trail (Afterimage)")]
     [SerializeField] private float _ghostSpawnDistance = 0.015f; // 너무 빽빽하지 않게 간격 약간 확대
-    private float _ghostLifeTime = 0.18f;
+    [SerializeField] private float _ghostLifeTime = 0.12f; // 잔상 기본 유지 시간 단축 (기존 0.18f)
     private Vector3 _lastGhostLocalPos;
     private Quaternion _lastGhostLocalRot;
     private SpriteRenderer _mainSpriteRenderer;
@@ -279,7 +279,7 @@ public class FloatingWeaponMotion : MonoBehaviour
         _activeGhosts.Add(ghost);
 
         float startAlpha = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.7f : 0.4f;
-        float lifeTime = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.4f : _ghostLifeTime;
+        float lifeTime = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.25f : _ghostLifeTime; // 콤보3 타격 잔상 유지 시간 단축 (기존 0.4f)
         Color baseColor = GetWeaponAuraColor();
 
         var fader = ghost.GetComponent<GhostFade>();
