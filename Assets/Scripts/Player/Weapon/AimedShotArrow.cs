@@ -44,6 +44,30 @@ public class AimedShotArrow : MonoBehaviour
         _damage = damage;
     }
 
+    private Color _elementColor;
+    private bool  _hasElementColor;
+
+    /// <summary>속성 색상을 주입합니다. 궤적 파티클과 글로우에 반영됩니다.</summary>
+    public void SetElementColor(Color hdrColor)
+    {
+        _elementColor    = hdrColor;
+        _hasElementColor = true;
+
+        if (_trailParticle != null)
+        {
+            var main = _trailParticle.main;
+            Color trailCol = hdrColor;
+            trailCol.a = 0.7f;
+            main.startColor = trailCol;
+
+            var psRenderer = _trailParticle.GetComponent<ParticleSystemRenderer>();
+            if (psRenderer != null && psRenderer.material != null)
+            {
+                psRenderer.material.SetColor("_EmissionColor", hdrColor);
+            }
+        }
+    }
+
     /// <summary>Emission 강도를 설정합니다 (차징 비례).</summary>
     public void SetGlowIntensity(float intensity, Color glowColor)
     {

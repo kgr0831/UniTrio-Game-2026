@@ -78,6 +78,7 @@ public class WandBehaviour : WeaponBehaviourBase
     private SpriteRenderer        _spriteRenderer;      // 메인 렌더러 (fallback)
     private MaterialPropertyBlock _propBlock;
     private MaterialPropertyBlock _glowPropBlock;
+    private ElementalWeaponSystem _elementalSystem;
 
     private static readonly int _glowIntensityId = Shader.PropertyToID("_EmissionIntensity");
     private static readonly int _glowColorId     = Shader.PropertyToID("_EmissionColor");
@@ -90,6 +91,10 @@ public class WandBehaviour : WeaponBehaviourBase
         _glowPropBlock   = new MaterialPropertyBlock();
         _localPosCached  = transform.localPosition;
         _cam             = Camera.main;
+
+        _elementalSystem = GetComponentInParent<ElementalWeaponSystem>();
+        if (_elementalSystem == null)
+            _elementalSystem = FindObjectOfType<ElementalWeaponSystem>();
 
         // 시작할 때는 빛을 끕니다.
         UpdateGlow(0f);
@@ -110,10 +115,21 @@ public class WandBehaviour : WeaponBehaviourBase
         }
     }
 
+    private Color GetCurrentGlowColor()
+    {
+        if (_elementalSystem != null)
+        {
+            Color c = _elementalSystem.GetCurrentAuraColor() * 1.5f;
+            c.a = 1f;
+            return c;
+        }
+        return _glowColor;
+    }
+
     private void UpdateGlow(float intensity)
     {
         _glowPropBlock.SetFloat(_glowIntensityId, intensity);
-        _glowPropBlock.SetColor(_glowColorId, _glowColor);
+        _glowPropBlock.SetColor(_glowColorId, GetCurrentGlowColor());
         if (_glowSpriteRenderer != null)
             _glowSpriteRenderer.SetPropertyBlock(_glowPropBlock);
         else
@@ -265,7 +281,16 @@ public class WandBehaviour : WeaponBehaviourBase
 
         GameObject      proj = SimpleObjectPool.Instance.Get(_projectilePrefab, spawnPos, Quaternion.identity);
         MagicProjectile mp   = proj.GetComponent<MagicProjectile>();
-        if (mp != null) mp.SetStats(_projectileSpeed, damage, fireDir);
+        if (mp != null)
+        {
+            mp.SetStats(_projectileSpeed, damage, fireDir);
+            if (_elementalSystem != null)
+            {
+                Color c = _elementalSystem.GetCurrentAuraColor() * 1.5f;
+                c.a = 1f;
+                mp.SetElementColor(c);
+            }
+        }
     }
 
     private Vector2 GetCurrentCursorDirection()
@@ -287,11 +312,13 @@ public class WandBehaviour : WeaponBehaviourBase
 
     private void SetGlow(float intensity)
     {
+        Color glowCol = GetCurrentGlowColor();
+
         // 글로우 전용 렌더러 (별도 스프라이트)
         if (_glowSpriteRenderer != null)
         {
             _glowSpriteRenderer.GetPropertyBlock(_glowPropBlock);
-            _glowPropBlock.SetColor(_glowColorId,     _glowColor);
+            _glowPropBlock.SetColor(_glowColorId,     glowCol);
             _glowPropBlock.SetFloat(_glowIntensityId, intensity);
             _glowSpriteRenderer.SetPropertyBlock(_glowPropBlock);
         }
@@ -299,7 +326,7 @@ public class WandBehaviour : WeaponBehaviourBase
         {
             // fallback: 메인 렌더러에 글로우 적용
             _spriteRenderer.GetPropertyBlock(_propBlock);
-            _propBlock.SetColor(_glowColorId,     _glowColor);
+            _propBlock.SetColor(_glowColorId,     glowCol);
             _propBlock.SetFloat(_glowIntensityId, intensity);
             _spriteRenderer.SetPropertyBlock(_propBlock);
         }

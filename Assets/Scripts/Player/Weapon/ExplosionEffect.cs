@@ -83,6 +83,12 @@ public class ExplosionEffect : MonoBehaviour
         _ready            = true;
     }
 
+    /// <summary>속성 색상을 주입합니다. 폭발 글로우에 반영됩니다.</summary>
+    public void SetElementColor(Color hdrColor)
+    {
+        _glowColor = hdrColor;
+    }
+
     private void OnEnable()
     {
         _elapsed = 0f;

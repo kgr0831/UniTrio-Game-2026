@@ -154,6 +154,18 @@ public class BowBehaviour : WeaponBehaviourBase
     private Camera         _mainCamera;
     private float          _lastAttackEndTime;
     private Vector3        _shakeOffset; // 차징 떨림 오프셋
+    private ElementalWeaponSystem _elementalSystem;
+
+    private Color GetCurrentElementColor()
+    {
+        if (_elementalSystem != null)
+        {
+            Color c = _elementalSystem.GetCurrentAuraColor() * 1.5f;
+            c.a = 1f;
+            return c;
+        }
+        return _glowColor;
+    }
 
     private void Awake()
     {
@@ -184,6 +196,10 @@ public class BowBehaviour : WeaponBehaviourBase
         }
 
         _mainCamera = Camera.main;
+
+        _elementalSystem = GetComponentInParent<ElementalWeaponSystem>();
+        if (_elementalSystem == null)
+            _elementalSystem = FindObjectOfType<ElementalWeaponSystem>();
     }
 
     /// <summary>이름으로 자식 Transform을 재귀 탐색합니다.</summary>
@@ -299,7 +315,7 @@ public class BowBehaviour : WeaponBehaviourBase
                 main.startLifetime = 0.35f;
                 main.startSpeed = -8f; // 중앙으로 빠르게 수렴
                 main.startSize = 0.15f;
-                main.startColor = _glowColor;
+                main.startColor = GetCurrentElementColor();
                 main.simulationSpace = ParticleSystemSimulationSpace.Local;
                 main.playOnAwake = false;
 
@@ -314,7 +330,7 @@ public class BowBehaviour : WeaponBehaviourBase
                 var psRenderer = _aimedShotGatherParticle.GetComponent<ParticleSystemRenderer>();
                 Material gatherMat = new Material(Shader.Find("Custom/VFXLit2D"));
                 gatherMat.SetFloat("_EmissionIntensity", 3f);
-                gatherMat.SetColor("_EmissionColor", _glowColor);
+                gatherMat.SetColor("_EmissionColor", GetCurrentElementColor());
                 gatherMat.SetFloat("_LightInfluence", 0.3f);
                 psRenderer.material = gatherMat;
                 psRenderer.sortingLayerName = "Weapons";
@@ -375,7 +391,7 @@ public class BowBehaviour : WeaponBehaviourBase
             
             _aimedShotBowRendererMain.GetPropertyBlock(_aimedShotBowPropBlock);
             _aimedShotBowPropBlock.SetFloat("_EmissionIntensity", bowGlow);
-            _aimedShotBowPropBlock.SetColor("_EmissionColor", _glowColor);
+            _aimedShotBowPropBlock.SetColor("_EmissionColor", GetCurrentElementColor());
             _aimedShotBowRendererMain.SetPropertyBlock(_aimedShotBowPropBlock);
         }
 
@@ -417,7 +433,7 @@ public class BowBehaviour : WeaponBehaviourBase
             {
                 glowIntensity += Mathf.PingPong(Time.time * 5f, _pulseAmplitude);
             }
-            _aimedShotArrowScript.SetGlowIntensity(glowIntensity, _glowColor);
+            _aimedShotArrowScript.SetGlowIntensity(glowIntensity, GetCurrentElementColor());
         }
 
         // ── 100% 차징 시 Aim_UPVFX 활성화 (활 우클릭과 동일한 시스템) ──
@@ -483,6 +499,8 @@ public class BowBehaviour : WeaponBehaviourBase
         _aimedShotArrowInstance.transform.localRotation = Quaternion.identity;
 
         _aimedShotArrowScript = _aimedShotArrowInstance.GetComponent<AimedShotArrow>();
+        if (_aimedShotArrowScript != null && _elementalSystem != null)
+            _aimedShotArrowScript.SetElementColor(GetCurrentElementColor());
 
         SpriteRenderer arrowRenderer = _aimedShotArrowInstance.GetComponent<SpriteRenderer>();
         if (arrowRenderer != null)
@@ -591,6 +609,8 @@ public class BowBehaviour : WeaponBehaviourBase
             AimedShotArrow arrow = arrowObj.GetComponent<AimedShotArrow>();
             if (arrow != null)
             {
+                if (_elementalSystem != null)
+                    arrow.SetElementColor(GetCurrentElementColor());
                 arrow.SetStats(speed, damage);
                 arrow.Launch();
             }
@@ -794,7 +814,7 @@ public class BowBehaviour : WeaponBehaviourBase
         }
 
         _spriteRenderer.GetPropertyBlock(_propBlock);
-        _propBlock.SetColor(_glowColorId, _glowColor);
+        _propBlock.SetColor(_glowColorId, GetCurrentElementColor());
         _propBlock.SetFloat(_glowIntensityId, intensity);
         _spriteRenderer.SetPropertyBlock(_propBlock);
     }
@@ -942,7 +962,12 @@ public class BowBehaviour : WeaponBehaviourBase
         
         // ArrowProjectile에 차징 값 전달
         ArrowProjectile ap = arrowObj.GetComponent<ArrowProjectile>();
-        if (ap != null) ap.SetStats(speed, damage);
+        if (ap != null)
+        {
+            ap.SetStats(speed, damage);
+            if (_elementalSystem != null)
+                ap.SetElementColor(GetCurrentElementColor());
+        }
     }
 
     public override void OnDeactivated()

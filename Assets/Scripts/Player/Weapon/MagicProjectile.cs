@@ -57,12 +57,23 @@ public class MagicProjectile : MonoBehaviour
     private static readonly int   _glowIntensityId = Shader.PropertyToID("_EmissionIntensity");
     private static readonly int   _glowColorId     = Shader.PropertyToID("_EmissionColor");
 
+    private Color _elementGlowColor;
+    private bool  _hasElementColor;
+
     /// <summary>WandBehaviour에서 발사 시 호출. damage를 float으로 수신합니다.</summary>
     public void SetStats(float speed, float damage, Vector2 direction)
     {
         _speed         = speed;
         _damage        = damage;
         _moveDirection = direction.sqrMagnitude > 0.001f ? direction.normalized : Vector2.right;
+    }
+
+    /// <summary>속성 색상을 주입합니다. 투사체와 폭발 모두에 반영됩니다.</summary>
+    public void SetElementColor(Color hdrColor)
+    {
+        _elementGlowColor = hdrColor;
+        _hasElementColor  = true;
+        _glowColor        = hdrColor;
     }
 
     private void Awake()
@@ -177,7 +188,11 @@ public class MagicProjectile : MonoBehaviour
         GameObject     vfx = SimpleObjectPool.Instance.Get(_explosionVfxPrefab, transform.position, Quaternion.identity);
         ExplosionEffect fx  = vfx.GetComponent<ExplosionEffect>();
         if (fx != null)
+        {
             fx.SetupExplosion(_damage, _damageTextPrefab);
+            if (_hasElementColor)
+                fx.SetElementColor(_elementGlowColor);
+        }
     }
 
     private void ApplyGlow(float intensity)

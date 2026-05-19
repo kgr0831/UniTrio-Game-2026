@@ -25,11 +25,81 @@ public class ArrowProjectile : MonoBehaviour
     [Header("Damage Text (Optional)")]
     [SerializeField] private GameObject _damageTextPrefab;
 
+    private SpriteRenderer _spriteRenderer;
+    private ParticleSystem _trailParticle;
+    private Color          _elementColor;
+    private bool           _hasElementColor;
+
     /// <summary>BowBehaviour에서 발사 시 차징 비율에 따른 속도/데미지를 주입합니다.</summary>
     public void SetStats(float speed, float damage)
     {
         _speed  = speed;
         _damage = damage;
+    }
+
+    /// <summary>속성 색상을 주입합니다. 화살 스프라이트 틴트와 궤적 파티클에 반영됩니다.</summary>
+    public void SetElementColor(Color hdrColor)
+    {
+        _elementColor    = hdrColor;
+        _hasElementColor = true;
+
+        if (_spriteRenderer != null)
+        {
+            Color tint = hdrColor;
+            tint.a = 1f;
+            _spriteRenderer.color = tint;
+        }
+
+        if (_trailParticle != null)
+        {
+            var main = _trailParticle.main;
+            Color trailCol = hdrColor;
+            trailCol.a = 0.6f;
+            main.startColor = trailCol;
+
+            var psRenderer = _trailParticle.GetComponent<ParticleSystemRenderer>();
+            if (psRenderer != null && psRenderer.material != null)
+            {
+                psRenderer.material.SetColor("_EmissionColor", hdrColor);
+            }
+        }
+    }
+
+    private void Awake()
+    {
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+
+        GameObject trailObj = new GameObject("ArrowTrailVFX");
+        trailObj.transform.SetParent(transform);
+        trailObj.transform.localPosition = new Vector3(-0.3f, 0, 0);
+        trailObj.transform.localRotation = Quaternion.Euler(0, 180, 0);
+
+        _trailParticle = trailObj.AddComponent<ParticleSystem>();
+        var main = _trailParticle.main;
+        main.duration = 1f;
+        main.startLifetime = 0.15f;
+        main.startSpeed = 0.5f;
+        main.startSize = 0.12f;
+        main.startColor = new Color(1f, 1f, 1f, 0.5f);
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.playOnAwake = false;
+
+        var emission = _trailParticle.emission;
+        emission.rateOverTime = 0f;
+
+        var shape = _trailParticle.shape;
+        shape.shapeType = ParticleSystemShapeType.Cone;
+        shape.angle = 15f;
+        shape.radius = 0.03f;
+
+        var psRenderer = _trailParticle.GetComponent<ParticleSystemRenderer>();
+        Material trailMat = new Material(Shader.Find("Custom/VFXLit2D"));
+        trailMat.SetFloat("_EmissionIntensity", 3f);
+        trailMat.SetColor("_EmissionColor", Color.white);
+        trailMat.SetFloat("_LightInfluence", 0.3f);
+        psRenderer.material = trailMat;
+        psRenderer.sortingLayerName = "Weapons";
+        psRenderer.sortingOrder = 9;
     }
 
     private void OnEnable()
@@ -40,11 +110,27 @@ public class ArrowProjectile : MonoBehaviour
         // 하지만 기존 구조를 최대한 유지하면서 풀 반환으로만 바꿉니다.
         CancelInvoke(nameof(ReturnToPool));
         Invoke(nameof(ReturnToPool), _lifeTime);
+
+        if (_trailParticle != null)
+        {
+            var em = _trailParticle.emission;
+            em.rateOverTime = 40f;
+            _trailParticle.Play();
+        }
+
+        if (_hasElementColor)
+            SetElementColor(_elementColor);
     }
 
     private void OnDisable()
     {
         CancelInvoke(nameof(ReturnToPool));
+        if (_trailParticle != null)
+        {
+            _trailParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+        if (_spriteRenderer != null)
+            _spriteRenderer.color = Color.white;
     }
 
     private void ReturnToPool()

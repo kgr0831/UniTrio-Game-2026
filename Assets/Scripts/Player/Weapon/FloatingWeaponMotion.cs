@@ -143,9 +143,20 @@ public class FloatingWeaponMotion : MonoBehaviour
                     Material energyMat = new Material(glowShader);
                     energyMat.EnableKeyword("_USE_OUTLINE_GLOW");
                     energyMat.SetColor("_GlowColor", auraColor * 1.5f);
-                    energyMat.SetFloat("_GlowIntensity", 2.0f);
-                    energyMat.SetFloat("_OutlineWidth", 1.5f);
-                    energyMat.SetFloat("_InteriorAlpha", 0.3f);
+
+                    if (_weapon != null && _weapon.WeaponType == WeaponType.Bow)
+                    {
+                        energyMat.SetFloat("_GlowIntensity", 1.5f);
+                        energyMat.SetFloat("_OutlineWidth", 0.8f);
+                        energyMat.SetFloat("_InteriorAlpha", 0.85f);
+                    }
+                    else
+                    {
+                        energyMat.SetFloat("_GlowIntensity", 2.0f);
+                        energyMat.SetFloat("_OutlineWidth", 1.5f);
+                        energyMat.SetFloat("_InteriorAlpha", 0.3f);
+                    }
+
                     r.material = energyMat;
                 }
 
@@ -279,7 +290,7 @@ public class FloatingWeaponMotion : MonoBehaviour
         _activeGhosts.Add(ghost);
 
         float startAlpha = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.7f : 0.4f;
-        float lifeTime = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.25f : _ghostLifeTime; // 콤보3 타격 잔상 유지 시간 단축 (기존 0.4f)
+        float lifeTime = (_weapon != null && _weapon.CurrentComboStep == 3) ? 0.25f : 0.2f;
         Color baseColor = GetWeaponAuraColor();
 
         var fader = ghost.GetComponent<GhostFade>();
@@ -468,6 +479,7 @@ public class FloatingWeaponMotion : MonoBehaviour
         float flipSign = 1f; // 더 이상 transform.localScale.y를 사용하지 않음
 
         // 3. 공격 상태 감지
+        bool isBow = _weapon != null && _weapon.WeaponType == WeaponType.Bow;
         bool isAttacking = _weapon != null && _weapon.IsAttacking;
         int currentStep = isAttacking ? _weapon.CurrentComboStep : -1;
 
@@ -517,9 +529,8 @@ public class FloatingWeaponMotion : MonoBehaviour
                 float thrustAngleLocal = Mathf.Atan2(thrustDir.y, thrustDir.x) * Mathf.Rad2Deg;
                 _spearThrustRotZ = thrustAngleLocal - (isFlipped ? -_spearBladeAngle : _spearBladeAngle);
 
-                // 잔상 시작점을 스폰 위치로 설정 (기본 위치→스폰 위치 사이 잘못된 잔상 방지)
-                _lastGhostLocalPos = _savedBasePos + new Vector3(_spearSpawnLocal.x, _spearSpawnLocal.y, 0f);
-                _lastGhostLocalRot = _savedBaseRot;
+                // 잔상 시작점은 일반 newAttack 로직에서 설정된 transform.localPosition 유지
+                // (스폰 위치가 아닌 무기의 실제 위치에서 잔상 시작)
             }
         }
         else if (!isAttacking && _wasAttacking)
@@ -536,7 +547,7 @@ public class FloatingWeaponMotion : MonoBehaviour
         float slashRotZ = 0f;
         float scaleMult = 1f;
 
-        if (isAttacking)
+        if (isAttacking && !isBow)
         {
             float speedMult = _attackSpeedMultiplier;
             // 3타(360도 회전) 속도 상향 조정 (원래 속도의 80% 수준)
@@ -545,7 +556,7 @@ public class FloatingWeaponMotion : MonoBehaviour
             _attackPhaseTime += Time.deltaTime * speedMult;
             float t = _attackPhaseTime;
             float dist = _attackLungeDistance;
-            
+
             if (_weapon != null && _weapon.WeaponType == WeaponType.Sword)
             {
                 // ── 검 전용 3타 콤보 (오르빗 애니메이션) ──
@@ -772,6 +783,14 @@ public class FloatingWeaponMotion : MonoBehaviour
         // 🌟 4. 무기 위치가 완벽히 적용된 직후에 잔상을 생성해야 제 위치에 생성됩니다!
         if (isAttacking && _weapon != null && (_weapon.WeaponType == WeaponType.Sword || _weapon.WeaponType == WeaponType.Spear))
         {
+            // 창: 무기가 충분히 보이기 전에는 잔상을 생성하지 않고 시작점만 갱신
+            // (스폰 위치가 멀어서 보이지 않는 구간의 잔상이 엉뚱한 곳에 나타나는 문제 방지)
+            if (_weapon.WeaponType == WeaponType.Spear && _currentAlpha < 0.5f)
+            {
+                _lastGhostLocalPos = transform.localPosition;
+                _lastGhostLocalRot = transform.localRotation;
+                goto SkipGhostSpawn;
+            }
             // 속도가 빠를수록(초반에 p가 작을 때) 더 촘촘하게 생성되도록 간격 가변 적용
             float t_p = 0.5f;
             if (_weapon != null && _weapon.WeaponType == WeaponType.Sword)
@@ -813,22 +832,22 @@ public class FloatingWeaponMotion : MonoBehaviour
                 for (int i = 1; i <= spawnCount; i++)
                 {
                     float lerpVal = (float)i / spawnCount;
-                    
+
                     // 곡선(호) 보간: 검처럼 플레이어 주위를 도는 무기는 Slerp 적용
                     Vector3 localSpawnPos;
                     if (_weapon != null && _weapon.WeaponType == WeaponType.Sword)
                         localSpawnPos = Vector3.Slerp(_lastGhostLocalPos, currentLocalPos, lerpVal);
                     else
                         localSpawnPos = Vector3.Lerp(_lastGhostLocalPos, currentLocalPos, lerpVal);
-                        
+
                     Quaternion localSpawnRot = Quaternion.Slerp(_lastGhostLocalRot, currentLocalRot, lerpVal);
 
                     Vector3 worldSpawnPos = transform.parent != null ? transform.parent.TransformPoint(localSpawnPos) : transform.TransformPoint(localSpawnPos);
                     worldSpawnPos += childWorldOffset;
-                    
+
                     // 잔상의 방향(Rotation)도 Slerp 된 값을 기준으로 월드 회전 생성
                     Quaternion ghostRot = transform.parent != null ? transform.parent.rotation * localSpawnRot : localSpawnRot;
-                    
+
                     SpawnGhostTrail(worldSpawnPos, ghostRot);
                     
                     if (_weapon != null)
@@ -837,6 +856,7 @@ public class FloatingWeaponMotion : MonoBehaviour
                 _lastGhostLocalPos = currentLocalPos;
                 _lastGhostLocalRot = currentLocalRot;
             }
+        SkipGhostSpawn:;
         }
 
         // 🌟 5. 파티클 역시 궤적 계산이 모두 끝난 뒤에 생성해야 무기 끝/시작 지점과 일치합니다!

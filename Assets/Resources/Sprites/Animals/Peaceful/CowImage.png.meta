@@ -34,7 +34,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -72,7 +72,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -110,167 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Right_Idle_1
+      name: CowImage_0
       rect:
         serializedVersion: 2
-        x: 4
-        y: 920
-        width: 116
-        height: 72
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 6dce2417fc6183b459cd7a1041100e28
-      internalID: -1363139524
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Right_Idle_2
-      rect:
-        serializedVersion: 2
-        x: 132
-        y: 920
-        width: 116
-        height: 68
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 96fe2e0b7b62800419dc043611b9c195
-      internalID: 1587169278
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Left_Idle_1
-      rect:
-        serializedVersion: 2
-        x: 265
-        y: 920
-        width: 116
-        height: 72
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: d94ab978147960a41986e6cf63f55b06
-      internalID: -1743390717
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Left_Idle_2
-      rect:
-        serializedVersion: 2
-        x: 392
-        y: 920
-        width: 116
-        height: 68
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 6fa5ec2f4e00cad44a3ada7c95e1910c
-      internalID: -1780990297
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Down_Idle_1
-      rect:
-        serializedVersion: 2
-        x: 544
-        y: 908
-        width: 60
-        height: 104
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 15c6ee80ce95a024e83cf4d2e1ae50bd
-      internalID: -332768375
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Down_Idle_2
-      rect:
-        serializedVersion: 2
-        x: 672
-        y: 908
-        width: 60
-        height: 100
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 5309594ddf723894780fd3b690259292
-      internalID: -1852592490
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Up_Idle_1
-      rect:
-        serializedVersion: 2
-        x: 800
-        y: 900
-        width: 60
-        height: 116
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 0e884b63cd1ead34f9471bd2d902c968
-      internalID: 2005308138
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Up_Idle_2
-      rect:
-        serializedVersion: 2
-        x: 928
+        x: 0
         y: 896
-        width: 60
-        height: 116
+        width: 128
+        height: 128
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -279,20 +125,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: bab698760fcd99243ac2f427b60fe955
-      internalID: 728812251
+      spriteID: ae6d4588b3cc16649abc014d1345207c
+      internalID: -743310208
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Right_Walk_1
+      name: CowImage_1
       rect:
         serializedVersion: 2
-        x: 4
-        y: 792
-        width: 116
-        height: 72
+        x: 128
+        y: 896
+        width: 128
+        height: 128
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -301,20 +147,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: a74e536e10ce77c40871fe1655dccaaf
-      internalID: -762376066
+      spriteID: 6f9392feb9bab2a4c8f6ee93a8fea09b
+      internalID: 393476291
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Right_Walk_2
+      name: CowImage_2
       rect:
         serializedVersion: 2
-        x: 132
-        y: 792
-        width: 116
-        height: 72
+        x: 256
+        y: 896
+        width: 128
+        height: 128
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -323,20 +169,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 6a4837fe539fae842936b4d7cc21031c
-      internalID: -1707389339
+      spriteID: ce6409f5904b5fd41b3ed82b7145826a
+      internalID: -1926559657
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Left_Walk_1
+      name: CowImage_3
       rect:
         serializedVersion: 2
-        x: 8
-        y: 664
-        width: 116
-        height: 72
+        x: 384
+        y: 896
+        width: 128
+        height: 128
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -345,20 +191,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 28cd68eba43aeaa4d8eab9ccaf27d708
-      internalID: -280719357
+      spriteID: 27af5472ac84aa441ab79f409fcdcd67
+      internalID: 765403732
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Left_Walk_2
+      name: CowImage_4
       rect:
         serializedVersion: 2
-        x: 136
-        y: 664
-        width: 116
-        height: 72
+        x: 512
+        y: 896
+        width: 128
+        height: 128
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -367,20 +213,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 79222b175b41df048bc8fefc24e81c83
-      internalID: 1058436580
+      spriteID: d2033a4b26177784883ec2c70aec0004
+      internalID: 1492731483
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Down_Walk_1
+      name: CowImage_5
       rect:
         serializedVersion: 2
-        x: 32
-        y: 524
-        width: 60
-        height: 104
+        x: 640
+        y: 896
+        width: 128
+        height: 128
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -389,20 +235,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 9c61c348985c4b943992dbd846039ff1
-      internalID: 1074633463
+      spriteID: fbb79ca7427799f4d8cbf6bdb13adddf
+      internalID: 1942068981
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Down_Walk_2
+      name: CowImage_6
       rect:
         serializedVersion: 2
-        x: 160
-        y: 524
-        width: 60
-        height: 104
+        x: 768
+        y: 896
+        width: 128
+        height: 128
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -411,20 +257,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 67acf39686d5d754cb90d33090f4b158
-      internalID: 1637006259
+      spriteID: 7ccfa73570db52d46923c049a8c652f7
+      internalID: 1194195384
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Up_Walk_1
+      name: CowImage_7
       rect:
         serializedVersion: 2
-        x: 32
-        y: 388
-        width: 60
-        height: 116
+        x: 896
+        y: 896
+        width: 128
+        height: 128
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -433,20 +279,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 498afaa659890a5469228c2fc9243acd
-      internalID: -1960866477
+      spriteID: 9cc54e27d9493c94b9bd0c97c7104e24
+      internalID: 1106300043
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Up_Walk_2
+      name: CowImage_8
       rect:
         serializedVersion: 2
-        x: 160
-        y: 388
-        width: 60
-        height: 116
+        x: 0
+        y: 768
+        width: 128
+        height: 128
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -455,8 +301,162 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 7b8ccc4747e4a8342b486227ab04591c
-      internalID: 1937922487
+      spriteID: deb770a6aa66b1847acafec3326cd6a4
+      internalID: -1780489405
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CowImage_9
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 768
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c35aca74bd343834886fb2c859d3c0d5
+      internalID: 158387602
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CowImage_10
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 640
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0736e2c421d831a438847f1f1c8c5e20
+      internalID: -490246620
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CowImage_11
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 640
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 580dc18c4b266aa45bbd5dcaff0eb699
+      internalID: 825685387
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CowImage_12
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 512
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 082fb1961a8c42e4bb9ad83cf8cf1b04
+      internalID: -439845359
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CowImage_13
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 512
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 37bc1fef06a47864599f994d6476f37a
+      internalID: -568560128
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CowImage_14
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 384
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6a8cbe10dec0e2944924d508341f9ff3
+      internalID: -1738057004
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CowImage_15
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 384
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c8397987b73fa3646879c95244d7261e
+      internalID: 1653401309
       vertices: []
       indices: 
       edges: []
@@ -475,25 +475,24 @@ TextureImporter:
     spriteCustomMetadata:
       entries:
       - key: SpriteEditor.SliceSettings
-        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":0,"keepEmptyRects":false,"isAlternate":false}'
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":8.0,"y":8.0},"gridSpriteSize":{"x":128.0,"y":128.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
       CowImage_0: -743310208
-      Down_Idle_1: -332768375
-      Down_Idle_2: -1852592490
-      Down_Walk_1: 1074633463
-      Down_Walk_2: 1637006259
-      Left_Idle_1: -1743390717
-      Left_Idle_2: -1780990297
-      Left_Walk_1: -280719357
-      Left_Walk_2: 1058436580
-      Right_Idle_1: -1363139524
-      Right_Idle_2: 1587169278
-      Right_Walk_1: -762376066
-      Right_Walk_2: -1707389339
-      Up_Idle_1: 2005308138
-      Up_Idle_2: 728812251
-      Up_Walk_1: -1960866477
-      Up_Walk_2: 1937922487
+      CowImage_1: 393476291
+      CowImage_10: -490246620
+      CowImage_11: 825685387
+      CowImage_12: -439845359
+      CowImage_13: -568560128
+      CowImage_14: -1738057004
+      CowImage_15: 1653401309
+      CowImage_2: -1926559657
+      CowImage_3: 765403732
+      CowImage_4: 1492731483
+      CowImage_5: 1942068981
+      CowImage_6: 1194195384
+      CowImage_7: 1106300043
+      CowImage_8: -1780489405
+      CowImage_9: 158387602
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
