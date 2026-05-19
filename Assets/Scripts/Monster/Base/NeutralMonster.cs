@@ -1,16 +1,42 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 중립 몹 (기본 배회, 공격받거나 플레이어 감지 시 반대 방향으로 도망)
+/// 중립 몹 (타일 기반 배회 + A* 경로 도망).
+/// 모든 이동은 타일 중앙 → 타일 중앙으로만 진행됨.
 /// </summary>
 [RequireComponent(typeof(DetectionSystem))]
 [RequireComponent(typeof(MonsterNavigator))]
 [RequireComponent(typeof(WanderSystem))]
 public sealed class NeutralMonster : MonsterBase
 {
+    [Header("Flee Settings")]
+    [SerializeField] private LayerMask _obstacleMask;
+    [SerializeField] private LayerMask _threatMask;
+    [SerializeField] private float _fleeSpeedMultiplier = 1.8f;
+    [SerializeField] private float _fleeTimeout = 3f;
+    [SerializeField] private float _tileReachThreshold = 0.3f;
+
+    [Header("Player Alert")]
+    [SerializeField] private float _playerAlertDuration = 10f;
+    [SerializeField] private LayerMask _playerMask;
+
     private DetectionSystem  _detection;
     private MonsterNavigator _navigator;
     private WanderSystem     _wander;
+
+    // ── Flee State ──
+    private List<Vector2Int> _fleePath;
+    private int              _fleePathIndex;
+    private float            _fleeTimer;
+    private bool             _isFleeing;
+    private float            _fleeCooldown;
+    private const float      FLEE_COOLDOWN_TIME = 0.5f;
+
+    // ── Player Alert State ──
+    private float _playerAlertTimer;
+
+    private readonly Collider2D[] _threatBuffer = new Collider2D[16];
 
     protected override void Awake()
     {
@@ -20,167 +46,312 @@ public sealed class NeutralMonster : MonsterBase
         _wander    = GetComponent<WanderSystem>();
     }
 
-    // --- [Mob Flee AI State] ---
-    private int _lastCommittedIndex = -1;
-    private int _zigzagShift = 0;
-    private float _zigzagTimer;
-    private float _directionLockTimer;
-    private Vector2 _currentMoveDirection;
-
-    // 8방향 정규화 벡터 (0:우, 1:우상, 2:상, 3:좌상, 4:좌, 5:좌하, 6:하, 7:우하)
-    private static readonly Vector2[] DIRECTIONS = new Vector2[]
-    {
-        Vector2.right,
-        new Vector2(1, 1).normalized,
-        Vector2.up,
-        new Vector2(-1, 1).normalized,
-        Vector2.left,
-        new Vector2(-1, -1).normalized,
-        Vector2.down,
-        new Vector2(1, -1).normalized
-    };
-
-    protected override BTNode BuildBT()
-    {
-        // 1. 도망 노드 (MobFleeAI 기반 수정)
-        var checkFleeCondition = new BTCondition(() => _detection.HasTarget);
-        
-        var fleeAction = new BTAction(() =>
-        {
-            _runtime.CurrentState = MonsterState.Flee;
-            if (_runtime.Data != null)
-                _runtime.CurrentSpeed = _runtime.Data.Speed * 0.01f;
-
-            Transform target = _detection.DetectedTarget;
-            float dist = Vector2.Distance(transform.position, target.position);
-            
-            // 해제 조건 (1.5배 거리)
-            if (dist > _runtime.Data.DetectionRadius * 1.5f)
-            {
-                _detection.ForceRelease();
-                _navigator.Stop();
-                _lastCommittedIndex = -1;
-                _currentMoveDirection = Vector2.zero;
-                _wander.SetBasePosition(transform.position);
-                _wander.ForceRecalculate();
-                return BTStatus.Success;
-            }
-
-            // [Step 1] 순수 도주 벡터 및 8방향 양자화
-            Vector2 pureFleeVector = ((Vector2)transform.position - (Vector2)target.position).normalized;
-            float angle = Mathf.Atan2(pureFleeVector.y, pureFleeVector.x) * Mathf.Rad2Deg;
-            if (angle < 0) angle += 360f;
-            int baseDirectionIndex = Mathf.RoundToInt(angle / 45f) % 8;
-
-            // [Step 2] 핑퐁(Ping-Pong) 지그재그 기동 (1.0초 고정 주기)
-            if (_zigzagShift == 0) _zigzagShift = 1; // 초기화
-
-            _zigzagTimer -= Time.deltaTime;
-            if (_zigzagTimer <= 0)
-            {
-                // 기존 오프셋에 -1을 곱해 강제로 반전 (1 -> -1 -> 1)
-                _zigzagShift *= -1;
-                _zigzagTimer = 1.0f; // 1초 고정
-            }
-            int finalDesiredIndex = (baseDirectionIndex + _zigzagShift + 8) % 8;
-            Vector2 desiredDirection = DIRECTIONS[finalDesiredIndex];
-
-            // [Step 3] 지터링(지지직) 방지 및 예외 방향 전환 로직
-            _directionLockTimer -= Time.deltaTime;
-
-            if (_lastCommittedIndex == -1 || _directionLockTimer <= 0)
-            {
-                // [Step 4] 장애물 회피 및 최적 방향 검색 (Ping-Pong 우선순위 반영)
-                // 단순히 baseDirectionIndex를 먼저 체크하면 지그재그를 무시하고 직진하려 함.
-                // 따라서 finalDesiredIndex(지그재그가 적용된 방향)를 최우선으로 검사해야 함.
-                
-                int safeIndex = -1;
-                // 검색 순서: 1. 지그재그 방향, 2. 직진 방향, 3. 반대쪽 지그재그 방향
-                int[] searchOffsets = { 0, -_zigzagShift, _zigzagShift }; 
-
-                LayerMask obstacleMask = LayerMask.GetMask("Wall", "Obstacle");
-
-                foreach (int offset in searchOffsets)
-                {
-                    // finalDesiredIndex 기준으로 오프셋을 더해 우선순위 검색
-                    int checkIndex = (finalDesiredIndex + offset + 8) % 8;
-                    
-                    // Hemisphere 제한: 베이스 방향(baseDirectionIndex) 기준 ±1을 벗어나면 안 됨
-                    int diff = Mathf.Abs((checkIndex - baseDirectionIndex + 12) % 8 - 4);
-                    if (diff > 1) continue;
-
-                    Vector2 checkDir = DIRECTIONS[checkIndex];
-                    if (!Physics2D.CircleCast(transform.position, 0.4f, checkDir, 1.2f, obstacleMask))
-                    {
-                        safeIndex = checkIndex;
-                        break;
-                    }
-                }
-
-                // 만약 모든 유효 방향(±1)이 막혔다면 어쩔 수 없이 baseDirectionIndex 강제 유지
-                if (safeIndex == -1) safeIndex = baseDirectionIndex;
-
-                // 방향 전환 결정 (현재 방향과 다르거나 처음인 경우)
-                if (safeIndex != _lastCommittedIndex)
-                {
-                    float dotProduct = Vector2.Dot(_currentMoveDirection, DIRECTIONS[safeIndex]);
-                    
-                    // 90도 이상 꺾이거나 타이머가 끝났을 때만 실제 방향 갱신
-                    if (_directionLockTimer <= 0 || dotProduct <= 0 || _lastCommittedIndex == -1)
-                    {
-                        _lastCommittedIndex = safeIndex;
-                        _currentMoveDirection = DIRECTIONS[safeIndex];
-                        _directionLockTimer = 0.25f;
-                    }
-                }
-            }
-
-            // [Step 5] 실제 이동 적용
-            _navigator.MoveInDirection(_currentMoveDirection);
-            return BTStatus.Running;
-        });
-
-        // 반응형 시퀀스: 조건 실패 시 즉시 Selector의 다음 자식(Wander)으로 제어권이 넘어감
-        BTSequence fleeSequence = new BTSequence(new BTNode[] { checkFleeCondition, fleeAction });
-
-        // 2. 배회 노드 (평상시)
-        var wanderAction = new BTAction(() =>
-        {
-            _runtime.CurrentState = MonsterState.Wander;
-            
-            if (_runtime.Data != null)
-                _runtime.CurrentSpeed = _runtime.Data.Speed * 0.01f * 0.5f;
-
-            Vector2 dir = _wander.GetWanderDirection();
-            _navigator.MoveInDirection(dir);
-            return BTStatus.Running;
-        });
-
-        return new BTSelector(new BTNode[] { fleeSequence, wanderAction });
-    }
-
     protected override void OnEnable()
     {
         base.OnEnable();
-        if (_health != null)
-            _health.OnHit += HandleHitFlee;
+        _navigator.SnapToTileCenter();
+        _playerAlertTimer = 0f;
+        _fleeCooldown = 0f;
+        _isFleeing = false;
     }
 
-    private void OnDisable()
+    protected override BTNode BuildBT()
     {
-        if (_health != null)
-            _health.OnHit -= HandleHitFlee;
+        var checkFlee = new BTCondition(() => _detection.HasTarget && _fleeCooldown <= 0f);
+        var fleeAction = new BTAction(ExecuteFlee);
+        var fleeSeq = new BTSequence(new BTNode[] { checkFlee, fleeAction });
+
+        var wanderAction = new BTAction(ExecuteWander);
+
+        return new BTSelector(new BTNode[] { fleeSeq, wanderAction });
     }
 
-    private void HandleHitFlee()
+    protected override void Update()
     {
-        // 플레이어에 의해 타격되었을 때, 시야 밖이라도 즉시 감지 대상으로 등록하여 도망 유도
-        if (!_detection.HasTarget)
+        base.Update();
+
+        if (_fleeCooldown > 0f)
+            _fleeCooldown -= Time.deltaTime;
+
+        if (_playerAlertTimer > 0f)
         {
-            // 성능 가이드라인에 따라 가끔 호출되는 이벤트 내에서만 사용
-            var player = GameObject.FindWithTag("Player");
-            if (player != null)
-                _runtime.DetectedPlayer = player.transform;
+            _playerAlertTimer -= Time.deltaTime;
+            if (!_detection.HasTarget)
+                TryDetectPlayerDuringAlert();
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  Wander
+    // ══════════════════════════════════════════════════════════════════
+
+    private BTStatus ExecuteWander()
+    {
+        if (_runtime.Data != null)
+            _runtime.CurrentSpeed = _runtime.Data.Speed * 0.01f * 0.5f;
+
+        if (_wander.TickIdle())
+        {
+            _runtime.CurrentState = MonsterState.Idle;
+            _navigator.Decelerate();
+            return BTStatus.Running;
+        }
+
+        if (!_wander.EnsurePath(_obstacleMask))
+        {
+            _wander.StartIdle();
+            _runtime.CurrentState = MonsterState.Idle;
+            _navigator.Decelerate();
+            return BTStatus.Running;
+        }
+
+        Vector2? target = _wander.GetCurrentTileTarget();
+        if (!target.HasValue)
+        {
+            _wander.StartIdle();
+            _navigator.Decelerate();
+            return BTStatus.Running;
+        }
+
+        _runtime.CurrentState = MonsterState.Wander;
+        bool reached = _navigator.MoveToTileCenter(target.Value, _tileReachThreshold);
+
+        if (reached)
+        {
+            if (!_wander.AdvanceToNextTile())
+            {
+                _wander.StartIdle();
+            }
+            else if (Random.value < _wander.IdleChance)
+            {
+                _wander.StartIdle();
+            }
+        }
+
+        return BTStatus.Running;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  Flee
+    // ══════════════════════════════════════════════════════════════════
+
+    private BTStatus ExecuteFlee()
+    {
+        _runtime.CurrentState = MonsterState.Flee;
+
+        if (_runtime.Data != null)
+        {
+            float baseSpeed = _runtime.Data.Speed * 0.01f;
+            float elapsed = _fleeTimeout - _fleeTimer;
+            float t = Mathf.Clamp01(elapsed / _fleeTimeout);
+            float speedCurve = Mathf.Lerp(_fleeSpeedMultiplier, 1f, t * t);
+            _runtime.CurrentSpeed = baseSpeed * speedCurve;
+        }
+
+        Transform threat = _detection.DetectedTarget;
+        if (threat == null)
+        {
+            EndFlee();
+            return BTStatus.Success;
+        }
+
+        if (_isFleeing && HasNearbyThreat())
+            _fleeTimer = _fleeTimeout;
+
+        if (!_isFleeing || _fleePath == null)
+        {
+            if (!GenerateFleePath())
+            {
+                Debug.LogWarning("[NeutralMonster] GenerateFleePath FAILED! Ending flee.");
+                EndFlee();
+                _fleeCooldown = FLEE_COOLDOWN_TIME;
+                return BTStatus.Success;
+            }
+            Debug.Log($"[NeutralMonster] Flee path generated: {_fleePath.Count} tiles");
+        }
+
+        _fleeTimer -= Time.deltaTime;
+        if (_fleeTimer <= 0f)
+        {
+            EndFlee();
+            return BTStatus.Success;
+        }
+
+        return FollowFleePath();
+    }
+
+    private bool GenerateFleePath()
+    {
+        _navigator.SnapToTileCenter();
+        Vector2Int currentTile = TileGridHelper.WorldToTile(transform.position);
+
+        Vector2 combinedThreatPos = GatherCombinedThreatPosition();
+
+        _fleePath = FleePathGenerator.GenerateFleePath(
+            currentTile, combinedThreatPos, _obstacleMask, _threatMask);
+
+        if (_fleePath == null || _fleePath.Count < 2)
+            return false;
+
+        _fleePathIndex = 1;
+        _fleeTimer = _fleeTimeout;
+        _isFleeing = true;
+        return true;
+    }
+
+    private Vector2 GatherCombinedThreatPosition()
+    {
+        Transform mainThreat = _detection.DetectedTarget;
+        Vector2 sum = (Vector2)mainThreat.position;
+        int count = 1;
+
+        float radius = _runtime.Data.DetectionRadius * 1.5f;
+        int hitCount = Physics2D.OverlapCircleNonAlloc(
+            transform.position, radius, _threatBuffer, _threatMask);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Transform root = _threatBuffer[i].transform.root;
+            if (root == transform) continue;
+            if (root == mainThreat) continue;
+
+            // 중립 몹은 위협이 아님 — 적대 몹과 플레이어만 위협으로 카운트
+            var runtimeData = root.GetComponent<MonsterRuntimeData>();
+            if (runtimeData != null && runtimeData.Type == MonsterType.Neutral)
+                continue;
+
+            sum += (Vector2)root.position;
+            count++;
+        }
+
+        return sum / count;
+    }
+
+    private bool HasNearbyThreat()
+    {
+        float radius = _runtime.Data.DetectionRadius;
+        int hitCount = Physics2D.OverlapCircleNonAlloc(
+            transform.position, radius, _threatBuffer, _threatMask);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Transform root = _threatBuffer[i].transform.root;
+            if (root == transform) continue;
+
+            var runtimeData = root.GetComponent<MonsterRuntimeData>();
+            if (runtimeData != null && runtimeData.Type == MonsterType.Neutral)
+                continue;
+
+            return true;
+        }
+        return false;
+    }
+
+    private BTStatus FollowFleePath()
+    {
+        if (_fleePathIndex >= _fleePath.Count)
+        {
+            EndFlee();
+            return BTStatus.Success;
+        }
+
+        Vector2 tileCenter = TileGridHelper.TileToWorld(_fleePath[_fleePathIndex]);
+        bool reached = _navigator.MoveToTileCenter(tileCenter, _tileReachThreshold);
+
+        if (reached)
+            _fleePathIndex++;
+
+        return BTStatus.Running;
+    }
+
+    private void EndFlee()
+    {
+        _isFleeing = false;
+        _fleePath = null;
+        _fleePathIndex = 0;
+        _fleeTimer = 0f;
+
+        _detection.ForceRelease();
+        _navigator.SnapToTileCenter();
+
+        _wander.SetBasePosition(transform.position);
+        _wander.ForceRecalculate();
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  Player Alert (피격 후 10초간 플레이어 감지)
+    // ══════════════════════════════════════════════════════════════════
+
+    private void TryDetectPlayerDuringAlert()
+    {
+        float radius = _runtime.Data.DetectionRadius;
+        int hitCount = Physics2D.OverlapCircleNonAlloc(
+            transform.position, radius, _threatBuffer, _playerMask);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Transform root = _threatBuffer[i].transform.root;
+            if (root.CompareTag("Player"))
+            {
+                _fleeCooldown = 0f;
+                _detection.ForceDetect(root);
+                return;
+            }
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  Damage → Flee Trigger
+    // ══════════════════════════════════════════════════════════════════
+
+    public override void TakeDamage(float damage, GameObject source = null)
+    {
+        base.TakeDamage(damage, source);
+        Debug.Log($"[NeutralMonster] TakeDamage called. source={source?.name ?? "NULL"}, isFleeing={_isFleeing}");
+
+        if (source == null) return;
+
+        Transform threatRoot = null;
+
+        var monsterData = source.GetComponentInParent<MonsterRuntimeData>();
+        if (monsterData != null)
+        {
+            threatRoot = monsterData.transform;
+            Debug.Log($"[NeutralMonster] Threat is monster: {threatRoot.name}");
+        }
+        else
+        {
+            threatRoot = source.GetComponentInParent<PlayerEntity>()?.transform;
+            if (threatRoot == null)
+            {
+                var playerObj = GameObject.FindWithTag("Player");
+                if (playerObj != null)
+                    threatRoot = playerObj.transform;
+            }
+
+            Debug.Log($"[NeutralMonster] Threat is player: {threatRoot?.name ?? "NOT FOUND"}");
+
+            if (threatRoot != null)
+                _playerAlertTimer = _playerAlertDuration;
+        }
+
+        if (threatRoot == null)
+        {
+            Debug.LogWarning("[NeutralMonster] No threat found! Cannot flee.");
+            return;
+        }
+
+        _fleeCooldown = 0f;
+
+        if (_isFleeing)
+        {
+            _fleeTimer = _fleeTimeout;
+            Debug.Log("[NeutralMonster] Already fleeing, timer reset.");
+        }
+        else
+        {
+            _detection.ForceDetect(threatRoot);
+            Debug.Log($"[NeutralMonster] ForceDetect → {threatRoot.name}, HasTarget={_detection.HasTarget}");
         }
     }
 }
