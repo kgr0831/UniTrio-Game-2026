@@ -538,6 +538,11 @@ public class FloatingWeaponMotion : MonoBehaviour
         if (isAttacking && !isBow)
         {
             float speedMult = _attackSpeedMultiplier;
+            if (_weapon != null)
+            {
+                speedMult *= _weapon.GetCurrentAttackSpeedMultiplier();
+            }
+
             // 3타(360도 회전) 속도 상향 조정 (원래 속도의 80% 수준)
             if (_weapon != null && _weapon.CurrentComboStep == 3) speedMult *= 0.8f;
 

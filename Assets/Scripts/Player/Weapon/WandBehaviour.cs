@@ -157,6 +157,11 @@ public class WandBehaviour : WeaponBehaviourBase
 
     // ── WeaponBehaviourBase 구현 ───────────────────────────────────
 
+    public override float GetCurrentAttackSpeedMultiplier()
+    {
+        return (1.3f + GetAnimationSpeedBonus()) / 1.3f;
+    }
+
     public override void BeginAttack(int comboStep)
     {
         IsAttacking      = true;
@@ -170,16 +175,22 @@ public class WandBehaviour : WeaponBehaviourBase
         }
         else if (_weaponAnimator != null)
         {
+            float speed = 1.3f + GetAnimationSpeedBonus();
+            _weaponAnimator.speed = speed;
             _weaponAnimator.SetTrigger("Attack");
         }
     }
 
     public override bool PollFinished(float attackStartTime)
     {
+        float elapsed = Time.time - attackStartTime;
+        float speed = 1.3f + GetAnimationSpeedBonus();
+        float duration = 0.3f * (1.3f / speed);
+
         // 즉시 발사 모드
         if (_isInstantCastMode)
         {
-            if (Time.time - attackStartTime >= _instantCastDelay)
+            if (elapsed >= duration)
             {
                 IsAttacking = false;
                 return true;
@@ -188,7 +199,7 @@ public class WandBehaviour : WeaponBehaviourBase
         }
 
         if (_weaponAnimator == null) { IsAttacking = false; return true; }
-        if (Time.time - attackStartTime < 0.05f) return false;
+        if (elapsed < 0.05f) return false;
 
         AnimatorStateInfo info = _weaponAnimator.GetCurrentAnimatorStateInfo(0);
         float t = info.normalizedTime;
@@ -214,14 +225,15 @@ public class WandBehaviour : WeaponBehaviourBase
         SetGlow(intensity);
 
         // ── 투사체 발사 ─────────────────────────────────────────────
-        if (info.IsName("Attack") && t >= _fireNormalizedTime && !_hasFired)
+        float fireTime = 0.15f * (1.3f / speed);
+        if (elapsed >= fireTime && !_hasFired)
         {
             _hasFired = true;
             FireProjectile();
         }
 
         // ── 종료 ────────────────────────────────────────────────────
-        if (!info.IsName("Attack") || t >= 0.95f)
+        if (elapsed >= duration)
         {
             IsAttacking = false;
             SetGlow(0f);

@@ -61,6 +61,11 @@ public class PlayerWeaponController : MonoBehaviour
 
     public WeaponBehaviourBase ActiveBehaviour => _activeBehaviour;
 
+    // --- Spear Stack System (Global) ---
+    public int SpearStacks { get; private set; }
+    public float LastSpearAttackTime { get; private set; }
+    public event Action<int> OnSpearStacksChanged;
+
     /// <summary>무기 장착 완료 시 발생. 새로 장착된 무기의 WeaponType을 전달합니다.</summary>
     public event Action<WeaponType> OnWeaponChanged;
 
@@ -98,10 +103,29 @@ public class PlayerWeaponController : MonoBehaviour
         // 패널이 열려있으면 무기 조작 차단
         if (InventoryToggle.Instance != null && InventoryToggle.Instance.IsAnyPanelOpen()) return;
 
+        // 창 스택 만료 체크 (10초)
+        if (SpearStacks > 0 && Time.time - LastSpearAttackTime >= 10f)
+        {
+            ResetSpearStacks();
+        }
+
         CheckAttackFinished();
         FlushPendingSwap();
         UpdateCursorDirection();
         HandleAttackInput();
+    }
+
+    public void AddSpearStack()
+    {
+        SpearStacks = Mathf.Min(5, SpearStacks + 1);
+        LastSpearAttackTime = Time.time;
+        OnSpearStacksChanged?.Invoke(SpearStacks);
+    }
+
+    public void ResetSpearStacks()
+    {
+        SpearStacks = 0;
+        OnSpearStacksChanged?.Invoke(SpearStacks);
     }
 
     /// <summary>
@@ -444,7 +468,12 @@ public class PlayerWeaponController : MonoBehaviour
         if (_activeBehaviour.PollFinished(_attackStartTime))
         {
             _lastAttackEndTime = Time.time;
-            _attackCooldownEndTime = Time.time + 0.05f; // 공격 종료 후 최소 0.05초(약 3프레임) 대기
+            float baseCooldown = _activeBehaviour.GetPostAttackCooldown();
+            
+            // 모든 무기에 창 스택에 의한 쿨다운 감소 적용 (스택당 0.02초 감소)
+            float finalCooldown = Mathf.Max(0f, baseCooldown - (SpearStacks * 0.02f));
+            
+            _attackCooldownEndTime = Time.time + finalCooldown;
         }
     }
 

@@ -79,9 +79,22 @@ public class SpearBehaviour : WeaponBehaviourBase
     private bool       _bashEffectActive;
     private TrailRenderer _bashTrail;
 
+    // --- Spear Stack System ---
+    private GameObject _spearAuraInstance;
+    private PlayerWeaponController _controller;
+
     private void Awake()
     {
         CurrentComboStep = 1;
+
+        HitEventManager.OnEnemyHit -= HandleEnemyHit;
+        HitEventManager.OnEnemyHit += HandleEnemyHit;
+
+        _controller = GetComponentInParent<PlayerWeaponController>();
+        if (_controller != null)
+        {
+            _controller.OnSpearStacksChanged += HandleSpearStacksChanged;
+        }
 
         // VFX 자식 오브젝트 비활성화
         Transform vfxChild = transform.Find("SpearVFX");
@@ -154,6 +167,100 @@ public class SpearBehaviour : WeaponBehaviourBase
         _hitVfxSprites = Resources.LoadAll<Sprite>("Spritessheets/hit-a");
         _playerRoot = GetComponentInParent<PlayerEntity>()?.transform;
         if (_playerRoot == null) _playerRoot = transform.root;
+
+        CreateSpearAura();
+    }
+
+    private void OnDestroy()
+    {
+        HitEventManager.OnEnemyHit -= HandleEnemyHit;
+        if (_controller != null)
+        {
+            _controller.OnSpearStacksChanged -= HandleSpearStacksChanged;
+        }
+    }
+
+    private void HandleEnemyHit(Vector3 sourcePos, Vector3 targetPos, bool isFirstHit)
+    {
+        if (!gameObject.activeInHierarchy || !IsAttacking) return;
+        
+        // 한 번 휘두를 때 여러 마리를 맞춰도 스택은 1번만 오르게 하려면 _hitboxFired 체크
+        if (!_hitboxFired)
+        {
+            _hitboxFired = true;
+            if (_controller != null)
+            {
+                _controller.AddSpearStack();
+            }
+        }
+    }
+
+    private void HandleSpearStacksChanged(int stacks)
+    {
+        Debug.Log($"[Spear] 현재 글로벌 스택: {stacks}");
+
+        if (stacks >= 5 && _spearAuraInstance != null)
+        {
+            Debug.Log($"[Spear] 5스택 도달! 오오라 활성화");
+            _spearAuraInstance.SetActive(true);
+            ParticleSystem ps = _spearAuraInstance.GetComponent<ParticleSystem>();
+            if (ps != null && !ps.isPlaying)
+            {
+                ps.Play();
+            }
+        }
+        else if (stacks == 0 && _spearAuraInstance != null)
+        {
+            Debug.Log($"[Spear] 스택 초기화 (오오라 끄기)");
+            ParticleSystem ps = _spearAuraInstance.GetComponent<ParticleSystem>();
+            if (ps != null) ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            _spearAuraInstance.SetActive(false);
+        }
+    }
+
+    private void CreateSpearAura()
+    {
+        if (_playerRoot == null) return;
+        _spearAuraInstance = new GameObject("SpearAura_Red");
+        _spearAuraInstance.transform.SetParent(_playerRoot);
+        _spearAuraInstance.transform.localPosition = new Vector3(0, 0.5f, 0); // 캐릭터 중심
+        _spearAuraInstance.SetActive(false);
+
+        var ps = _spearAuraInstance.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.duration = 1f;
+        main.loop = true;
+        main.startLifetime = 0.5f;
+        main.startSpeed = 2f;
+        main.startSize = 0.5f;
+        main.simulationSpace = ParticleSystemSimulationSpace.Local;
+
+        var em = ps.emission;
+        em.rateOverTime = 20f;
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Circle;
+        shape.radius = 0.8f;
+
+        var col = ps.colorOverLifetime;
+        col.enabled = true;
+        Gradient grad = new Gradient();
+        grad.SetKeys(
+            new GradientColorKey[] { new GradientColorKey(Color.red, 0f), new GradientColorKey(Color.yellow, 1f) },
+            new GradientAlphaKey[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.5f), new GradientAlphaKey(0f, 1f) }
+        );
+        col.color = grad;
+
+        var renderer = ps.GetComponent<ParticleSystemRenderer>();
+        renderer.sortingLayerName = "Weapons";
+        renderer.sortingOrder = 10;
+        
+        // VFXLit2D 매터리얼 사용
+        Material mat = new Material(Shader.Find("Custom/VFXLit2D"));
+        mat.SetFloat("_EmissionIntensity", 4f);
+        mat.SetColor("_EmissionColor", new Color(1.5f, 0.1f, 0.1f, 1f));
+        mat.SetFloat("_LightInfluence", 0.3f);
+        renderer.material = mat;
     }
 
     private void CreateBashTrail()
@@ -223,6 +330,8 @@ public class SpearBehaviour : WeaponBehaviourBase
             _bashTrail.AddPosition(tipWorldPos);
         }
     }
+
+
 
     private void LateUpdate()
     {
@@ -303,6 +412,11 @@ public class SpearBehaviour : WeaponBehaviourBase
         ApplyBashVisual(active);
     }
 
+    public override float GetCurrentAttackSpeedMultiplier()
+    {
+        return (1.3f + GetAnimationSpeedBonus()) / 1.3f;
+    }
+
     public override void BeginAttack(int comboStep)
     {
         if (_bashTrail != null)
@@ -324,8 +438,7 @@ public class SpearBehaviour : WeaponBehaviourBase
 
         Physics2D.SyncTransforms();
 
-        float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
-        if (speed <= 0) speed = 1f;
+        float speed = 1.3f + GetAnimationSpeedBonus();
 
         _weaponAnimator.speed = speed;
         _weaponAnimator.SetTrigger("Attack");
@@ -337,14 +450,16 @@ public class SpearBehaviour : WeaponBehaviourBase
         }
     }
 
+
+
     public override bool PollFinished(float attackStartTime)
     {
         float elapsed = Time.time - attackStartTime;
         if (elapsed < 0.05f) return false;
 
-        float thrustDuration = _thrustDuration;
-        float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
-        if (speed > 0f) thrustDuration /= speed;
+        float speed = 1.3f + GetAnimationSpeedBonus();
+        // 기본 0.3초 (배속 1.3f 기준) -> 현재 배속에 맞게 시간 축소
+        float thrustDuration = 0.3f * (1.3f / speed);
 
         if (elapsed >= thrustDuration)
         {
@@ -354,7 +469,7 @@ public class SpearBehaviour : WeaponBehaviourBase
             _weaponAnimator.ResetTrigger("Attack");
             _weaponAnimator.Play("Idle", 0, 0f);
 
-            if (_vfxAnimator != null)
+            if (_vfxAnimator != null && _vfxAnimator.gameObject.activeInHierarchy)
             {
                 _vfxAnimator.Play("Idle", 0, 0f);
             }
