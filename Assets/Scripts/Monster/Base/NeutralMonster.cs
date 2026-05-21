@@ -1,10 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// 중립 몹 (타일 기반 배회 + A* 경로 도망).
-/// 모든 이동은 타일 중앙 → 타일 중앙으로만 진행됨.
-/// </summary>
 [RequireComponent(typeof(DetectionSystem))]
 [RequireComponent(typeof(MonsterNavigator))]
 [RequireComponent(typeof(WanderSystem))]
@@ -25,7 +21,6 @@ public sealed class NeutralMonster : MonsterBase
     private MonsterNavigator _navigator;
     private WanderSystem     _wander;
 
-    // ── Flee State ──
     private List<Vector2Int> _fleePath;
     private int              _fleePathIndex;
     private float            _fleeTimer;
@@ -33,8 +28,10 @@ public sealed class NeutralMonster : MonsterBase
     private float            _fleeCooldown;
     private const float      FLEE_COOLDOWN_TIME = 0.5f;
 
-    // ── Player Alert State ──
     private float _playerAlertTimer;
+    private bool  _needsFleePathRegen;
+    private float _pathRegenCooldown;
+    private const float PATH_REGEN_COOLDOWN = 0.3f;
 
     private readonly Collider2D[] _threatBuffer = new Collider2D[16];
 
@@ -53,6 +50,7 @@ public sealed class NeutralMonster : MonsterBase
         _playerAlertTimer = 0f;
         _fleeCooldown = 0f;
         _isFleeing = false;
+        _needsFleePathRegen = false;
     }
 
     protected override BTNode BuildBT()
@@ -92,7 +90,7 @@ public sealed class NeutralMonster : MonsterBase
 
         if (_wander.TickIdle())
         {
-            _runtime.CurrentState = MonsterState.Idle;
+            _runtime.CurrentState = _wander.IsEating ? MonsterState.Eat : MonsterState.Idle;
             _navigator.Decelerate();
             return BTStatus.Running;
         }
@@ -155,19 +153,38 @@ public sealed class NeutralMonster : MonsterBase
             return BTStatus.Success;
         }
 
-        if (_isFleeing && HasNearbyThreat())
+        Vector2Int threatTile = TileGridHelper.WorldToTile(threat.position);
+
+        if (_isFleeing && TileGridHelper.ChebyshevDistance(
+                TileGridHelper.WorldToTile(transform.position), threatTile) <= 3)
             _fleeTimer = _fleeTimeout;
 
-        if (!_isFleeing || _fleePath == null)
+        if (!_isFleeing || _fleePath == null || _needsFleePathRegen)
         {
-            if (!GenerateFleePath())
+            _needsFleePathRegen = false;
+            if (!GenerateFleePath(threat))
             {
-                Debug.LogWarning("[NeutralMonster] GenerateFleePath FAILED! Ending flee.");
                 EndFlee();
                 _fleeCooldown = FLEE_COOLDOWN_TIME;
                 return BTStatus.Success;
             }
-            Debug.Log($"[NeutralMonster] Flee path generated: {_fleePath.Count} tiles");
+        }
+
+        _pathRegenCooldown -= Time.deltaTime;
+        if (_isFleeing && _pathRegenCooldown <= 0f && IsPathBlockedByThreat(threat))
+        {
+            if (!GenerateFleePath(threat))
+            {
+                EndFlee();
+                return BTStatus.Success;
+            }
+            _pathRegenCooldown = PATH_REGEN_COOLDOWN;
+        }
+
+        if (_fleePath == null)
+        {
+            EndFlee();
+            return BTStatus.Success;
         }
 
         _fleeTimer -= Time.deltaTime;
@@ -180,15 +197,16 @@ public sealed class NeutralMonster : MonsterBase
         return FollowFleePath();
     }
 
-    private bool GenerateFleePath()
+    private bool GenerateFleePath(Transform threat)
     {
-        _navigator.SnapToTileCenter();
         Vector2Int currentTile = TileGridHelper.WorldToTile(transform.position);
+        Vector2 threatPos = (Vector2)threat.position;
+        Vector2Int threatTile = TileGridHelper.WorldToTile(threatPos);
 
-        Vector2 combinedThreatPos = GatherCombinedThreatPosition();
+        var threatTiles = new List<Vector2Int>(1) { threatTile };
 
         _fleePath = FleePathGenerator.GenerateFleePath(
-            currentTile, combinedThreatPos, _obstacleMask, _threatMask);
+            currentTile, threatPos, _obstacleMask, _threatMask, threatTiles);
 
         if (_fleePath == null || _fleePath.Count < 2)
             return false;
@@ -197,54 +215,6 @@ public sealed class NeutralMonster : MonsterBase
         _fleeTimer = _fleeTimeout;
         _isFleeing = true;
         return true;
-    }
-
-    private Vector2 GatherCombinedThreatPosition()
-    {
-        Transform mainThreat = _detection.DetectedTarget;
-        Vector2 sum = (Vector2)mainThreat.position;
-        int count = 1;
-
-        float radius = _runtime.Data.DetectionRadius * 1.5f;
-        int hitCount = Physics2D.OverlapCircleNonAlloc(
-            transform.position, radius, _threatBuffer, _threatMask);
-
-        for (int i = 0; i < hitCount; i++)
-        {
-            Transform root = _threatBuffer[i].transform.root;
-            if (root == transform) continue;
-            if (root == mainThreat) continue;
-
-            // 중립 몹은 위협이 아님 — 적대 몹과 플레이어만 위협으로 카운트
-            var runtimeData = root.GetComponent<MonsterRuntimeData>();
-            if (runtimeData != null && runtimeData.Type == MonsterType.Neutral)
-                continue;
-
-            sum += (Vector2)root.position;
-            count++;
-        }
-
-        return sum / count;
-    }
-
-    private bool HasNearbyThreat()
-    {
-        float radius = _runtime.Data.DetectionRadius;
-        int hitCount = Physics2D.OverlapCircleNonAlloc(
-            transform.position, radius, _threatBuffer, _threatMask);
-
-        for (int i = 0; i < hitCount; i++)
-        {
-            Transform root = _threatBuffer[i].transform.root;
-            if (root == transform) continue;
-
-            var runtimeData = root.GetComponent<MonsterRuntimeData>();
-            if (runtimeData != null && runtimeData.Type == MonsterType.Neutral)
-                continue;
-
-            return true;
-        }
-        return false;
     }
 
     private BTStatus FollowFleePath()
@@ -264,22 +234,34 @@ public sealed class NeutralMonster : MonsterBase
         return BTStatus.Running;
     }
 
+    private bool IsPathBlockedByThreat(Transform threat)
+    {
+        Vector2Int threatTile = TileGridHelper.WorldToTile(threat.position);
+        int lookAhead = Mathf.Min(_fleePathIndex + 4, _fleePath.Count);
+        for (int i = _fleePathIndex; i < lookAhead; i++)
+        {
+            if (TileGridHelper.ChebyshevDistance(_fleePath[i], threatTile) <= 2)
+                return true;
+        }
+        return false;
+    }
+
     private void EndFlee()
     {
         _isFleeing = false;
         _fleePath = null;
         _fleePathIndex = 0;
         _fleeTimer = 0f;
+        _needsFleePathRegen = false;
 
         _detection.ForceRelease();
-        _navigator.SnapToTileCenter();
 
         _wander.SetBasePosition(transform.position);
         _wander.ForceRecalculate();
     }
 
     // ══════════════════════════════════════════════════════════════════
-    //  Player Alert (피격 후 10초간 플레이어 감지)
+    //  Player Alert
     // ══════════════════════════════════════════════════════════════════
 
     private void TryDetectPlayerDuringAlert()
@@ -307,7 +289,6 @@ public sealed class NeutralMonster : MonsterBase
     public override void TakeDamage(float damage, GameObject source = null)
     {
         base.TakeDamage(damage, source);
-        Debug.Log($"[NeutralMonster] TakeDamage called. source={source?.name ?? "NULL"}, isFleeing={_isFleeing}");
 
         if (source == null) return;
 
@@ -317,7 +298,6 @@ public sealed class NeutralMonster : MonsterBase
         if (monsterData != null)
         {
             threatRoot = monsterData.transform;
-            Debug.Log($"[NeutralMonster] Threat is monster: {threatRoot.name}");
         }
         else
         {
@@ -329,29 +309,22 @@ public sealed class NeutralMonster : MonsterBase
                     threatRoot = playerObj.transform;
             }
 
-            Debug.Log($"[NeutralMonster] Threat is player: {threatRoot?.name ?? "NOT FOUND"}");
-
             if (threatRoot != null)
                 _playerAlertTimer = _playerAlertDuration;
         }
 
-        if (threatRoot == null)
-        {
-            Debug.LogWarning("[NeutralMonster] No threat found! Cannot flee.");
-            return;
-        }
+        if (threatRoot == null) return;
 
         _fleeCooldown = 0f;
 
         if (_isFleeing)
         {
             _fleeTimer = _fleeTimeout;
-            Debug.Log("[NeutralMonster] Already fleeing, timer reset.");
+            _needsFleePathRegen = true;
         }
         else
         {
             _detection.ForceDetect(threatRoot);
-            Debug.Log($"[NeutralMonster] ForceDetect → {threatRoot.name}, HasTarget={_detection.HasTarget}");
         }
     }
 }

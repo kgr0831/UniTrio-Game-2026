@@ -76,27 +76,36 @@ public sealed class MonsterNavigator : MonoBehaviour
         _isDecelerating = false;
         Vector2 currentPos = _rb.position;
         Vector2 diff = tileCenter - currentPos;
+        float dist = diff.magnitude;
 
-        if (diff.sqrMagnitude <= reachThreshold * reachThreshold)
+        float snapThreshold = reachThreshold * 0.3f;
+        if (dist <= snapThreshold)
         {
             _rb.position = tileCenter;
             _rb.linearVelocity = Vector2.zero;
             return true;
         }
 
+        if (dist <= reachThreshold)
+        {
+            _rb.position = Vector2.MoveTowards(currentPos, tileCenter, _runtime.CurrentSpeed * Time.deltaTime);
+            _rb.linearVelocity = Vector2.zero;
+            return _rb.position == tileCenter;
+        }
+
         Vector2 moveDir;
-        float correctionSpeed = 10f * Time.deltaTime;
+        float correctionSpeed = _runtime.CurrentSpeed * 2f;
 
         if (Mathf.Abs(diff.x) > Mathf.Abs(diff.y))
         {
             moveDir = new Vector2(Mathf.Sign(diff.x), 0f);
-            float correctedY = Mathf.MoveTowards(currentPos.y, tileCenter.y, correctionSpeed);
+            float correctedY = Mathf.MoveTowards(currentPos.y, tileCenter.y, correctionSpeed * Time.deltaTime);
             _rb.position = new Vector2(currentPos.x, correctedY);
         }
         else
         {
             moveDir = new Vector2(0f, Mathf.Sign(diff.y));
-            float correctedX = Mathf.MoveTowards(currentPos.x, tileCenter.x, correctionSpeed);
+            float correctedX = Mathf.MoveTowards(currentPos.x, tileCenter.x, correctionSpeed * Time.deltaTime);
             _rb.position = new Vector2(correctedX, currentPos.y);
         }
 

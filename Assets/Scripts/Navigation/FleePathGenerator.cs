@@ -1,10 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// 위협으로부터 도망치는 경로를 생성하는 유틸리티.
-/// 위협 반대 방향 ±25° 랜덤 목적지 + A* 4방향 경로.
-/// </summary>
 public static class FleePathGenerator
 {
     private const int FLEE_TILE_DISTANCE = 10;
@@ -14,7 +10,8 @@ public static class FleePathGenerator
         Vector2Int currentTile,
         Vector2 threatWorldPos,
         LayerMask obstacleMask,
-        LayerMask threatMask)
+        LayerMask threatMask,
+        List<Vector2Int> threatTiles = null)
     {
         Vector2 currentWorld = TileGridHelper.TileToWorld(currentTile);
         Vector2 fleeDir = (currentWorld - threatWorldPos).normalized;
@@ -22,12 +19,12 @@ public static class FleePathGenerator
         if (fleeDir.sqrMagnitude < 0.01f)
             fleeDir = Random.insideUnitCircle.normalized;
 
-        Vector2Int? destination = FindFleeDestination(currentTile, fleeDir, obstacleMask);
+        Vector2Int? destination = FindFleeDestination(currentTile, fleeDir, obstacleMask, threatTiles);
         if (!destination.HasValue)
             return null;
 
         List<Vector2Int> path = GridPathfinder.FindPath(
-            currentTile, destination.Value, obstacleMask, false, 512);
+            currentTile, destination.Value, obstacleMask, allowDiagonal: false, 512, threatTiles);
 
         return path;
     }
@@ -35,7 +32,8 @@ public static class FleePathGenerator
     private static Vector2Int? FindFleeDestination(
         Vector2Int currentTile,
         Vector2 fleeDir,
-        LayerMask obstacleMask)
+        LayerMask obstacleMask,
+        List<Vector2Int> threatTiles)
     {
         for (int attempt = 0; attempt < MAX_DESTINATION_ATTEMPTS; attempt++)
         {
@@ -49,9 +47,8 @@ public static class FleePathGenerator
                 currentTile.x + Mathf.RoundToInt(rotatedDir.x * distance),
                 currentTile.y + Mathf.RoundToInt(rotatedDir.y * distance));
 
-            if (TileGridHelper.IsWalkable(targetTile, obstacleMask))
+            if (TileGridHelper.IsWalkable(targetTile, obstacleMask) && !IsThreatTile(targetTile, threatTiles))
             {
-                // 목적지가 위협 반대편인지 검증
                 Vector2 toTarget = new Vector2(
                     targetTile.x - currentTile.x,
                     targetTile.y - currentTile.y);
@@ -60,7 +57,7 @@ public static class FleePathGenerator
             }
 
             Vector2Int? fallback = GridPathfinder.FindNearestWalkable(targetTile, obstacleMask, 5);
-            if (fallback.HasValue)
+            if (fallback.HasValue && !IsThreatTile(fallback.Value, threatTiles))
             {
                 Vector2 toFallback = new Vector2(
                     fallback.Value.x - currentTile.x,
@@ -82,6 +79,17 @@ public static class FleePathGenerator
         }
 
         return null;
+    }
+
+    private static bool IsThreatTile(Vector2Int tile, List<Vector2Int> threatTiles)
+    {
+        if (threatTiles == null) return false;
+        for (int i = 0; i < threatTiles.Count; i++)
+        {
+            if (TileGridHelper.ChebyshevDistance(tile, threatTiles[i]) <= 1)
+                return true;
+        }
+        return false;
     }
 
     private static Vector2 RotateVector2(Vector2 v, float angleDeg)

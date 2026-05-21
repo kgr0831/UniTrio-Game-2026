@@ -1,9 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// 몹 애니메이션 전담 컴포넌트 (SRP).
-/// MonsterRuntimeData의 State를 모니터링하여 파라미터 제어.
-/// </summary>
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(MonsterRuntimeData))]
 public sealed class MonsterAnimatorController : MonoBehaviour
@@ -14,14 +10,13 @@ public sealed class MonsterAnimatorController : MonoBehaviour
     private Animator           _animator;
     private MonsterRuntimeData _runtime;
 
-    private static readonly int _hashIsMoving  = Animator.StringToHash("isMoving");
-    private static readonly int _hashDirX      = Animator.StringToHash("DirX");
-    private static readonly int _hashDirY      = Animator.StringToHash("DirY");
-    private static readonly int _hashAttack    = Animator.StringToHash("Attack");
-    private static readonly int _hashStagger   = Animator.StringToHash("Hit");
-    private static readonly int _hashAnimSpeed = Animator.StringToHash("AnimSpeed");
-
-    private float _baseAnimSpeed;
+    private static readonly int _hashIsMoving       = Animator.StringToHash("isMoving");
+    private static readonly int _hashIsEating        = Animator.StringToHash("isEating");
+    private static readonly int _hashDirX            = Animator.StringToHash("DirX");
+    private static readonly int _hashDirY            = Animator.StringToHash("DirY");
+    private static readonly int _hashAttack          = Animator.StringToHash("Attack");
+    private static readonly int _hashStagger         = Animator.StringToHash("Hit");
+    private static readonly int _hashSpeedMultiplier = Animator.StringToHash("SpeedMultiplier");
 
     private void Awake()
     {
@@ -40,12 +35,16 @@ public sealed class MonsterAnimatorController : MonoBehaviour
                         _runtime.CurrentState == MonsterState.Chase ||
                         _runtime.CurrentState == MonsterState.Flee;
 
-        _animator.SetBool(_hashIsMoving, isMoving);
+        bool isEating = _runtime.CurrentState == MonsterState.Eat;
 
-        // 이동속도에 비례하여 애니메이션 속도 조절
+        _animator.SetBool(_hashIsMoving, isMoving);
+        _animator.SetBool(_hashIsEating, isEating);
+
         float baseSpeed = _runtime.Data.Speed * 0.01f;
         float speedRatio = baseSpeed > 0.001f ? _runtime.CurrentSpeed / baseSpeed : 1f;
-        _animator.speed = Mathf.Max(speedRatio, 0.5f);
+        _animator.SetFloat(_hashSpeedMultiplier, Mathf.Max(speedRatio, 0.5f));
+
+        _animator.speed = isMoving ? 1f : 1f;
 
         if (_use4Direction)
             ApplyDirection4();
@@ -58,7 +57,6 @@ public sealed class MonsterAnimatorController : MonoBehaviour
         Vector2 dir = _runtime.CurrentDirection;
         if (dir.sqrMagnitude < 0.001f) return;
 
-        // 주축(dominant axis) 기반 4방향 양자화
         if (Mathf.Abs(dir.x) >= Mathf.Abs(dir.y))
         {
             _animator.SetFloat(_hashDirX, Mathf.Sign(dir.x));

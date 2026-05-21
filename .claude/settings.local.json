@@ -55,7 +55,10 @@
       "WebFetch(domain:www.youtube.com)",
       "WebSearch",
       "WebFetch(domain:docs.unity3d.com)",
-      "mcp__UnityMCP__delete_script"
+      "mcp__UnityMCP__delete_script",
+      "PowerShell(git checkout *)",
+      "PowerShell(git add *)",
+      "PowerShell(git push *)"
     ]
   }
 }

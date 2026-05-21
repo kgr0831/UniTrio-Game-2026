@@ -1,18 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// 경량 A* 경로 탐색기.
-/// TileGridHelper 기반 2D 타일 그리드에서 동작하며, 독립 유틸리티로 재사용 가능.
-/// </summary>
 public static class GridPathfinder
 {
     private static readonly Vector2Int[] DIR_4 =
     {
-        new Vector2Int( 0,  1), // 상
-        new Vector2Int( 0, -1), // 하
-        new Vector2Int(-1,  0), // 좌
-        new Vector2Int( 1,  0), // 우
+        new Vector2Int( 0,  1),
+        new Vector2Int( 0, -1),
+        new Vector2Int(-1,  0),
+        new Vector2Int( 1,  0),
     };
 
     private static readonly Vector2Int[] DIR_8 =
@@ -30,28 +26,19 @@ public static class GridPathfinder
     private const float STRAIGHT_COST = 1f;
     private const float DIAGONAL_COST = 1.414f;
 
-    private struct Node
+    private struct HeapNode
     {
         public Vector2Int Pos;
-        public float G;
         public float F;
     }
 
-    /// <summary>
-    /// A* 경로 탐색.
-    /// </summary>
-    /// <param name="start">시작 타일 좌표</param>
-    /// <param name="goal">목표 타일 좌표</param>
-    /// <param name="obstacleMask">장애물 레이어 마스크</param>
-    /// <param name="allowDiagonal">대각선 이동 허용 여부</param>
-    /// <param name="maxNodes">최대 탐색 노드 수 (병목 방지)</param>
-    /// <returns>시작→목표 타일 좌표 리스트 (시작 포함, 실패 시 null)</returns>
     public static List<Vector2Int> FindPath(
         Vector2Int start,
         Vector2Int goal,
         LayerMask obstacleMask,
         bool allowDiagonal = true,
-        int maxNodes = 512)
+        int maxNodes = 512,
+        List<Vector2Int> blockedTiles = null)
     {
         if (start == goal)
             return new List<Vector2Int> { start };
@@ -61,30 +48,42 @@ public static class GridPathfinder
 
         var directions = allowDiagonal ? DIR_8 : DIR_4;
 
-        var openSet = new SortedList<float, List<Vector2Int>>();
-        var gScore = new Dictionary<Vector2Int, float>();
-        var cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+        HashSet<Vector2Int> blockedSet = null;
+        if (blockedTiles != null && blockedTiles.Count > 0)
+        {
+            blockedSet = new HashSet<Vector2Int>();
+            for (int b = 0; b < blockedTiles.Count; b++)
+            {
+                Vector2Int bt = blockedTiles[b];
+                for (int dx = -1; dx <= 1; dx++)
+                    for (int dy = -1; dy <= 1; dy++)
+                        blockedSet.Add(new Vector2Int(bt.x + dx, bt.y + dy));
+            }
+        }
+
+        var walkableCache = new Dictionary<Vector2Int, bool>(256);
+        var openHeap = new List<HeapNode>(128);
+        var gScore = new Dictionary<Vector2Int, float>(256);
+        var cameFrom = new Dictionary<Vector2Int, Vector2Int>(256);
         var closedSet = new HashSet<Vector2Int>();
 
         gScore[start] = 0f;
-        float startH = Heuristic(start, goal);
-        AddToOpen(openSet, startH, start);
+        HeapPush(openHeap, new HeapNode { Pos = start, F = Heuristic(start, goal) });
 
         int nodesExpanded = 0;
 
-        while (openSet.Count > 0)
+        while (openHeap.Count > 0)
         {
-            Vector2Int current = PopBest(openSet);
+            HeapNode currentNode = HeapPop(openHeap);
+            Vector2Int current = currentNode.Pos;
 
             if (current == goal)
                 return ReconstructPath(cameFrom, start, goal);
 
-            if (closedSet.Contains(current))
+            if (!closedSet.Add(current))
                 continue;
 
-            closedSet.Add(current);
             nodesExpanded++;
-
             if (nodesExpanded >= maxNodes)
                 return null;
 
@@ -97,16 +96,18 @@ public static class GridPathfinder
                 if (closedSet.Contains(neighbor))
                     continue;
 
-                if (!TileGridHelper.IsWalkable(neighbor, obstacleMask))
+                if (blockedSet != null && blockedSet.Contains(neighbor))
                     continue;
 
-                // 대각선 이동 시 인접 두 칸이 모두 열려있어야 통과 (코너 컷 방지)
+                if (!IsWalkableCached(neighbor, obstacleMask, walkableCache))
+                    continue;
+
                 if (allowDiagonal && directions[i].x != 0 && directions[i].y != 0)
                 {
                     Vector2Int adjX = new Vector2Int(current.x + directions[i].x, current.y);
                     Vector2Int adjY = new Vector2Int(current.x, current.y + directions[i].y);
-                    if (!TileGridHelper.IsWalkable(adjX, obstacleMask) ||
-                        !TileGridHelper.IsWalkable(adjY, obstacleMask))
+                    if (!IsWalkableCached(adjX, obstacleMask, walkableCache) ||
+                        !IsWalkableCached(adjY, obstacleMask, walkableCache))
                         continue;
                 }
 
@@ -120,16 +121,13 @@ public static class GridPathfinder
                 gScore[neighbor] = tentativeG;
                 cameFrom[neighbor] = current;
                 float f = tentativeG + Heuristic(neighbor, goal);
-                AddToOpen(openSet, f, neighbor);
+                HeapPush(openHeap, new HeapNode { Pos = neighbor, F = f });
             }
         }
 
         return null;
     }
 
-    /// <summary>
-    /// 목표 지점이 막혀있을 경우, 목표 주변에서 가장 가까운 걷기 가능 타일을 탐색.
-    /// </summary>
     public static Vector2Int? FindNearestWalkable(Vector2Int center, LayerMask obstacleMask, int maxRadius = 5)
     {
         if (TileGridHelper.IsWalkable(center, obstacleMask))
@@ -153,34 +151,62 @@ public static class GridPathfinder
         return null;
     }
 
+    private static bool IsWalkableCached(Vector2Int tile, LayerMask obstacleMask, Dictionary<Vector2Int, bool> cache)
+    {
+        if (cache.TryGetValue(tile, out bool result))
+            return result;
+
+        result = TileGridHelper.IsWalkable(tile, obstacleMask);
+        cache[tile] = result;
+        return result;
+    }
+
     private static float Heuristic(Vector2Int a, Vector2Int b)
     {
-        // Octile distance: 대각선 이동 비용을 정확히 반영
         int dx = Mathf.Abs(a.x - b.x);
         int dy = Mathf.Abs(a.y - b.y);
         return STRAIGHT_COST * (dx + dy) + (DIAGONAL_COST - 2f * STRAIGHT_COST) * Mathf.Min(dx, dy);
     }
 
-    private static void AddToOpen(SortedList<float, List<Vector2Int>> openSet, float f, Vector2Int pos)
+    private static void HeapPush(List<HeapNode> heap, HeapNode node)
     {
-        // SortedList는 동일 키를 허용하지 않으므로 List로 묶어서 관리
-        if (!openSet.TryGetValue(f, out var list))
+        heap.Add(node);
+        int i = heap.Count - 1;
+        while (i > 0)
         {
-            list = new List<Vector2Int>(4);
-            openSet.Add(f, list);
+            int parent = (i - 1) / 2;
+            if (heap[parent].F <= heap[i].F) break;
+            (heap[parent], heap[i]) = (heap[i], heap[parent]);
+            i = parent;
         }
-        list.Add(pos);
     }
 
-    private static Vector2Int PopBest(SortedList<float, List<Vector2Int>> openSet)
+    private static HeapNode HeapPop(List<HeapNode> heap)
     {
-        var list = openSet.Values[0];
-        float key = openSet.Keys[0];
-        Vector2Int best = list[list.Count - 1];
-        list.RemoveAt(list.Count - 1);
-        if (list.Count == 0)
-            openSet.RemoveAt(0);
-        return best;
+        HeapNode top = heap[0];
+        int last = heap.Count - 1;
+        heap[0] = heap[last];
+        heap.RemoveAt(last);
+        last--;
+
+        int i = 0;
+        while (true)
+        {
+            int left = 2 * i + 1;
+            int right = 2 * i + 2;
+            int smallest = i;
+
+            if (left <= last && heap[left].F < heap[smallest].F)
+                smallest = left;
+            if (right <= last && heap[right].F < heap[smallest].F)
+                smallest = right;
+
+            if (smallest == i) break;
+            (heap[i], heap[smallest]) = (heap[smallest], heap[i]);
+            i = smallest;
+        }
+
+        return top;
     }
 
     private static List<Vector2Int> ReconstructPath(

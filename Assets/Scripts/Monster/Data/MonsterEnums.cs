@@ -20,6 +20,7 @@ public enum AttackShapeType
 public enum MonsterState
 {
     Idle,       // 대기
+    Eat,        // 먹기
     Wander,     // 자유 배회
     Chase,      // 추격 (적대적)
     Flee,       // 도망 (중립)
