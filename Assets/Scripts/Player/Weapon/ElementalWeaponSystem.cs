@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -10,6 +12,8 @@ using UnityEngine;
 /// </summary>
 public class ElementalWeaponSystem : MonoBehaviour
 {
+    public static ElementalWeaponSystem Instance { get; private set; }
+
     // ── Inspector References ──────────────────────────────
     [Header("Dependencies")]
     [SerializeField] private PlayerWeaponController _weaponController;
@@ -26,9 +30,29 @@ public class ElementalWeaponSystem : MonoBehaviour
     [SerializeField] private string _sortingLayerName = "Weapons";
     [SerializeField] private int    _sortingOrderOffset = 1;
 
+    // ── Events ────────────────────────────────────────────
+    /// <summary>게이지 배열(0~1 비율)이 변경될 때 호출됩니다. (인덱스: Earth=0, Fire=1, Ice=2)</summary>
+    public event Action<float[]> OnGaugesChanged;
+
     // ── Runtime State ─────────────────────────────────────
     private ElementType _currentElement = ElementType.Earth;
     public  ElementType CurrentElement => _currentElement;
+
+    // ── 속성 게이지 시스템 ─────────────────────────────────
+    private float[] _elementGauges = new float[3];
+    private float _lastAttackHitTime = -999f; // 마지막으로 적을 타격한 시각
+    private float _gaugeDecayTimer = 0f;      // 감소 타이머
+    private const float GAUGE_MAX = 300f;
+    private const float GAUGE_DECAY_DELAY = 7f;  // 7초간 비공격 후 감소 시작
+    private const float GAUGE_DECAY_RATE = 50f;  // 1초마다 50 감소
+    private const float GAUGE_DECAY_INTERVAL = 1f;
+
+    /// <summary>현재 속성 게이지 배열 (0~300)</summary>
+    public float[] CurrentGauges => _elementGauges;
+
+    // 이동 정지용
+    private PlayerMovement _playerMovement;
+    private Coroutine _movementStopCoroutine;
 
     private GameObject      _overlayObj;
     private SpriteRenderer  _overlayRenderer;
@@ -97,6 +121,26 @@ public class ElementalWeaponSystem : MonoBehaviour
     // ──────────────────────────────────────────────────────
     //  Lifecycle
     // ──────────────────────────────────────────────────────
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        else if (Instance != this) 
+        {
+            Debug.LogWarning("[ElementalWeaponSystem] Duplicate instance found. Destroying the extra component, but keep an eye out for duplicate scripts!");
+            Destroy(this);
+        }
+    }
+
+    private void OnEnable()
+    {
+        HitEventManager.OnEnemyHit += HandleEnemyHit;
+    }
+
+    private void OnDisable()
+    {
+        HitEventManager.OnEnemyHit -= HandleEnemyHit;
+    }
+
     private void Start()
     {
         if (_weaponController == null)
@@ -113,6 +157,11 @@ public class ElementalWeaponSystem : MonoBehaviour
         // 무기 교체 이벤트 구독
         if (_weaponController != null)
             _weaponController.OnWeaponChanged += OnWeaponChanged;
+
+        // 이동 컴포넌트 캐싱
+        _playerMovement = GetComponent<PlayerMovement>();
+        if (_playerMovement == null)
+            _playerMovement = FindObjectOfType<PlayerMovement>();
     }
 
     private void OnDestroy()
@@ -130,6 +179,51 @@ public class ElementalWeaponSystem : MonoBehaviour
     {
         HandleElementSwitch();
         SyncOverlay();
+        UpdateGaugeDecay();
+    }
+
+    /// <summary>
+    /// 속성 게이지 감소 로직: 마지막 타격 후 7초 이상 경과 시 1초마다 50씩 감소
+    /// </summary>
+    private void UpdateGaugeDecay()
+    {
+        bool anyGaugeActive = false;
+        for (int i = 0; i < 3; i++)
+        {
+            if (_elementGauges[i] > 0f)
+            {
+                anyGaugeActive = true;
+                break;
+            }
+        }
+
+        if (!anyGaugeActive) return;
+
+        float timeSinceLastHit = Time.time - _lastAttackHitTime;
+        if (timeSinceLastHit < GAUGE_DECAY_DELAY) 
+        {
+            _gaugeDecayTimer = 0f;
+            return;
+        }
+
+        _gaugeDecayTimer += Time.deltaTime;
+        if (_gaugeDecayTimer >= GAUGE_DECAY_INTERVAL)
+        {
+            _gaugeDecayTimer -= GAUGE_DECAY_INTERVAL;
+            bool changed = false;
+            for (int i = 0; i < 3; i++)
+            {
+                if (_elementGauges[i] > 0f)
+                {
+                    _elementGauges[i] = Mathf.Max(0f, _elementGauges[i] - GAUGE_DECAY_RATE);
+                    changed = true;
+                }
+            }
+            if (changed)
+            {
+                NotifyGaugesChanged();
+            }
+        }
     }
 
     // ──────────────────────────────────────────────────────
@@ -137,21 +231,51 @@ public class ElementalWeaponSystem : MonoBehaviour
     // ──────────────────────────────────────────────────────
     private void HandleElementSwitch()
     {
+        // 우클릭 감지 확인 (디버그)
+        if (Input.GetMouseButtonDown(1))
+        {
+            Debug.Log($"[ElementSwitch] 우클릭 감지됨! _weaponController={_weaponController != null}, ActiveBehaviour={(_weaponController != null ? _weaponController.ActiveBehaviour?.GetType().Name : "N/A")}");
+        }
+
         if (!Input.GetMouseButtonDown(1)) return;
 
         // 무기 미장착 시 무시
-        if (_weaponController == null || _weaponController.ActiveBehaviour == null) return;
+        if (_weaponController == null)
+        {
+            Debug.Log("[ElementSwitch] 차단: _weaponController == null");
+            return;
+        }
+        if (_weaponController.ActiveBehaviour == null)
+        {
+            Debug.Log("[ElementSwitch] 차단: ActiveBehaviour == null");
+            return;
+        }
+
+        // ★ 공격 중에는 속성 변경 불가 (ActiveBehaviour의 실제 공격 상태만 체크)
+        var activeBehaviour = _weaponController.ActiveBehaviour;
+        if (activeBehaviour != null && activeBehaviour.IsAttacking)
+        {
+            Debug.Log("[ElementSwitch] 차단: 공격 중 (IsAttacking = true)");
+            return;
+        }
 
         // 활(Bow) 차징 중이면 속성 전환 무시 (기존 차징 우선)
-        if (_weaponController.ActiveBehaviour is BowBehaviour bow)
+        if (activeBehaviour is BowBehaviour bow)
         {
-            if (bow.IsAttacking) return;
+            if (bow.IsAttacking)
+            {
+                Debug.Log("[ElementSwitch] 차단: 활 차징 중");
+                return;
+            }
         }
 
         // UI 위에서 클릭했으면 무시
         if (UnityEngine.EventSystems.EventSystem.current != null &&
             UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+        {
+            Debug.Log("[ElementSwitch] 차단: UI 위에서 클릭");
             return;
+        }
 
         // 순환: Earth → Fire → Ice → Earth
         _currentElement = (ElementType)(((int)_currentElement + 1) % 3);
@@ -159,7 +283,29 @@ public class ElementalWeaponSystem : MonoBehaviour
         ApplyElementVisuals();
         ApplyTrailAndGhostColors();
 
+        // ★ 속성 변경 시 0.5초간 이동 정지
+        if (_playerMovement != null)
+        {
+            if (_movementStopCoroutine != null)
+                StopCoroutine(_movementStopCoroutine);
+            _movementStopCoroutine = StartCoroutine(StopMovementCoroutine(0.5f));
+        }
+
+        // 속성이 변경되었으므로 UI 갱신 이벤트 호출 (하이라이트 표시를 위해)
+        NotifyGaugesChanged();
+
         Debug.Log($"[ElementalWeapon] 속성 전환 → {_currentElement}");
+    }
+
+    /// <summary>
+    /// 속성 변경 시 일정 시간 동안 이동을 정지합니다.
+    /// </summary>
+    private IEnumerator StopMovementCoroutine(float duration)
+    {
+        _playerMovement.SpeedMultiplier = 0f;
+        yield return new WaitForSeconds(duration);
+        _playerMovement.SpeedMultiplier = 1f;
+        _movementStopCoroutine = null;
     }
 
     // ──────────────────────────────────────────────────────
@@ -488,5 +634,64 @@ public class ElementalWeaponSystem : MonoBehaviour
     public Color GetCurrentHDRColor()
     {
         return _elementHDRColors[(int)_currentElement];
+    }
+
+    // ──────────────────────────────────────────────────────
+    //  속성 게이지 공개 API
+    // ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// 적 타격 이벤트 수신 시 호출되어 속성 게이지를 증가시킵니다.
+    /// - 거리별 증가량: 1미터 이내 30, 1미터씩 멀어질 때마다 3 감소, 최소 15 (6미터 이상)
+    /// - 다중 타격 시: 두 번째 적부터는 고정 5
+    /// </summary>
+    private void HandleEnemyHit(Vector3 sourcePosition, Vector3 targetPosition, bool isFirstHit)
+    {
+        float distance = Vector3.Distance(sourcePosition, targetPosition);
+
+        // 마지막 타격 시간 갱신
+        _lastAttackHitTime = Time.time;
+        _gaugeDecayTimer = 0f;
+
+        float gaugeAmount;
+
+        if (!isFirstHit)
+        {
+            // 두 번째 적부터는 고정 5
+            gaugeAmount = 5f;
+        }
+        else
+        {
+            // 거리 기반 계산: 1미터 이내 30, 1미터씩 멀어질 때마다 3 감소, 최소 15
+            if (distance <= 1f)
+            {
+                gaugeAmount = 30f;
+            }
+            else
+            {
+                float metersOver = distance - 1f;
+                gaugeAmount = Mathf.Max(15f, 30f - metersOver * 3f);
+            }
+        }
+
+        // 현재 속성의 게이지만 증가
+        int activeIndex = (int)_currentElement;
+        float oldVal = _elementGauges[activeIndex];
+        _elementGauges[activeIndex] = Mathf.Min(GAUGE_MAX, _elementGauges[activeIndex] + gaugeAmount);
+        
+        Debug.Log($"[AddGaugeOnHit] dist={distance}, first={isFirstHit}, Element: {_currentElement}, oldVal: {oldVal}, added: {gaugeAmount}, newVal: {_elementGauges[activeIndex]}");
+
+        NotifyGaugesChanged();
+    }
+
+    private void NotifyGaugesChanged()
+    {
+        float[] ratios = new float[3];
+        for (int i = 0; i < 3; i++)
+        {
+            ratios[i] = _elementGauges[i] / GAUGE_MAX;
+        }
+        Debug.Log($"[NotifyGaugesChanged] Firing event. Earth: {ratios[0]:F2}, Fire: {ratios[1]:F2}, Ice: {ratios[2]:F2}");
+        OnGaugesChanged?.Invoke(ratios);
     }
 }

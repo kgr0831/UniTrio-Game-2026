@@ -21,6 +21,23 @@ public class SpearBehaviour : WeaponBehaviourBase
     [SerializeField] private Collider2D _hitboxCollider;
     [SerializeField] private SwordHitbox _spearHitbox;
 
+    [Header("Tip Critical")]
+    [Tooltip("창 끝 타격 판정 거리 (플레이어 기준, 이 거리 이상이면 크리티컬)")]
+    [SerializeField] private float _tipMinDistance = 2.0f;
+    [Tooltip("창 끝 타격 시 데미지 배율")]
+    [SerializeField] private float _tipDamageMultiplier = 1.5f;
+
+    /// <summary>팁 크리티컬 데미지 배율 (SwordHitbox에서 참조)</summary>
+    public float TipDamageMultiplier => _tipDamageMultiplier;
+
+    // 공격 시 방향 벡터 (거리 판정용)
+    private Vector2 _attackDirection;
+    private Transform _playerRoot;
+
+    // hit-a_0 VFX 리소스
+    private RuntimeAnimatorController _hitVfxController;
+    private Sprite[] _hitVfxSprites;
+
     [Header("Bash Effect")]
     [Tooltip("창 스프라이트 (강타 발동 시 붉은 블룸 적용)")]
     [SerializeField] private SpriteRenderer _spearRenderer;
@@ -131,6 +148,12 @@ public class SpearBehaviour : WeaponBehaviourBase
         }
 
         CreateBashTrail();
+
+        // 팁 VFX 리소스 로드
+        _hitVfxController = Resources.Load<RuntimeAnimatorController>("Spritessheets/hit-a_0");
+        _hitVfxSprites = Resources.LoadAll<Sprite>("Spritessheets/hit-a");
+        _playerRoot = GetComponentInParent<PlayerEntity>()?.transform;
+        if (_playerRoot == null) _playerRoot = transform.root;
     }
 
     private void CreateBashTrail()
@@ -293,6 +316,12 @@ public class SpearBehaviour : WeaponBehaviourBase
 
         if (_spearHitbox != null) _spearHitbox.ResetSwingHits();
         if (_hitboxCollider != null) _hitboxCollider.enabled = true;
+
+        // 공격 방향 저장 (팁 크리티컬 거리 판정용)
+        // 피벗의 right 벡터 = 커서 방향 (Z축 회전 기반)
+        Transform pivot = transform.parent;
+        _attackDirection = pivot != null ? (Vector2)pivot.right : Vector2.right;
+
         Physics2D.SyncTransforms();
 
         float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
@@ -356,4 +385,45 @@ public class SpearBehaviour : WeaponBehaviourBase
         ApplyBashVisual(false);
     }
 
+    /// <summary>
+    /// 적 타격 위치가 창 끝 사거리(Tip)인지 판정합니다.
+    /// 플레이어→적 벡터를 공격 방향에 투영하여 거리가 _tipMinDistance 이상이면 true.
+    /// </summary>
+    public bool IsTipHit(Vector3 enemyWorldPos)
+    {
+        if (!IsAttacking) return false;
+
+        Vector2 toEnemy = (Vector2)enemyWorldPos - (Vector2)_playerRoot.position;
+        float projDist = Vector2.Dot(toEnemy, _attackDirection);
+
+        return projDist >= _tipMinDistance;
+    }
+
+    /// <summary>
+    /// 창 끝 크리티컬 타격 시 hit-a_0 VFX를 타격 위치에 생성합니다.
+    /// </summary>
+    public void SpawnTipVFX(Vector3 hitWorldPos)
+    {
+        GameObject vfxObj = new GameObject("SpearTipHitVFX");
+        vfxObj.transform.position = hitWorldPos;
+        vfxObj.transform.localScale = Vector3.one * 10f;
+
+        SpriteRenderer sr = vfxObj.AddComponent<SpriteRenderer>();
+        sr.sortingLayerName = "Weapons";
+        sr.sortingOrder = 30;
+
+        if (_hitVfxSprites != null && _hitVfxSprites.Length > 0)
+            sr.sprite = _hitVfxSprites[0];
+
+        if (_hitVfxController != null)
+        {
+            Animator animator = vfxObj.AddComponent<Animator>();
+            animator.runtimeAnimatorController = _hitVfxController;
+            vfxObj.AddComponent<DestroyAfterAnimation>();
+        }
+        else
+        {
+            Object.Destroy(vfxObj, 0.5f);
+        }
+    }
 }

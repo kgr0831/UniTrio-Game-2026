@@ -502,27 +502,16 @@ public class FloatingWeaponMotion : MonoBehaviour
 
             if (_weapon != null && _weapon.WeaponType == WeaponType.Spear)
             {
-                float cursorDist = _attackLungeDistance;
-                Camera cam = Camera.main;
-                if (cam != null)
-                {
-                    Vector3 mScreen = Input.mousePosition;
-                    mScreen.z = Mathf.Abs(cam.transform.position.z - transform.position.z);
-                    Vector3 mWorld = cam.ScreenToWorldPoint(mScreen);
-                    Vector3 pivotWorld = transform.parent != null ? transform.parent.position : transform.position;
-                    cursorDist = Vector2.Distance(mWorld, pivotWorld);
-                }
-                cursorDist = Mathf.Clamp(cursorDist, 1f, _attackLungeDistance);
+                // ── 변경: 커서 거리 무관, 커서 방향으로 고정 거리에서 찌르기 ──
+                // 소환 시작: 플레이어 약간 뒤(-_spearStartBack)
+                // 찌르기 도달: 커서 방향으로 고정 거리(_attackLungeDistance)
+                float fixedThrustDist = _attackLungeDistance; // 기본 3.0
 
-                // 가까울수록 Y 오프셋(수직 거리) 증가 — 가까이서 크게 휘둘러 오는 느낌
-                float normalizedDist = Mathf.Clamp01(cursorDist / _attackLungeDistance);
-                float yOffset = _spearWorldUpOffset * Mathf.Lerp(3f, 1f, normalizedDist);
-
-                // 왼쪽을 바라볼 때(Flipped) 생성 위치 및 타겟 방향 대칭 처리
                 bool isFlipped = _weapon != null && _weapon.IsFlipped;
-                _spearSpawnLocal = new Vector2(-_spearStartBack, isFlipped ? -yOffset : yOffset);
+                // Y오프셋 없이 직선 찌르기 (커서 방향 = Local X축)
+                _spearSpawnLocal = new Vector2(-_spearStartBack, 0f);
 
-                Vector2 cursorLocal = new Vector2(cursorDist, 0f);
+                Vector2 cursorLocal = new Vector2(fixedThrustDist, 0f);
                 Vector2 thrustDir = (cursorLocal - _spearSpawnLocal).normalized;
                 _spearTargetLocal = cursorLocal - thrustDir * _spearTipOffset;
 
@@ -530,7 +519,6 @@ public class FloatingWeaponMotion : MonoBehaviour
                 _spearThrustRotZ = thrustAngleLocal - (isFlipped ? -_spearBladeAngle : _spearBladeAngle);
 
                 // 잔상 시작점은 일반 newAttack 로직에서 설정된 transform.localPosition 유지
-                // (스폰 위치가 아닌 무기의 실제 위치에서 잔상 시작)
             }
         }
         else if (!isAttacking && _wasAttacking)

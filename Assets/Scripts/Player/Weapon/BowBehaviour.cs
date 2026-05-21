@@ -310,6 +310,7 @@ public class BowBehaviour : WeaponBehaviourBase
                 vfxObj.transform.localRotation = Quaternion.identity;
 
                 _aimedShotGatherParticle = vfxObj.AddComponent<ParticleSystem>();
+                _aimedShotGatherParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
                 var main = _aimedShotGatherParticle.main;
                 main.duration = 3f;
                 main.startLifetime = 0.35f;

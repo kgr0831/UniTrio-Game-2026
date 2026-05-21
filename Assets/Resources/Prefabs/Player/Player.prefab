@@ -336,6 +336,8 @@ MonoBehaviour:
   _spriteRotationZ: 135
   _hitboxCollider: {fileID: 4469310113847408289}
   _spearHitbox: {fileID: 0}
+  _tipMinDistance: 2
+  _tipDamageMultiplier: 1.5
   _spearRenderer: {fileID: 0}
   _bashSpearColor: {r: 1.5, g: 0.1, b: 0.1, a: 1}
   _orbitRadius: -0.354

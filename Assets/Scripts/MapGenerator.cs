@@ -78,6 +78,19 @@ public class MapGenerator : MonoBehaviour
     // UpdateVisibleChunks 내부 로직 보강
     void UpdateVisibleChunks()
     {
+        if (player == null)
+        {
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+            {
+                player = playerObj.transform;
+            }
+            else
+            {
+                return;
+            }
+        }
+
         Vector2Int playerCoord = new Vector2Int(
             Mathf.FloorToInt(player.position.x / chunkSize),
             Mathf.FloorToInt(player.position.y / chunkSize)

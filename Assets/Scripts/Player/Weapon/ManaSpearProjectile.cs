@@ -53,6 +53,7 @@ public class ManaSpearProjectile : MonoBehaviour
         gatherObj.transform.localPosition = Vector3.zero;
 
         _gatheringParticle = gatherObj.AddComponent<ParticleSystem>();
+        _gatheringParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = _gatheringParticle.main;
         main.duration = 1f;
         main.startLifetime = 0.3f;
@@ -173,6 +174,8 @@ public class ManaSpearProjectile : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        if (collision == null || collision.gameObject == null || !collision.gameObject.activeInHierarchy) return;
+
         if (_currentState != State.Alive) return;
 
         if (collision.CompareTag("Enemy") || collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
@@ -181,9 +184,12 @@ public class ManaSpearProjectile : MonoBehaviour
             if (collision.CompareTag("Enemy"))
             {
                 IDamageable target = collision.GetComponent<IDamageable>();
-                if (target != null)
+                if (target != null && target.IsAlive)
                 {
+                    Vector3 targetPosition = collision.transform.position;
                     target.TakeDamage(_damage, gameObject);
+
+                    HitEventManager.NotifyHit(_startFlyPos, targetPosition, true);
                 }
             }
             

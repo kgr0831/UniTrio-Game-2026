@@ -27,9 +27,27 @@ public class SwordHitbox : MonoBehaviour
         _weaponBehaviour = GetComponentInParent<WeaponBehaviourBase>();
     }
 
+    /// <summary>이번 스윙에서 타격한 적 수를 반환합니다.</summary>
+    public int HitCount => _hitThisSwing.Count;
+
     public void ResetSwingHits()
     {
         _hitThisSwing.Clear();
+    }
+
+    /// <summary>
+    /// 외부(SpearTipHitbox 등)에서 이미 타격한 적의 ID를 등록하여
+    /// 일반 히트박스에서 중복 데미지가 발생하지 않게 합니다.
+    /// </summary>
+    public void RegisterExternalHit(int targetId)
+    {
+        _hitThisSwing.Add(targetId);
+    }
+
+    /// <summary>이번 스윙에서 해당 적이 이미 타격되었는지 확인합니다.</summary>
+    public bool ContainsHit(int targetId)
+    {
+        return _hitThisSwing.Contains(targetId);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -69,37 +87,62 @@ public class SwordHitbox : MonoBehaviour
             if (bashMult > 1.0f) isBashActive = true;
         }
 
+        // ★ 창(Spear) 팁 크리티컬: 적이 창 끝 사거리에 있으면 1.5배 데미지 + VFX
+        bool isTipCritical = false;
+        if (_weaponBehaviour != null && _weaponBehaviour is SpearBehaviour spear)
+        {
+            if (spear.IsTipHit(other.transform.position))
+            {
+                damage *= spear.TipDamageMultiplier;
+                isTipCritical = true;
+            }
+        }
+
+        // 에러 방지: 타격 전 위치 캐싱 (TakeDamage 직후 오브젝트 파괴 가능)
+        Vector3 targetPosition = other.transform.position;
+        Vector3 hitPoint = other.ClosestPoint(transform.position);
+
         target.TakeDamage(damage, gameObject);
 
-        if (isBashActive)
+        if (isTipCritical)
         {
-            if (CameraShakeController.Instance != null)
-                CameraShakeController.Instance.Shake(0.15f, 0.25f);
-            if (HitStopManager.Instance != null)
-                HitStopManager.Instance.TriggerHitStop(0.12f);
+            if (CameraShakeController.Instance != null) CameraShakeController.Instance.Shake(0.12f, 0.15f);
+            if (HitStopManager.Instance != null) HitStopManager.Instance.TriggerHitStop(0.06f);
 
-            SpawnBashImpactVFX(other);
+            SpearBehaviour spearVfx = _weaponBehaviour as SpearBehaviour;
+            if (spearVfx != null) spearVfx.SpawnTipVFX(hitPoint);
+        }
+        else if (isBashActive)
+        {
+            if (CameraShakeController.Instance != null) CameraShakeController.Instance.Shake(0.15f, 0.25f);
+            if (HitStopManager.Instance != null) HitStopManager.Instance.TriggerHitStop(0.12f);
+
+            SpawnBashImpactVFX(hitPoint);
         }
         else
         {
-            if (CameraShakeController.Instance != null)
-                CameraShakeController.Instance.Shake(0.06f, 0.05f);
-            if (HitStopManager.Instance != null)
-                HitStopManager.Instance.TriggerHitStop(0.02f);
+            if (CameraShakeController.Instance != null) CameraShakeController.Instance.Shake(0.06f, 0.05f);
+            if (HitStopManager.Instance != null) HitStopManager.Instance.TriggerHitStop(0.02f);
         }
 
-        float stunDuration = (GetAttackDuration() + 0.05f) * 0.67f;
-        ApplyHitStun(other, stunDuration);
-        ApplyFlashSync(other, stunDuration);
+        // other가 파괴되지 않았을 경우에만 스턴, VFX 등을 적용
+        if (other != null && other.gameObject != null)
+        {
+            float stunDuration = (GetAttackDuration() + 0.05f) * 0.67f;
+            ApplyHitStun(other, stunDuration);
+            ApplyFlashSync(other, stunDuration);
+            SpawnHitVFX(other, hitPoint);
+            SpawnDamageText(other, damage);
+        }
 
-        SpawnHitVFX(other);
-        SpawnDamageText(other, damage);
+        // 속성 게이지 증가 연동 (이벤트 발송)
+        Transform playerRoot = _playerEntity != null ? _playerEntity.transform : transform.root;
+        bool isFirstHit = _hitThisSwing.Count <= 1;
+        HitEventManager.NotifyHit(playerRoot.position, targetPosition, isFirstHit);
     }
 
-    private void SpawnBashImpactVFX(Collider2D enemyCollider)
+    private void SpawnBashImpactVFX(Vector3 hitPoint)
     {
-        Vector3 hitPoint = enemyCollider.ClosestPoint(transform.position);
-
         GameObject bashVfxObj = new GameObject("BashImpactVFX");
         bashVfxObj.transform.position = hitPoint;
         Destroy(bashVfxObj, 2f);
@@ -114,6 +157,7 @@ public class SwordHitbox : MonoBehaviour
         shockObj.transform.SetParent(bashVfxObj.transform);
         shockObj.transform.localPosition = Vector3.zero;
         ParticleSystem shockPs = shockObj.AddComponent<ParticleSystem>();
+        shockPs.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var smain = shockPs.main;
         smain.duration = 0.5f; smain.loop = false;
         smain.startLifetime = 0.3f;
@@ -149,6 +193,7 @@ public class SwordHitbox : MonoBehaviour
         debrisObj.transform.SetParent(bashVfxObj.transform);
         debrisObj.transform.localPosition = Vector3.zero;
         ParticleSystem debrisPs = debrisObj.AddComponent<ParticleSystem>();
+        debrisPs.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var dmain = debrisPs.main;
         dmain.duration = 1f; dmain.loop = false;
         dmain.startLifetime = new ParticleSystem.MinMaxCurve(0.4f, 0.8f);
@@ -175,17 +220,16 @@ public class SwordHitbox : MonoBehaviour
         debrisPs.Play();
     }
 
-    private void SpawnHitVFX(Collider2D enemyCollider)
+    private void SpawnHitVFX(Collider2D enemyCollider, Vector3 hitPoint)
     {
         if (_hitVfxPrefabs == null || _hitVfxPrefabs.Length == 0) return;
 
-        Vector3 closestHitPoint = enemyCollider.ClosestPoint(transform.position);
         Vector3 enemyCenter     = enemyCollider.bounds.center;
-        Vector3 dirToCenter     = (enemyCenter - closestHitPoint).normalized;
+        Vector3 dirToCenter     = (enemyCenter - hitPoint).normalized;
 
-        float   maxDist      = Vector3.Distance(closestHitPoint, enemyCenter);
+        float   maxDist      = Vector3.Distance(hitPoint, enemyCenter);
         float   actualOffset = Mathf.Min(_vfxOffsetTowardsEnemy, maxDist * 0.5f);
-        Vector3 spawnPos     = closestHitPoint + dirToCenter * actualOffset;
+        Vector3 spawnPos     = hitPoint + dirToCenter * actualOffset;
 
         // 피격 방향 기반 회전 (검 → 적 방향)
         Vector3 hitDir = (enemyCenter - transform.position).normalized;
