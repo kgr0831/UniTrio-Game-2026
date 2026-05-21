@@ -9,6 +9,7 @@ public sealed class MonsterAnimatorController : MonoBehaviour
 
     private Animator           _animator;
     private MonsterRuntimeData _runtime;
+    private bool               _hasDirY;
 
     private static readonly int _hashIsMoving       = Animator.StringToHash("isMoving");
     private static readonly int _hashIsEating        = Animator.StringToHash("isEating");
@@ -29,7 +30,10 @@ public sealed class MonsterAnimatorController : MonoBehaviour
         if (_runtime == null || _runtime.Data == null) return;
 
         if (_animator.runtimeAnimatorController != _runtime.Data.AnimController)
+        {
             _animator.runtimeAnimatorController = _runtime.Data.AnimController;
+            _hasDirY = HasParameter(_animator, _hashDirY);
+        }
 
         bool isMoving = _runtime.CurrentState == MonsterState.Wander ||
                         _runtime.CurrentState == MonsterState.Chase ||
@@ -44,8 +48,6 @@ public sealed class MonsterAnimatorController : MonoBehaviour
         float speedRatio = baseSpeed > 0.001f ? _runtime.CurrentSpeed / baseSpeed : 1f;
         _animator.SetFloat(_hashSpeedMultiplier, Mathf.Max(speedRatio, 0.5f));
 
-        _animator.speed = isMoving ? 1f : 1f;
-
         if (_use4Direction)
             ApplyDirection4();
         else
@@ -56,6 +58,12 @@ public sealed class MonsterAnimatorController : MonoBehaviour
     {
         Vector2 dir = _runtime.CurrentDirection;
         if (dir.sqrMagnitude < 0.001f) return;
+
+        if (!_hasDirY)
+        {
+            ApplyDirection2();
+            return;
+        }
 
         if (Mathf.Abs(dir.x) >= Mathf.Abs(dir.y))
         {
@@ -71,11 +79,9 @@ public sealed class MonsterAnimatorController : MonoBehaviour
 
     private void ApplyDirection2()
     {
-        float dirX = _runtime.CurrentDirection.x;
-        if (Mathf.Abs(dirX) > 0.01f)
-            _animator.SetFloat(_hashDirX, Mathf.Sign(dirX));
-
-        _animator.SetFloat(_hashDirY, 0f);
+        Vector2 dir = _runtime.CurrentDirection;
+        if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y) * 0.5f && Mathf.Abs(dir.x) > 0.1f)
+            _animator.SetFloat(_hashDirX, dir.x > 0f ? 1f : -1f);
     }
 
     public void PlayAttack()
@@ -86,5 +92,15 @@ public sealed class MonsterAnimatorController : MonoBehaviour
     public void PlayHit()
     {
         _animator.SetTrigger(_hashStagger);
+    }
+
+    private static bool HasParameter(Animator animator, int nameHash)
+    {
+        foreach (var p in animator.parameters)
+        {
+            if (p.nameHash == nameHash)
+                return true;
+        }
+        return false;
     }
 }

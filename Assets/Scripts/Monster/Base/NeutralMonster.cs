@@ -92,6 +92,7 @@ public sealed class NeutralMonster : MonsterBase
         {
             _runtime.CurrentState = _wander.IsEating ? MonsterState.Eat : MonsterState.Idle;
             _navigator.Decelerate();
+
             return BTStatus.Running;
         }
 
@@ -112,7 +113,7 @@ public sealed class NeutralMonster : MonsterBase
         }
 
         _runtime.CurrentState = MonsterState.Wander;
-        bool reached = _navigator.MoveToTileCenter(target.Value, _tileReachThreshold);
+        bool reached = _navigator.MoveToTarget(target.Value, _tileReachThreshold);
 
         if (reached)
         {
@@ -226,7 +227,7 @@ public sealed class NeutralMonster : MonsterBase
         }
 
         Vector2 tileCenter = TileGridHelper.TileToWorld(_fleePath[_fleePathIndex]);
-        bool reached = _navigator.MoveToTileCenter(tileCenter, _tileReachThreshold);
+        bool reached = _navigator.MoveToTarget(tileCenter, _tileReachThreshold);
 
         if (reached)
             _fleePathIndex++;

@@ -1,12 +1,12 @@
 using UnityEngine;
 
 /// <summary>
-/// 기본 적 엔티티.
+/// 기본 엔티티 클래스.
 /// HP·피격 플래시는 HealthSystem 컴포넌트에 위임하고,
 /// 사망 처리(파괴 또는 풀 반환)만 직접 담당합니다.
-/// Milestone 4에서 MonsterBase 도입 시 CharacterBase로 변경 예정.
+/// MonsterType을 통해 적대적/중립 엔티티를 구분합니다.
 /// </summary>
-public class Enemy : LivingEntity
+public class Entity : LivingEntity
 {
     [Header("Contact Damage")]
     [Tooltip("플레이어 접촉 시 주는 데미지")]

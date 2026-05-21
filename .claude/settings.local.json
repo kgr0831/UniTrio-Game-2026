@@ -58,7 +58,11 @@
       "mcp__UnityMCP__delete_script",
       "PowerShell(git checkout *)",
       "PowerShell(git add *)",
-      "PowerShell(git push *)"
+      "PowerShell(git push *)",
+      "Bash(git mv *)",
+      "Bash(git checkout *)",
+      "mcp__UnityMCP__manage_script_capabilities",
+      "mcp__UnityMCP__execute_custom_tool"
     ]
   }
 }

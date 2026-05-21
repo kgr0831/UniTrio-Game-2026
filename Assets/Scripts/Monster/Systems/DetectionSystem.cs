@@ -3,8 +3,8 @@ using UnityEngine;
 /// <summary>
 /// 감지 범위를 기준으로 위협 대상을 탐지.
 /// - Hostile/Boss: 플레이어를 감지하여 추격.
-/// - Neutral: 적대적 몹(Enemy 레이어)만 감지하여 도망. 플레이어 근접만으로는 도망하지 않음.
-///   (플레이어 공격에 의한 도망은 NeutralMonster.HandleHitFlee에서 처리)
+/// - Neutral: 같은 Entity 레이어 내에서 MonsterType.Hostile인 적만 감지하여 도망.
+///   플레이어 근접만으로는 도망하지 않음. (플레이어 공격에 의한 도망은 NeutralMonster.TakeDamage에서 처리)
 /// </summary>
 [RequireComponent(typeof(MonsterRuntimeData))]
 public sealed class DetectionSystem : MonoBehaviour
@@ -12,8 +12,8 @@ public sealed class DetectionSystem : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private LayerMask _obstacleMask;
     [SerializeField] private LayerMask _playerMask;
-    [Tooltip("적대적 몹 감지용 레이어 (Neutral 몹이 도망할 대상)")]
-    [SerializeField] private LayerMask _enemyMask;
+    [Tooltip("Entity 레이어 (Neutral 몹이 Hostile 타입을 감지하여 도망할 대상)")]
+    [SerializeField] private LayerMask _entityMask;
     [Tooltip("Raycast 체크 주기 (초)")]
     [SerializeField] private float _checkInterval = 0.15f;
 
@@ -86,7 +86,7 @@ public sealed class DetectionSystem : MonoBehaviour
         _losBlockedTimer = 0f;
     }
 
-    /// <summary>Neutral: 적대적 몹(Enemy 레이어)만 감지. 플레이어 근접으로는 도망하지 않음.</summary>
+    /// <summary>Neutral: Entity 레이어에서 MonsterType.Hostile만 감지. 플레이어 근접으로는 도망하지 않음.</summary>
     private void PerformNeutralDetection()
     {
         if (_runtime.DetectedPlayer != null) return;
@@ -94,7 +94,7 @@ public sealed class DetectionSystem : MonoBehaviour
         float radius = _runtime.Data.DetectionRadius;
 
         int hitCount = Physics2D.OverlapCircleNonAlloc(
-            transform.position, radius, _colliderBuffer, _enemyMask);
+            transform.position, radius, _colliderBuffer, _entityMask);
 
         Collider2D enemyHit = FindClosestHostile(hitCount);
 
@@ -116,7 +116,7 @@ public sealed class DetectionSystem : MonoBehaviour
         return null;
     }
 
-    /// <summary>Enemy 레이어 중 Hostile 타입만 필터, 가장 가까운 것 반환 (자기 자신 및 다른 Neutral 몹 제외)</summary>
+    /// <summary>Entity 레이어 중 Hostile 타입만 필터, 가장 가까운 것 반환 (자기 자신 및 다른 Neutral 몹 제외)</summary>
     private Collider2D FindClosestHostile(int hitCount)
     {
         Collider2D closest = null;

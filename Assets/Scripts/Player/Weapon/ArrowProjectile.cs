@@ -153,7 +153,7 @@ public class ArrowProjectile : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.CompareTag("Enemy"))
+        if (collision.CompareTag("Entity"))
         {
             IDamageable target = collision.GetComponentInParent<IDamageable>();
             if (target != null && target.IsAlive)

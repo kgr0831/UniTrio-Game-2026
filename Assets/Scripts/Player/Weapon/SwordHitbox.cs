@@ -9,8 +9,8 @@ public class SwordHitbox : MonoBehaviour
     [Tooltip("기능 무기 고유의 추가 데미지. (WeaponData에 값이 있다면 이 값은 0으로 두는 것을 권장합니다.)")]
     [SerializeField] private float _baseDamage = 0f;
 
-    [Tooltip("이 무기가 공격할 수 있는 대상의 태그 목록. 기본값은 'Enemy'.")]
-    [SerializeField] private string[] _targetTags = new string[] { "Enemy", "Tree" };
+    [Tooltip("이 무기가 공격할 수 있는 대상의 태그 목록. 기본값은 'Entity'.")]
+    [SerializeField] private string[] _targetTags = new string[] { "Entity", "Tree" };
 
     [Header("Hit VFX")]
     [SerializeField] private GameObject[] _hitVfxPrefabs;

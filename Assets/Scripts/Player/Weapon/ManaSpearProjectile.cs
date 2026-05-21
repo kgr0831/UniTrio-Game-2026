@@ -175,10 +175,10 @@ public class ManaSpearProjectile : MonoBehaviour
     {
         if (_currentState != State.Alive) return;
 
-        if (collision.CompareTag("Enemy") || collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
+        if (collision.CompareTag("Entity") || collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
         {
             // 데미지 처리 (적일 경우)
-            if (collision.CompareTag("Enemy"))
+            if (collision.CompareTag("Entity"))
             {
                 IDamageable target = collision.GetComponent<IDamageable>();
                 if (target != null)

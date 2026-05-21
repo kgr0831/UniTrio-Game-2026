@@ -8,6 +8,8 @@ TagManager:
   - Wall
   - Obstacle
   - Tree
+  - Animal
+  - Entity
   layers:
   - Default
   - TransparentFX

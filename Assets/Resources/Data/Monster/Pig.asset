@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3bf8b65d0a13404fa46a5c10c296a01, type: 3}
+  m_Name: Pig
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterData
+  MonsterId: 10005
+  MonsterName: "\uB3FC\uC9C0"
+  Type: 0
+  MaxHP: 160
+  ATK: 0
+  DEF: 20
+  Speed: 323
+  AttackSpeed: 0
+  AttackDelay: 0
+  AttackShape:
+    ShapeType: 0
+    RectWidth: 0
+    RectHeight: 0
+    FanAngle: 0
+    FanRadius: 0
+    CircleRadius: 0
+  DetectionRadius: 9
+  DropTable:
+  - Item: {fileID: 11400000, guid: f4a50b4681c994748a7fe864cfda06af, type: 2}
+    DropChance: 1
+    MaxCount: 4
+    CountWeights:
+    - 0
+    - 0
+    - 0.5
+    - 0.5
+  - Item: {fileID: 11400000, guid: dae5ae9033eacb8438eae4180e0ae7f5, type: 2}
+    DropChance: 1
+    MaxCount: 2
+    CountWeights:
+    - 0.5
+    - 0.5
+  IdleSprite: {fileID: 0}
+  AnimController: {fileID: 9100000, guid: e5bccc1e81384c6409e3add66fd1afaa, type: 2}
+  MonsterPrefab: {fileID: 6864642755928304661, guid: cbe7f3f365157fa409c5207888bf731c, type: 3}

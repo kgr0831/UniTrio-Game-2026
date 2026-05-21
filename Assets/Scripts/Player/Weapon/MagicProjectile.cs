@@ -136,7 +136,7 @@ public class MagicProjectile : MonoBehaviour
         if (_exploded) return;
 
         // 적, 벽, 또는 장애물에 충돌 시 폭발
-        if (collision.CompareTag("Enemy") || collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
+        if (collision.CompareTag("Entity") || collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
         {
             Explode(collision);
         }
@@ -152,7 +152,7 @@ public class MagicProjectile : MonoBehaviour
         if (_light != null) _light.enabled = false;
 
         // 적일 경우에만 히트 이펙트(피격 이펙트)를 추가로 생성
-        if (collision.CompareTag("Enemy"))
+        if (collision.CompareTag("Entity"))
         {
             SpawnHitVfx(collision);
         }

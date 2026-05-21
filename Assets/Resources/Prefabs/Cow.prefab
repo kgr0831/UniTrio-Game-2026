@@ -24,7 +24,7 @@ GameObject:
   - component: {fileID: 8392769630604708335}
   m_Layer: 8
   m_Name: Cow
-  m_TagString: Enemy
+  m_TagString: Entity
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
