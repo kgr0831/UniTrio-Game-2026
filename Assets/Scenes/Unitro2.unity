@@ -20070,7 +20070,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 421795173}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99997514
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -21618,7 +21618,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 300}
+  m_AnchoredPosition: {x: 0, y: 0.00019927701}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1124094281
@@ -24392,9 +24392,25 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1185045763}
     m_Modifications:
+    - target: {fileID: 693179457648463566, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
+      propertyPath: m_Mass
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 693179457648463566, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
+      propertyPath: m_Constraints
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4008959096482823201, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
+      propertyPath: m_TagString
+      value: Entity
+      objectReference: {fileID: 0}
     - target: {fileID: 7464555105971457318, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
       propertyPath: m_Name
       value: Zombies
+      objectReference: {fileID: 0}
+    - target: {fileID: 7464555105971457318, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9207802949705906906, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
       propertyPath: m_LocalPosition.x

@@ -17,25 +17,49 @@ public sealed class MonsterNavigator : MonoBehaviour
     private MonsterRuntimeData _runtime;
     private bool               _isDecelerating;
 
+    // 충돌 밀림 방지: 매 FixedUpdate에서 의도한 속도로 덮어쓰기
+    private Vector2 _intendedVelocity;
+
+    private static PhysicsMaterial2D _sharedNoPushMat;
+
     private void Awake()
     {
         _rb      = GetComponent<Rigidbody2D>();
         _runtime = GetComponent<MonsterRuntimeData>();
+
+        // ── 충돌 밀림 방지 설정 ──
+        _rb.mass         = 100f;
+        _rb.linearDamping = 0f;
+        _rb.gravityScale  = 0f;
+        _rb.constraints   = RigidbodyConstraints2D.FreezeRotation;
+
+        if (_sharedNoPushMat == null)
+            _sharedNoPushMat = new PhysicsMaterial2D("NoPush")
+                { friction = 0f, bounciness = 0f };
+
+        foreach (var col in GetComponentsInChildren<Collider2D>())
+            col.sharedMaterial = _sharedNoPushMat;
     }
 
     private void FixedUpdate()
     {
+        // ── 충돌 밀림 방지: 매 물리 스텝마다 의도한 속도로 강제 복원 ──
+        // Unity 물리 엔진이 충돌 해소 시 추가한 속도를 덮어써서 밀림 방지
+        _rb.linearVelocity = _intendedVelocity;
+
         if (!_isDecelerating) return;
 
-        Vector2 vel = _rb.linearVelocity;
-        if (vel.sqrMagnitude < 0.01f)
+        if (_intendedVelocity.sqrMagnitude < 0.01f)
         {
+            _intendedVelocity = Vector2.zero;
             _rb.linearVelocity = Vector2.zero;
             _isDecelerating = false;
             return;
         }
 
-        _rb.linearVelocity = Vector2.MoveTowards(vel, Vector2.zero, _deceleration * Time.fixedDeltaTime);
+        _intendedVelocity = Vector2.MoveTowards(
+            _intendedVelocity, Vector2.zero, _deceleration * Time.fixedDeltaTime);
+        _rb.linearVelocity = _intendedVelocity;
     }
 
     public void MoveToward(Vector2 targetPosition)
@@ -47,7 +71,8 @@ public sealed class MonsterNavigator : MonoBehaviour
         if (finalDir.sqrMagnitude > 0.01f)
             _runtime.CurrentDirection = finalDir;
 
-        _rb.linearVelocity = finalDir * _runtime.CurrentSpeed;
+        _intendedVelocity = finalDir * _runtime.CurrentSpeed;
+        _rb.linearVelocity = _intendedVelocity;
     }
 
     public void MoveInDirection(Vector2 direction)
@@ -58,7 +83,8 @@ public sealed class MonsterNavigator : MonoBehaviour
         if (finalDir.sqrMagnitude > 0.01f)
             _runtime.CurrentDirection = finalDir;
 
-        _rb.linearVelocity = finalDir * _runtime.CurrentSpeed;
+        _intendedVelocity = finalDir * _runtime.CurrentSpeed;
+        _rb.linearVelocity = _intendedVelocity;
     }
 
     public bool MoveToTarget(Vector2 target, float reachThreshold)
@@ -71,6 +97,7 @@ public sealed class MonsterNavigator : MonoBehaviour
         if (dist <= reachThreshold * 0.3f)
         {
             _rb.position = target;
+            _intendedVelocity = Vector2.zero;
             _rb.linearVelocity = Vector2.zero;
             return true;
         }
@@ -78,6 +105,7 @@ public sealed class MonsterNavigator : MonoBehaviour
         if (dist <= reachThreshold)
         {
             _rb.position = Vector2.MoveTowards(currentPos, target, _runtime.CurrentSpeed * Time.deltaTime);
+            _intendedVelocity = Vector2.zero;
             _rb.linearVelocity = Vector2.zero;
             return (Vector2)_rb.position == target;
         }
@@ -88,7 +116,8 @@ public sealed class MonsterNavigator : MonoBehaviour
         if (finalDir.sqrMagnitude > 0.01f)
             _runtime.CurrentDirection = finalDir;
 
-        _rb.linearVelocity = finalDir * _runtime.CurrentSpeed;
+        _intendedVelocity = finalDir * _runtime.CurrentSpeed;
+        _rb.linearVelocity = _intendedVelocity;
         return false;
     }
 
@@ -96,6 +125,7 @@ public sealed class MonsterNavigator : MonoBehaviour
     {
         if (_rb == null) _rb = GetComponent<Rigidbody2D>();
         _rb.position = TileGridHelper.GetTileCenter(_rb.position);
+        _intendedVelocity = Vector2.zero;
         _rb.linearVelocity = Vector2.zero;
         _isDecelerating = false;
     }
@@ -107,6 +137,7 @@ public sealed class MonsterNavigator : MonoBehaviour
 
     public void Stop()
     {
+        _intendedVelocity = Vector2.zero;
         _rb.linearVelocity = Vector2.zero;
         _isDecelerating = false;
     }

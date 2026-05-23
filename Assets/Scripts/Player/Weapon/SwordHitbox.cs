@@ -34,6 +34,7 @@ public class SwordHitbox : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        // 태그 기반 1차 필터 + IDamageable 기반 2차 필터
         bool isValidTag = false;
         if (_targetTags != null)
         {
@@ -46,6 +47,11 @@ public class SwordHitbox : MonoBehaviour
                 }
             }
         }
+
+        // "Entity" 태그를 가진 대상도 항상 허용 (동물 등 MonsterBase 대상)
+        if (!isValidTag && other.CompareTag("Entity"))
+            isValidTag = true;
+
         if (!isValidTag) return;
 
         IDamageable target = other.GetComponentInParent<IDamageable>();

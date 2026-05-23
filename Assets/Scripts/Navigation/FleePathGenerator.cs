@@ -3,7 +3,7 @@ using UnityEngine;
 
 public static class FleePathGenerator
 {
-    private const int FLEE_TILE_DISTANCE = 10;
+    private const int FLEE_TILE_DISTANCE = 5;
     private const int MAX_DESTINATION_ATTEMPTS = 16;
 
     public static List<Vector2Int> GenerateFleePath(

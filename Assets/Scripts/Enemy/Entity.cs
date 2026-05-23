@@ -16,6 +16,39 @@ public class Entity : LivingEntity
 
     private float _contactDamageTimer;
 
+    private static PhysicsMaterial2D _sharedNoPushMat;
+    private Rigidbody2D _rb;
+
+    protected override void Awake()
+    {
+        base.Awake();
+
+        // ── 충돌 밀림 방지 설정 ──
+        _rb = GetComponent<Rigidbody2D>();
+        if (_rb != null)
+        {
+            _rb.mass         = 100f;
+            _rb.linearDamping = 0f;
+            _rb.gravityScale  = 0f;
+            // Entity는 자체 이동이 없으므로 위치+회전 모두 잠금 (프리팹 원본 유지)
+            _rb.constraints   = RigidbodyConstraints2D.FreezeAll;
+
+            if (_sharedNoPushMat == null)
+                _sharedNoPushMat = new PhysicsMaterial2D("NoPush")
+                    { friction = 0f, bounciness = 0f };
+
+            foreach (var col in GetComponentsInChildren<Collider2D>())
+                col.sharedMaterial = _sharedNoPushMat;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        // Entity는 자체 이동 없음 → 충돌에 의한 잔여 속도를 매 물리 스텝마다 제거
+        if (_rb != null)
+            _rb.linearVelocity = Vector2.zero;
+    }
+
     private void Update()
     {
         // 타이머 방식 쿨다운 (GC 없음)

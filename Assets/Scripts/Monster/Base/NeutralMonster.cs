@@ -10,7 +10,7 @@ public sealed class NeutralMonster : MonsterBase
     [SerializeField] private LayerMask _obstacleMask;
     [SerializeField] private LayerMask _threatMask;
     [SerializeField] private float _fleeSpeedMultiplier = 1.8f;
-    [SerializeField] private float _fleeTimeout = 3f;
+    [SerializeField] private float _fleeTimeout = 1.5f;
     [SerializeField] private float _tileReachThreshold = 0.3f;
 
     [Header("Player Alert")]
@@ -33,6 +33,9 @@ public sealed class NeutralMonster : MonsterBase
     private float _pathRegenCooldown;
     private const float PATH_REGEN_COOLDOWN = 0.3f;
 
+    // 도망 원인 추적: 플레이어 공격이 원인이면 true, 에너미 감지가 원인이면 false
+    private bool _fleeFromPlayer;
+
     private readonly Collider2D[] _threatBuffer = new Collider2D[16];
 
     protected override void Awake()
@@ -51,6 +54,7 @@ public sealed class NeutralMonster : MonsterBase
         _fleeCooldown = 0f;
         _isFleeing = false;
         _needsFleePathRegen = false;
+        _fleeFromPlayer = false;
     }
 
     protected override BTNode BuildBT()
@@ -71,10 +75,11 @@ public sealed class NeutralMonster : MonsterBase
         if (_fleeCooldown > 0f)
             _fleeCooldown -= Time.deltaTime;
 
+        // 플레이어 공격이 원인인 도망 중에만 플레이어를 재감지
         if (_playerAlertTimer > 0f)
         {
             _playerAlertTimer -= Time.deltaTime;
-            if (!_detection.HasTarget)
+            if (_fleeFromPlayer && !_detection.HasTarget)
                 TryDetectPlayerDuringAlert();
         }
     }
@@ -254,6 +259,7 @@ public sealed class NeutralMonster : MonsterBase
         _fleePathIndex = 0;
         _fleeTimer = 0f;
         _needsFleePathRegen = false;
+        _fleeFromPlayer = false;
 
         _detection.ForceRelease();
 
@@ -295,6 +301,7 @@ public sealed class NeutralMonster : MonsterBase
 
         Transform threatRoot = null;
 
+        // 1. source에 MonsterRuntimeData가 있으면 몬스터 공격
         var monsterData = source.GetComponentInParent<MonsterRuntimeData>();
         if (monsterData != null)
         {
@@ -302,16 +309,17 @@ public sealed class NeutralMonster : MonsterBase
         }
         else
         {
-            threatRoot = source.GetComponentInParent<PlayerEntity>()?.transform;
-            if (threatRoot == null)
-            {
-                var playerObj = GameObject.FindWithTag("Player");
-                if (playerObj != null)
-                    threatRoot = playerObj.transform;
-            }
+            // 2. 몬스터가 아니면 플레이어 공격으로 간주
+            //    source가 투사체/히트박스일 수 있으므로 FindWithTag 우선 사용
+            var playerObj = GameObject.FindWithTag("Player");
+            if (playerObj != null)
+                threatRoot = playerObj.transform;
 
             if (threatRoot != null)
+            {
                 _playerAlertTimer = _playerAlertDuration;
+                _fleeFromPlayer = true;
+            }
         }
 
         if (threatRoot == null) return;
