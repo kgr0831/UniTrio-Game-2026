@@ -25,6 +25,8 @@ public class SwordHitbox : MonoBehaviour
     private void Awake()
     {
         _weaponBehaviour = GetComponentInParent<WeaponBehaviourBase>();
+        if (_playerEntity == null)
+            _playerEntity = GetComponentInParent<PlayerEntity>();
     }
 
     /// <summary>이번 스윙에서 타격한 적 수를 반환합니다.</summary>
@@ -133,6 +135,18 @@ public class SwordHitbox : MonoBehaviour
             ApplyFlashSync(other, stunDuration);
             SpawnHitVFX(other, hitPoint);
             SpawnDamageText(other, damage);
+        }
+
+        // 속성 디버프 적용
+        if (other != null && other.gameObject != null)
+        {
+            DebuffReceiver debuffReceiver = other.GetComponentInParent<DebuffReceiver>();
+            if (debuffReceiver != null && _playerEntity != null)
+            {
+                var elemSystem = ElementalWeaponSystem.Instance;
+                if (elemSystem != null)
+                    DebuffApplier.Apply(debuffReceiver, elemSystem.CurrentElement, _playerEntity.Stats);
+            }
         }
 
         // 속성 게이지 증가 연동 (이벤트 발송)

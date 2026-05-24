@@ -1736,6 +1736,9 @@ MonoBehaviour:
   _baseMana: 100
   _baseMaxHP: 100
   _manaRegen: 1
+  _baseFireAtk: 100
+  _baseIceAtk: 100
+  _baseEarthAtk: 100
   _permMaxHP: 0
   _permAtk: 0
   _permMagicAtk: 0

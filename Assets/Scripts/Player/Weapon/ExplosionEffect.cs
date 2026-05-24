@@ -131,6 +131,9 @@ public class ExplosionEffect : MonoBehaviour
 
             target.TakeDamage(_damage, gameObject);
             SpawnDamageText(hit.bounds.center);
+
+            // 속성 디버프 적용
+            DebuffApplier.ApplyFromProjectile(hit.gameObject);
             
             HitEventManager.NotifyHit(transform.position, hit.bounds.center, firstHit);
             firstHit = false;

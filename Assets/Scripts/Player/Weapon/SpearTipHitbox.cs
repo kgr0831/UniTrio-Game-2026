@@ -37,6 +37,8 @@ public class SpearTipHitbox : MonoBehaviour
     private void Awake()
     {
         _weaponBehaviour = GetComponentInParent<WeaponBehaviourBase>();
+        if (_playerEntity == null)
+            _playerEntity = GetComponentInParent<PlayerEntity>();
 
         // Resources에서 hit-a_0 AnimatorController 로드
         _hitVfxController = Resources.Load<RuntimeAnimatorController>("Spritessheets/hit-a_0");
@@ -135,6 +137,15 @@ public class SpearTipHitbox : MonoBehaviour
 
         // 데미지 텍스트 표시
         SpawnDamageText(other, damage);
+
+        // 속성 디버프 적용
+        DebuffReceiver debuffReceiver = other.GetComponentInParent<DebuffReceiver>();
+        if (debuffReceiver != null && _playerEntity != null)
+        {
+            var elemSystem = ElementalWeaponSystem.Instance;
+            if (elemSystem != null)
+                DebuffApplier.Apply(debuffReceiver, elemSystem.CurrentElement, _playerEntity.Stats);
+        }
 
         // 속성 게이지 연동 (이벤트 발송)
         Transform playerRoot = _playerEntity != null ? _playerEntity.transform : transform.root;

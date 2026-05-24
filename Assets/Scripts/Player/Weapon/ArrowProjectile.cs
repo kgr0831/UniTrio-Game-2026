@@ -168,6 +168,9 @@ public class ArrowProjectile : MonoBehaviour
                 SpawnHitVfx(hitPoint);
                 SpawnDamageText(collision.bounds.center);
 
+                // 속성 디버프 적용
+                DebuffApplier.ApplyFromProjectile(collision);
+
                 HitEventManager.NotifyHit(_spawnPos, targetPosition, true);
             }
             ReturnToPool();

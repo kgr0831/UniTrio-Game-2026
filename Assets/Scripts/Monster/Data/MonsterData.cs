@@ -32,6 +32,14 @@ public class MonsterData : ScriptableObject
     [Header("═══ Drop Table ═══")]
     public DropEntry[] DropTable;       // 드롭 아이템 테이블
 
+    [Header("═══ Elemental Resistance ═══")]
+    [Tooltip("불 속성 저항")]
+    public float FireResistance;
+    [Tooltip("얼음 속성 저항")]
+    public float IceResistance;
+    [Tooltip("땅 속성 저항")]
+    public float EarthResistance;
+
     [Header("═══ Visuals ═══")]
     public Sprite     IdleSprite;       // 기본 스프라이트
     public RuntimeAnimatorController AnimController; // Animator Controller

@@ -189,6 +189,9 @@ public class ManaSpearProjectile : MonoBehaviour
                     Vector3 targetPosition = collision.transform.position;
                     target.TakeDamage(_damage, gameObject);
 
+                    // 속성 디버프 적용
+                    DebuffApplier.ApplyFromProjectile(collision);
+
                     HitEventManager.NotifyHit(_startFlyPos, targetPosition, true);
                 }
             }

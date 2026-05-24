@@ -204,6 +204,9 @@ public class AimedShotArrow : MonoBehaviour
                 SpawnHitVfx(hitPoint);
                 SpawnDamageText(collision.bounds.center);
 
+                // 속성 디버프 적용
+                DebuffApplier.ApplyFromProjectile(collision);
+
                 HitEventManager.NotifyHit(_spawnPos, targetPosition, true);
             }
             // 관통: 적 충돌 시 파괴하지 않음
