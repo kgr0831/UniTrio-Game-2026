@@ -122,6 +122,7 @@ public class ExplosionEffect : MonoBehaviour
         // Physics2D.OverlapCircle (배열 오버로드): 가비지 없는 물리 검출
         int count = Physics2D.OverlapCircle(center, worldRadius, _contactFilter, _overlapResults);
 
+        bool firstHit = true;
         for (int i = 0; i < count; i++)
         {
             Collider2D  hit    = _overlapResults[i];
@@ -130,6 +131,12 @@ public class ExplosionEffect : MonoBehaviour
 
             target.TakeDamage(_damage, gameObject);
             SpawnDamageText(hit.bounds.center);
+
+            // 속성 디버프 적용
+            DebuffApplier.ApplyFromProjectile(hit.gameObject);
+            
+            HitEventManager.NotifyHit(transform.position, hit.bounds.center, firstHit);
+            firstHit = false;
         }
     }
 

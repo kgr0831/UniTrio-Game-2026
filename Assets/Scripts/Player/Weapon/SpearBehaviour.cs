@@ -21,6 +21,23 @@ public class SpearBehaviour : WeaponBehaviourBase
     [SerializeField] private Collider2D _hitboxCollider;
     [SerializeField] private SwordHitbox _spearHitbox;
 
+    [Header("Tip Critical")]
+    [Tooltip("창 끝 타격 판정 거리 (플레이어 기준, 이 거리 이상이면 크리티컬)")]
+    [SerializeField] private float _tipMinDistance = 2.0f;
+    [Tooltip("창 끝 타격 시 데미지 배율")]
+    [SerializeField] private float _tipDamageMultiplier = 1.5f;
+
+    /// <summary>팁 크리티컬 데미지 배율 (SwordHitbox에서 참조)</summary>
+    public float TipDamageMultiplier => _tipDamageMultiplier;
+
+    // 공격 시 방향 벡터 (거리 판정용)
+    private Vector2 _attackDirection;
+    private Transform _playerRoot;
+
+    // hit-a_0 VFX 리소스
+    private RuntimeAnimatorController _hitVfxController;
+    private Sprite[] _hitVfxSprites;
+
     [Header("Bash Effect")]
     [Tooltip("창 스프라이트 (강타 발동 시 붉은 블룸 적용)")]
     [SerializeField] private SpriteRenderer _spearRenderer;
@@ -62,9 +79,22 @@ public class SpearBehaviour : WeaponBehaviourBase
     private bool       _bashEffectActive;
     private TrailRenderer _bashTrail;
 
+    // --- Spear Stack System ---
+    private GameObject _spearAuraInstance;
+    private PlayerWeaponController _controller;
+
     private void Awake()
     {
         CurrentComboStep = 1;
+
+        HitEventManager.OnEnemyHit -= HandleEnemyHit;
+        HitEventManager.OnEnemyHit += HandleEnemyHit;
+
+        _controller = GetComponentInParent<PlayerWeaponController>();
+        if (_controller != null)
+        {
+            _controller.OnSpearStacksChanged += HandleSpearStacksChanged;
+        }
 
         // VFX 자식 오브젝트 비활성화
         Transform vfxChild = transform.Find("SpearVFX");
@@ -131,6 +161,106 @@ public class SpearBehaviour : WeaponBehaviourBase
         }
 
         CreateBashTrail();
+
+        // 팁 VFX 리소스 로드
+        _hitVfxController = Resources.Load<RuntimeAnimatorController>("Spritessheets/hit-a_0");
+        _hitVfxSprites = Resources.LoadAll<Sprite>("Spritessheets/hit-a");
+        _playerRoot = GetComponentInParent<PlayerEntity>()?.transform;
+        if (_playerRoot == null) _playerRoot = transform.root;
+
+        CreateSpearAura();
+    }
+
+    private void OnDestroy()
+    {
+        HitEventManager.OnEnemyHit -= HandleEnemyHit;
+        if (_controller != null)
+        {
+            _controller.OnSpearStacksChanged -= HandleSpearStacksChanged;
+        }
+    }
+
+    private void HandleEnemyHit(Vector3 sourcePos, Vector3 targetPos, bool isFirstHit)
+    {
+        if (!gameObject.activeInHierarchy || !IsAttacking) return;
+        
+        // 한 번 휘두를 때 여러 마리를 맞춰도 스택은 1번만 오르게 하려면 _hitboxFired 체크
+        if (!_hitboxFired)
+        {
+            _hitboxFired = true;
+            if (_controller != null)
+            {
+                _controller.AddSpearStack();
+            }
+        }
+    }
+
+    private void HandleSpearStacksChanged(int stacks)
+    {
+        Debug.Log($"[Spear] 현재 글로벌 스택: {stacks}");
+
+        if (stacks >= 5 && _spearAuraInstance != null)
+        {
+            Debug.Log($"[Spear] 5스택 도달! 오오라 활성화");
+            _spearAuraInstance.SetActive(true);
+            ParticleSystem ps = _spearAuraInstance.GetComponent<ParticleSystem>();
+            if (ps != null && !ps.isPlaying)
+            {
+                ps.Play();
+            }
+        }
+        else if (stacks == 0 && _spearAuraInstance != null)
+        {
+            Debug.Log($"[Spear] 스택 초기화 (오오라 끄기)");
+            ParticleSystem ps = _spearAuraInstance.GetComponent<ParticleSystem>();
+            if (ps != null) ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            _spearAuraInstance.SetActive(false);
+        }
+    }
+
+    private void CreateSpearAura()
+    {
+        if (_playerRoot == null) return;
+        _spearAuraInstance = new GameObject("SpearAura_Red");
+        _spearAuraInstance.transform.SetParent(_playerRoot);
+        _spearAuraInstance.transform.localPosition = new Vector3(0, 0.5f, 0); // 캐릭터 중심
+        _spearAuraInstance.SetActive(false);
+
+        var ps = _spearAuraInstance.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.duration = 1f;
+        main.loop = true;
+        main.startLifetime = 0.5f;
+        main.startSpeed = 2f;
+        main.startSize = 0.5f;
+        main.simulationSpace = ParticleSystemSimulationSpace.Local;
+
+        var em = ps.emission;
+        em.rateOverTime = 20f;
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Circle;
+        shape.radius = 0.8f;
+
+        var col = ps.colorOverLifetime;
+        col.enabled = true;
+        Gradient grad = new Gradient();
+        grad.SetKeys(
+            new GradientColorKey[] { new GradientColorKey(Color.red, 0f), new GradientColorKey(Color.yellow, 1f) },
+            new GradientAlphaKey[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.5f), new GradientAlphaKey(0f, 1f) }
+        );
+        col.color = grad;
+
+        var renderer = ps.GetComponent<ParticleSystemRenderer>();
+        renderer.sortingLayerName = "Weapons";
+        renderer.sortingOrder = 10;
+        
+        // VFXLit2D 매터리얼 사용
+        Material mat = new Material(Shader.Find("Custom/VFXLit2D"));
+        mat.SetFloat("_EmissionIntensity", 4f);
+        mat.SetColor("_EmissionColor", new Color(1.5f, 0.1f, 0.1f, 1f));
+        mat.SetFloat("_LightInfluence", 0.3f);
+        renderer.material = mat;
     }
 
     private void CreateBashTrail()
@@ -200,6 +330,8 @@ public class SpearBehaviour : WeaponBehaviourBase
             _bashTrail.AddPosition(tipWorldPos);
         }
     }
+
+
 
     private void LateUpdate()
     {
@@ -280,6 +412,11 @@ public class SpearBehaviour : WeaponBehaviourBase
         ApplyBashVisual(active);
     }
 
+    public override float GetCurrentAttackSpeedMultiplier()
+    {
+        return (1.3f + GetAnimationSpeedBonus()) / 1.3f;
+    }
+
     public override void BeginAttack(int comboStep)
     {
         if (_bashTrail != null)
@@ -293,10 +430,15 @@ public class SpearBehaviour : WeaponBehaviourBase
 
         if (_spearHitbox != null) _spearHitbox.ResetSwingHits();
         if (_hitboxCollider != null) _hitboxCollider.enabled = true;
+
+        // 공격 방향 저장 (팁 크리티컬 거리 판정용)
+        // 피벗의 right 벡터 = 커서 방향 (Z축 회전 기반)
+        Transform pivot = transform.parent;
+        _attackDirection = pivot != null ? (Vector2)pivot.right : Vector2.right;
+
         Physics2D.SyncTransforms();
 
-        float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
-        if (speed <= 0) speed = 1f;
+        float speed = 1.3f + GetAnimationSpeedBonus();
 
         _weaponAnimator.speed = speed;
         _weaponAnimator.SetTrigger("Attack");
@@ -308,14 +450,16 @@ public class SpearBehaviour : WeaponBehaviourBase
         }
     }
 
+
+
     public override bool PollFinished(float attackStartTime)
     {
         float elapsed = Time.time - attackStartTime;
         if (elapsed < 0.05f) return false;
 
-        float thrustDuration = _thrustDuration;
-        float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
-        if (speed > 0f) thrustDuration /= speed;
+        float speed = 1.3f + GetAnimationSpeedBonus();
+        // 기본 0.3초 (배속 1.3f 기준) -> 현재 배속에 맞게 시간 축소
+        float thrustDuration = 0.3f * (1.3f / speed);
 
         if (elapsed >= thrustDuration)
         {
@@ -325,7 +469,7 @@ public class SpearBehaviour : WeaponBehaviourBase
             _weaponAnimator.ResetTrigger("Attack");
             _weaponAnimator.Play("Idle", 0, 0f);
 
-            if (_vfxAnimator != null)
+            if (_vfxAnimator != null && _vfxAnimator.gameObject.activeInHierarchy)
             {
                 _vfxAnimator.Play("Idle", 0, 0f);
             }
@@ -356,4 +500,45 @@ public class SpearBehaviour : WeaponBehaviourBase
         ApplyBashVisual(false);
     }
 
+    /// <summary>
+    /// 적 타격 위치가 창 끝 사거리(Tip)인지 판정합니다.
+    /// 플레이어→적 벡터를 공격 방향에 투영하여 거리가 _tipMinDistance 이상이면 true.
+    /// </summary>
+    public bool IsTipHit(Vector3 enemyWorldPos)
+    {
+        if (!IsAttacking) return false;
+
+        Vector2 toEnemy = (Vector2)enemyWorldPos - (Vector2)_playerRoot.position;
+        float projDist = Vector2.Dot(toEnemy, _attackDirection);
+
+        return projDist >= _tipMinDistance;
+    }
+
+    /// <summary>
+    /// 창 끝 크리티컬 타격 시 hit-a_0 VFX를 타격 위치에 생성합니다.
+    /// </summary>
+    public void SpawnTipVFX(Vector3 hitWorldPos)
+    {
+        GameObject vfxObj = new GameObject("SpearTipHitVFX");
+        vfxObj.transform.position = hitWorldPos;
+        vfxObj.transform.localScale = Vector3.one * 10f;
+
+        SpriteRenderer sr = vfxObj.AddComponent<SpriteRenderer>();
+        sr.sortingLayerName = "Weapons";
+        sr.sortingOrder = 30;
+
+        if (_hitVfxSprites != null && _hitVfxSprites.Length > 0)
+            sr.sprite = _hitVfxSprites[0];
+
+        if (_hitVfxController != null)
+        {
+            Animator animator = vfxObj.AddComponent<Animator>();
+            animator.runtimeAnimatorController = _hitVfxController;
+            vfxObj.AddComponent<DestroyAfterAnimation>();
+        }
+        else
+        {
+            Object.Destroy(vfxObj, 0.5f);
+        }
+    }
 }

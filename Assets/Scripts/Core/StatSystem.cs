@@ -18,6 +18,11 @@ public sealed class StatSystem : MonoBehaviour
     [Tooltip("초당 마나 자연 회복량")]
     [SerializeField] private float _manaRegen     = 1f;
 
+    [Header("Elemental Attack")]
+    [SerializeField] private float _baseFireAtk  = 100f;
+    [SerializeField] private float _baseIceAtk   = 100f;
+    [SerializeField] private float _baseEarthAtk = 100f;
+
     /// <summary>스탯이 변경되었을 때(장비 교체 등) 발생하는 이벤트.</summary>
     public event System.Action OnStatsChanged;
 
@@ -109,6 +114,23 @@ public sealed class StatSystem : MonoBehaviour
             float total = 1.0f; // 기본 배율 100%
             for (int i = 0; i < _providers.Count; i++) total += _providers[i].GetAttackSpeedBonus();
             return total;
+        }
+    }
+
+    // ── 속성 공격력 ─────────────────────────────────────────────
+    public float TotalFireAtk  => _baseFireAtk;
+    public float TotalIceAtk   => _baseIceAtk;
+    public float TotalEarthAtk => _baseEarthAtk;
+
+    /// <summary>ElementType에 대응하는 속성 공격력을 반환합니다.</summary>
+    public float GetElementalAtk(ElementType element)
+    {
+        switch (element)
+        {
+            case ElementType.Fire:  return TotalFireAtk;
+            case ElementType.Ice:   return TotalIceAtk;
+            case ElementType.Earth: return TotalEarthAtk;
+            default:                return 0f;
         }
     }
 

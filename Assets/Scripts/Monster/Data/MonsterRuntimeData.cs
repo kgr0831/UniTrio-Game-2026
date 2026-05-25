@@ -21,6 +21,23 @@ public sealed class MonsterRuntimeData : MonoBehaviour
     public float       AttackSpeed  => _data.AttackSpeed;
     public float       AttackDelay  => _data.AttackDelay;
 
+    // ── 속성 저항 ──────────────────────────────────────────
+    public float FireResistance  => _data != null ? _data.FireResistance  : 0f;
+    public float IceResistance   => _data != null ? _data.IceResistance   : 0f;
+    public float EarthResistance => _data != null ? _data.EarthResistance : 0f;
+
+    /// <summary>ElementType에 대응하는 속성 저항을 반환합니다.</summary>
+    public float GetElementalResistance(ElementType element)
+    {
+        switch (element)
+        {
+            case ElementType.Fire:  return FireResistance;
+            case ElementType.Ice:   return IceResistance;
+            case ElementType.Earth: return EarthResistance;
+            default:                return 0f;
+        }
+    }
+
     // ── 동적 상태 ─────────────────────────────────────────────
     /// <summary>현재 이동속도 (디버프 등으로 변동 가능)</summary>
     public float CurrentSpeed { get; set; }

@@ -270,6 +270,13 @@ public class SwordBehaviour : WeaponBehaviourBase
         }
     }
 
+    public override float GetCurrentAttackSpeedMultiplier()
+    {
+        float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
+        if (speed <= 0) speed = 1f;
+        return speed + GetAnimationSpeedBonus();
+    }
+
     public override void BeginAttack(int comboStep)
     {
         if (_bashTrail != null)
@@ -294,9 +301,10 @@ public class SwordBehaviour : WeaponBehaviourBase
         if (_hitboxCollider != null) _hitboxCollider.enabled = true;
         Physics2D.SyncTransforms();
 
-        // 공격 속도 연동 (StatSystem 반영)
+        // 원래 배율 복구 (StatSystem)
         float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
         if (speed <= 0) speed = 1f;
+        speed += GetAnimationSpeedBonus();
 
         _weaponAnimator.ResetTrigger("Attack");
         _weaponAnimator.speed = speed;
@@ -324,7 +332,10 @@ public class SwordBehaviour : WeaponBehaviourBase
         }
 
         float speed = (_statSystem != null) ? _statSystem.TotalAttackSpeed : 1f;
-        if (speed > 0f) orbitDuration /= speed;
+        if (speed <= 0) speed = 1f;
+        speed += GetAnimationSpeedBonus();
+        
+        orbitDuration /= speed;
 
         if (elapsed >= orbitDuration)
         {

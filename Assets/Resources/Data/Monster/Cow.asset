@@ -55,6 +55,9 @@ MonoBehaviour:
     CountWeights:
     - 0.5
     - 0.5
+  FireResistance: 50
+  IceResistance: 50
+  EarthResistance: 50
   IdleSprite: {fileID: 0}
   AnimController: {fileID: 9100000, guid: abaf6cd5133999e45a06826cbc46b2d3, type: 2}
   MonsterPrefab: {fileID: 1164133402143040078, guid: f3968e3f107877b4bbb3ae9576692363, type: 3}

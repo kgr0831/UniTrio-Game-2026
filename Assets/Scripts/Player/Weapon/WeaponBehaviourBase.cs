@@ -81,6 +81,28 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
         IsAimingLeft = isAimingLeft;
     }
 
+    /// <summary>
+    /// 공격 애니메이션이 끝난 후 다음 공격이 가능할 때까지의 쿨다운(대기 시간)입니다.
+    /// 기본적으로 0.3초를 반환하며, 파생 클래스에서 오버라이드하여 조절할 수 있습니다.
+    /// </summary>
+    public virtual float GetPostAttackCooldown() => 0.3f;
+
+    /// <summary>
+    /// 창 스택 등 글로벌 요인에 의한 애니메이션 속도 증가량을 반환합니다.
+    /// 파생 클래스에서 기본 배율에 이 값을 더해 사용합니다.
+    /// </summary>
+    public float GetAnimationSpeedBonus()
+    {
+        var controller = GetComponentInParent<PlayerWeaponController>();
+        return (controller != null) ? (controller.SpearStacks * 0.1f) : 0f;
+    }
+
+    /// <summary>
+    /// FloatingWeaponMotion 등에서 이 무기의 실제 재생 배속을 알아낼 때 사용합니다.
+    /// 파생 클래스에서 (현재속도 / 기준속도) 비율을 반환해야 합니다.
+    /// </summary>
+    public virtual float GetCurrentAttackSpeedMultiplier() => 1f;
+
     /// <summary>공격 시작. comboStep에 이번에 실행할 타수(1, 2, ...)를 넘깁니다.</summary>
     public abstract void BeginAttack(int comboStep);
 

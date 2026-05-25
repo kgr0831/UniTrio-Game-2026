@@ -75,6 +75,7 @@ public class ArrowProjectile : MonoBehaviour
         trailObj.transform.localRotation = Quaternion.Euler(0, 180, 0);
 
         _trailParticle = trailObj.AddComponent<ParticleSystem>();
+        _trailParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = _trailParticle.main;
         main.duration = 1f;
         main.startLifetime = 0.15f;
@@ -158,9 +159,17 @@ public class ArrowProjectile : MonoBehaviour
             IDamageable target = collision.GetComponentInParent<IDamageable>();
             if (target != null && target.IsAlive)
             {
+                Vector3 targetPosition = collision.transform.position;
+                Vector3 hitPoint = collision.ClosestPoint(transform.position);
+
                 target.TakeDamage(_damage, gameObject);
-                SpawnHitVfx(collision);
-                SpawnDamageText(collision);
+                SpawnHitVfx(hitPoint);
+                SpawnDamageText(collision.bounds.center);
+
+                // 속성 디버프 적용
+                DebuffApplier.ApplyFromProjectile(collision);
+
+                HitEventManager.NotifyHit(_spawnPos, targetPosition, true);
             }
             ReturnToPool();
         }
@@ -174,11 +183,10 @@ public class ArrowProjectile : MonoBehaviour
     /// 충돌 콜라이더의 ClosestPoint에 HitVFX를 풀링 생성합니다.
     /// Rotation Z = 투사체 위치 → 충돌 지점 방향각.
     /// </summary>
-    private void SpawnHitVfx(Collider2D hitCollider)
+    private void SpawnHitVfx(Vector3 hitPoint)
     {
         if (_hitVfxPrefabs == null || _hitVfxPrefabs.Length == 0) return;
 
-        Vector3 hitPoint = hitCollider.ClosestPoint(transform.position);
         Vector2 dir      = (Vector2)(hitPoint - transform.position);
         float   angleZ   = dir.sqrMagnitude > 0.0001f
                            ? Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg
@@ -188,10 +196,10 @@ public class ArrowProjectile : MonoBehaviour
         SimpleObjectPool.Instance.Get(prefab, hitPoint, Quaternion.Euler(0f, 0f, angleZ));
     }
 
-    private void SpawnDamageText(Collider2D hitCollider)
+    private void SpawnDamageText(Vector3 enemyCenter)
     {
         if (_damageTextPrefab == null) return;
-        Vector3    spawnPos = hitCollider.bounds.center + Vector3.up * 0.5f;
+        Vector3    spawnPos = enemyCenter + Vector3.up * 0.5f;
         
         // 최적화: Instantiate 대신 SimpleObjectPool에서 가져옵니다.
         GameObject textObj  = SimpleObjectPool.Instance.Get(_damageTextPrefab, spawnPos, Quaternion.identity);

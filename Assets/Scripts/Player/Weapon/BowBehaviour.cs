@@ -310,6 +310,7 @@ public class BowBehaviour : WeaponBehaviourBase
                 vfxObj.transform.localRotation = Quaternion.identity;
 
                 _aimedShotGatherParticle = vfxObj.AddComponent<ParticleSystem>();
+                _aimedShotGatherParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
                 var main = _aimedShotGatherParticle.main;
                 main.duration = 3f;
                 main.startLifetime = 0.35f;
@@ -883,6 +884,11 @@ public class BowBehaviour : WeaponBehaviourBase
     // ─────────────────────────────────────────────────────────────
     // WeaponBehaviourBase 구현 (좌클릭 일반 공격)
     // ─────────────────────────────────────────────────────────────
+    public override float GetCurrentAttackSpeedMultiplier()
+    {
+        return (2f + GetAnimationSpeedBonus()) / 2f;
+    }
+
     public override void BeginAttack(int comboStep)
     {
         if (_bowState == BowState.Charging || _bowState == BowState.AimedShot) return; // 차징/조준사격 중 좌클릭 무시
@@ -894,7 +900,8 @@ public class BowBehaviour : WeaponBehaviourBase
 
         if (_weaponAnimator != null)
         {
-            _weaponAnimator.speed = 1f;
+            float speed = 2f + GetAnimationSpeedBonus();
+            _weaponAnimator.speed = speed; // 0.3초에 맞게 애니메이션 배속 증가
             // 이전 공격에서 큐에 남은 트리거를 먼저 비워 중복 발화 방지
             _weaponAnimator.ResetTrigger("Attack");
             _weaponAnimator.SetTrigger("Attack");
@@ -905,21 +912,26 @@ public class BowBehaviour : WeaponBehaviourBase
     {
         if (_bowState == BowState.Charging) return false;
         if (_bowState == BowState.AimedShot) return false;  // 조준 사격 중에는 PollFinished 무시
-        if (Time.time - attackStartTime < 0.05f) return false;
+        
+        float elapsed = Time.time - attackStartTime;
+        if (elapsed < 0.05f) return false;
+
+        float speed = 2f + GetAnimationSpeedBonus();
+        float fireTime = 0.15f * (2f / speed);
 
         AnimatorStateInfo info = _weaponAnimator.GetCurrentAnimatorStateInfo(0);
 
-        // 좌클릭 일반 발사: 지정 시점에 화살 발사
-        if (_bowState == BowState.NormalAttack
-            && info.IsName("Attack")
-            && info.normalizedTime >= _fireDelayNormalizedTime
-            && !_hasFired)
+        // 좌클릭 일반 발사: 애니메이션이나 특정 시간에 무관하게 대략 절반 지점(0.15초)에 발사
+        if (_bowState == BowState.NormalAttack && elapsed >= fireTime && !_hasFired)
         {
             FireArrow(1f); // 일반 공격은 항상 100% 위력
         }
 
-        // 95% 이상 재생 시 Idle로 귀환
-        if (!info.IsName("Attack") || info.normalizedTime >= 0.95f)
+        // 배속이 반영된 총 지속 시간 (기본 배속 2f 기준 0.3초)
+        float duration = 0.3f * (2f / speed);
+
+        // 모든 무기 고정 딜레이
+        if (elapsed >= duration)
         {
             if (!_hasFired) FireArrow(1f);
 

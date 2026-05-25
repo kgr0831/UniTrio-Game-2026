@@ -7,11 +7,16 @@ using UnityEngine;
 /// </summary>
 [RequireComponent(typeof(MonsterRuntimeData))]
 [RequireComponent(typeof(HealthSystem))]
+[RequireComponent(typeof(DebuffReceiver))]
+[RequireComponent(typeof(MonsterHPBar))]
+[RequireComponent(typeof(DebuffOverlayController))]
+[RequireComponent(typeof(DebuffIconDisplay))]
 public abstract class MonsterBase : MonoBehaviour, IDamageable
 {
     protected BTNode             _rootNode;
     protected MonsterRuntimeData _runtime;
     protected HealthSystem       _health;
+    protected DebuffReceiver     _debuffReceiver;
 
     public bool IsAlive => _health != null && _health.IsAlive;
 
@@ -19,14 +24,17 @@ public abstract class MonsterBase : MonoBehaviour, IDamageable
     {
         if (_health != null && _health.IsAlive)
         {
-            _health.ApplyDamage(damage);
+            // 땅 디버프에 의한 받는 피해 증가 배율 적용
+            float multiplier = _debuffReceiver != null ? _debuffReceiver.GetDamageMultiplier() : 1f;
+            _health.ApplyDamage(damage * multiplier);
         }
     }
 
     protected virtual void Awake()
     {
-        _runtime = GetComponent<MonsterRuntimeData>();
-        _health  = GetComponent<HealthSystem>();
+        _runtime        = GetComponent<MonsterRuntimeData>();
+        _health         = GetComponent<HealthSystem>();
+        _debuffReceiver = GetComponent<DebuffReceiver>();
     }
 
     protected virtual void OnEnable()

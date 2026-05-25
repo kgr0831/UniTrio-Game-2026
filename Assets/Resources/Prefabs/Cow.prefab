@@ -22,6 +22,10 @@ GameObject:
   - component: {fileID: 6940807242602123746}
   - component: {fileID: 3169103988750891305}
   - component: {fileID: 8392769630604708335}
+  - component: {fileID: 2976110677430539821}
+  - component: {fileID: 3275081582229729479}
+  - component: {fileID: 3025669982588570594}
+  - component: {fileID: 7551760447801000965}
   m_Layer: 8
   m_Name: Cow
   m_TagString: Entity
@@ -339,3 +343,56 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 942265c97ece6dd46801d4ff4ed38c51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterLootDropper
+--- !u!114 &2976110677430539821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164133402143040078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5009c7c5545f2e44e9d08c3445b64a7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DebuffReceiver
+--- !u!114 &3275081582229729479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164133402143040078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66107a05688daa241933f272ef7ef900, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterHPBar
+  _yOffset: 1
+  _barWidth: 0.8
+  _barHeight: 0.1
+--- !u!114 &3025669982588570594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164133402143040078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b04f842285c71b84fb4b37843e8c5c1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DebuffOverlayController
+--- !u!114 &7551760447801000965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164133402143040078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8cfd518641d1f44c8f3e5215f991e3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DebuffIconDisplay
+  _iconSize: 0.25
+  _iconSpacing: 0.02
