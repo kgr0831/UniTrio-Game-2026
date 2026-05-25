@@ -1,12 +1,12 @@
 using UnityEngine;
 
 /// <summary>
-/// 기본 적 엔티티.
+/// 기본 엔티티 클래스.
 /// HP·피격 플래시는 HealthSystem 컴포넌트에 위임하고,
 /// 사망 처리(파괴 또는 풀 반환)만 직접 담당합니다.
-/// Milestone 4에서 MonsterBase 도입 시 CharacterBase로 변경 예정.
+/// MonsterType을 통해 적대적/중립 엔티티를 구분합니다.
 /// </summary>
-public class Enemy : LivingEntity
+public class Entity : LivingEntity
 {
     [Header("Contact Damage")]
     [Tooltip("플레이어 접촉 시 주는 데미지")]
@@ -15,6 +15,39 @@ public class Enemy : LivingEntity
     [SerializeField] private float _contactDamageCooldown = 0.5f;
 
     private float _contactDamageTimer;
+
+    private static PhysicsMaterial2D _sharedNoPushMat;
+    private Rigidbody2D _rb;
+
+    protected override void Awake()
+    {
+        base.Awake();
+
+        // ── 충돌 밀림 방지 설정 ──
+        _rb = GetComponent<Rigidbody2D>();
+        if (_rb != null)
+        {
+            _rb.mass         = 100f;
+            _rb.linearDamping = 0f;
+            _rb.gravityScale  = 0f;
+            // Entity는 자체 이동이 없으므로 위치+회전 모두 잠금 (프리팹 원본 유지)
+            _rb.constraints   = RigidbodyConstraints2D.FreezeAll;
+
+            if (_sharedNoPushMat == null)
+                _sharedNoPushMat = new PhysicsMaterial2D("NoPush")
+                    { friction = 0f, bounciness = 0f };
+
+            foreach (var col in GetComponentsInChildren<Collider2D>())
+                col.sharedMaterial = _sharedNoPushMat;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        // Entity는 자체 이동 없음 → 충돌에 의한 잔여 속도를 매 물리 스텝마다 제거
+        if (_rb != null)
+            _rb.linearVelocity = Vector2.zero;
+    }
 
     private void Update()
     {

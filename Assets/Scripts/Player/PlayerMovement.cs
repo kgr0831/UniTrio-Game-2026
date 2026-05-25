@@ -27,6 +27,8 @@ public class PlayerMovement : MonoBehaviour
     private Vector2     _recoilVelocity; // 반동/넉백용 내부 속도
     private PlayerWeaponController _weaponController;
 
+    private static PhysicsMaterial2D _sharedNoPushMat;
+
     private static readonly int HashIsMoving = Animator.StringToHash("IsMoving");
     private static readonly int HashDirX     = Animator.StringToHash("DirX");
     private static readonly int HashDirY     = Animator.StringToHash("DirY");
@@ -40,6 +42,19 @@ public class PlayerMovement : MonoBehaviour
             _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
         _statSystem = GetComponent<StatSystem>(); // nullable
         _weaponController = GetComponent<PlayerWeaponController>();
+
+        // ── 충돌 밀림 방지 설정 ──
+        _rb.mass         = 100f;
+        _rb.linearDamping = 0f;
+        _rb.gravityScale  = 0f;
+        _rb.constraints   = RigidbodyConstraints2D.FreezeRotation;
+
+        if (_sharedNoPushMat == null)
+            _sharedNoPushMat = new PhysicsMaterial2D("NoPush")
+                { friction = 0f, bounciness = 0f };
+
+        foreach (var col in GetComponentsInChildren<Collider2D>())
+            col.sharedMaterial = _sharedNoPushMat;
     }
 
     void Update()
@@ -77,6 +92,9 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
+        // 충돌에 의한 잔여 물리 속도 제거 (밀림 방지)
+        _rb.linearVelocity = Vector2.zero;
+
         // StatSystem이 있으면 TotalMoveSpeed 사용, 없으면 moveSpeed 폴백
         float speed = _statSystem != null ? _statSystem.TotalMoveSpeed : moveSpeed;
         

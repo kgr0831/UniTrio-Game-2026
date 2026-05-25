@@ -5032,6 +5032,9 @@ MonoBehaviour:
   container: {fileID: 69071314}
   columns: 8
   rows: 4
+  isMainInventory: 0
+  starterWeapons: []
+  starterItems: []
 --- !u!1001 &81941217
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11287,7 +11290,9 @@ MonoBehaviour:
   dragVisualIcon: {fileID: 1930110839}
   draggingData: {fileID: 0}
   startSlot: {fileID: 0}
+  startBoxSlot: {fileID: 0}
   draggingCount: 0
+  dragConsumed: 0
 --- !u!4 &856308691
 Transform:
   m_ObjectHideFlags: 0
@@ -12474,6 +12479,10 @@ MonoBehaviour:
   - {fileID: 1759815806}
   - {fileID: 321523035}
   - {fileID: 1879057685}
+  _inventoryHotbarSlots: []
+  _boxHotbarSlots: []
+  _stats: {fileID: 0}
+  _weaponController: {fileID: 0}
 --- !u!4 &1530210930
 Transform:
   m_ObjectHideFlags: 0

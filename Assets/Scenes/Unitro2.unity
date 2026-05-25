@@ -7156,6 +7156,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 215630342}
   m_CullTransparentMesh: 1
+--- !u!1 &219374957
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 219374959}
+  - component: {fileID: 219374958}
+  m_Layer: 0
+  m_Name: MobSpawner_Pig
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &219374958
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 219374957}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a051cda2af1999b4ab7615b11403972c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MobSpawner
+  _targetData: {fileID: 11400000, guid: e78247149d75dcc43894e00211c7b285, type: 2}
+  _maxSpawnCount: 20
+  _gridSpacing: 10
+  _initialSpawnInterval: 0.5
+  _respawnDelay: 2
+  _spawnOnStart: 1
+--- !u!4 &219374959
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 219374957}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 30, y: 6, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &223578475
 GameObject:
   m_ObjectHideFlags: 0
@@ -19974,7 +20024,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 421795173}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.9999949
+  m_Size: 0.99997514
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -21522,7 +21572,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.000045651992}
+  m_AnchoredPosition: {x: 0, y: 0.00019927701}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1124094281
@@ -24296,9 +24346,25 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1185045763}
     m_Modifications:
+    - target: {fileID: 693179457648463566, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
+      propertyPath: m_Mass
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 693179457648463566, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
+      propertyPath: m_Constraints
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4008959096482823201, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
+      propertyPath: m_TagString
+      value: Entity
+      objectReference: {fileID: 0}
     - target: {fileID: 7464555105971457318, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
       propertyPath: m_Name
       value: Zombies
+      objectReference: {fileID: 0}
+    - target: {fileID: 7464555105971457318, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9207802949705906906, guid: f84d89c30682c6f48a2954929e6a0cac, type: 3}
       propertyPath: m_LocalPosition.x
@@ -29071,6 +29137,56 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8dd9c519f6d3e194887e17a3fbd61c44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
+--- !u!1 &1691640654
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1691640656}
+  - component: {fileID: 1691640655}
+  m_Layer: 0
+  m_Name: MobSpawner_Chicken
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1691640655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1691640654}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a051cda2af1999b4ab7615b11403972c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MobSpawner
+  _targetData: {fileID: 11400000, guid: 91ad47f02b22273489587a15a067034c, type: 2}
+  _maxSpawnCount: 20
+  _gridSpacing: 30
+  _initialSpawnInterval: 0.5
+  _respawnDelay: 2
+  _spawnOnStart: 1
+--- !u!4 &1691640656
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1691640654}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6, y: 6, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1692601713
 GameObject:
   m_ObjectHideFlags: 0
@@ -34085,3 +34201,5 @@ SceneRoots:
   m_Roots:
   - {fileID: 282768773}
   - {fileID: 83243078}
+  - {fileID: 219374959}
+  - {fileID: 1691640656}

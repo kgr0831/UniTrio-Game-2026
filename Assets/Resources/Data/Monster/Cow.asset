@@ -28,7 +28,7 @@ MonoBehaviour:
     FanAngle: 0
     FanRadius: 0
     CircleRadius: 0
-  DetectionRadius: 6
+  DetectionRadius: 3.25
   DropTable:
   - Item: {fileID: 11400000, guid: f4a50b4681c994748a7fe864cfda06af, type: 2}
     DropChance: 1

@@ -192,7 +192,7 @@ public class AimedShotArrow : MonoBehaviour
 
         if (!_launched) return;
 
-        if (collision.CompareTag("Enemy"))
+        if (collision.CompareTag("Entity"))
         {
             IDamageable target = collision.GetComponentInParent<IDamageable>();
             if (target != null && target.IsAlive)

@@ -28,7 +28,7 @@ GameObject:
   - component: {fileID: 7551760447801000965}
   m_Layer: 8
   m_Name: Cow
-  m_TagString: Enemy
+  m_TagString: Entity
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -244,8 +244,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dd4c762e0bf9983458ff8fdd815af3d6, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::MonsterAnimatorController
+  _use4Direction: 1
 --- !u!114 &2328045539576863626
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -263,7 +264,10 @@ MonoBehaviour:
     m_Bits: 1
   _playerMask:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 512
+  _enemyMask:
+    serializedVersion: 2
+    m_Bits: 256
   _checkInterval: 0.15
   _losBreakDuration: 4
 --- !u!114 &8229075593959029453
@@ -298,6 +302,10 @@ MonoBehaviour:
   _minWanderTime: 1
   _maxWanderTime: 3
   _wanderRadius: 3
+  _tileWanderRange: 4
+  _idleChance: 0.4
+  _minIdleTime: 1
+  _maxIdleTime: 3
 --- !u!114 &3169103988750891305
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -310,6 +318,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ec0ee24cdf1cc54494624e3dc6c37fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeutralMonster
+  _obstacleMask:
+    serializedVersion: 2
+    m_Bits: 1
+  _threatMask:
+    serializedVersion: 2
+    m_Bits: 768
+  _fleeSpeedMultiplier: 1.8
+  _fleeTimeout: 3
+  _tileReachThreshold: 0.3
+  _playerAlertDuration: 10
+  _playerMask:
+    serializedVersion: 2
+    m_Bits: 512
 --- !u!114 &8392769630604708335
 MonoBehaviour:
   m_ObjectHideFlags: 0
