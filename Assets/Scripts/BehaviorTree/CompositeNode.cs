@@ -38,16 +38,15 @@ public class Sequence : Node
 
     public override NodeState Evaluate()
     {
-        bool anyChildRunning = false;
         foreach (var node in children)
         {
             switch (node.Evaluate())
             {
                 case NodeState.FAILURE: return NodeState.FAILURE;
                 case NodeState.SUCCESS: continue;
-                case NodeState.RUNNING: anyChildRunning = true; continue;
+                case NodeState.RUNNING: return NodeState.RUNNING;
             }
         }
-        return anyChildRunning ? NodeState.RUNNING : NodeState.SUCCESS;
+        return NodeState.SUCCESS;
     }
 }

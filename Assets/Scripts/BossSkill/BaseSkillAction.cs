@@ -2,16 +2,15 @@ using UnityEngine;
 
 public abstract class BaseSkillAction
 {
-    protected enum Phase { Ready, Indicator, Delay, Execute }
+    protected enum Phase { Indicator, Delay, Execute }
     protected Phase currentPhase;
     protected float timer;
     protected GameObject owner;
     protected BossBlackboard bb;
     protected GameObject activeIndicator;
-    protected virtual float ReadyDuration => 2.0f;
     protected virtual Vector3 IndicatorScale => Vector3.one;
     protected Quaternion IndicatorRotation;
-    
+
     protected abstract float IndicatorDuration { get; }
     protected abstract float DelayDuration { get; }
     protected abstract string AnimTriggerName { get; }
@@ -28,7 +27,13 @@ public abstract class BaseSkillAction
 
     public virtual void OnStart() {
         timer = 0f;
+        isAnimationSignalReceived = false;
         currentPhase = Phase.Indicator;
+
+        bb.isAttacking = true;
+        bb.rb.linearVelocity = Vector2.zero;
+        bb.anim.SetBool("isMove", false);
+
         if (IndicatorPrefab != null)
             activeIndicator = Object.Instantiate(IndicatorPrefab, owner.transform.position, Quaternion.identity);
         activeIndicator.transform.localScale = IndicatorScale;
@@ -47,44 +52,41 @@ public abstract class BaseSkillAction
         OnExecuteStart();
     }
 
-    public NodeState OnUpdate() {
+    public virtual NodeState OnUpdate() {
         timer += Time.deltaTime;
-        switch (currentPhase) {
-            case Phase.Ready:
-                if (timer >= ReadyDuration)
-                {
-                    if (IndicatorPrefab != null)
-                    {
-                        activeIndicator = Object.Instantiate(IndicatorPrefab, owner.transform.position, IndicatorRotation);
-                    }
-                    else 
-                        activeIndicator.SetActive(true);
 
-                    timer = 0;
-                    currentPhase = Phase.Indicator;
-                }
-                return NodeState.RUNNING;
+        bb.rb.linearVelocity = Vector2.zero;
+
+        switch (currentPhase) {
             case Phase.Indicator:
                 if (timer >= IndicatorDuration) {
                     if (activeIndicator != null) activeIndicator.SetActive(false);
+                    timer = 0f;
                     currentPhase = Phase.Delay;
                 }
                 return NodeState.RUNNING;
+
             case Phase.Delay:
-                bb.anim.SetTrigger(AnimTriggerName);
-                currentPhase = Phase.Execute;
+                if (timer >= DelayDuration) {
+                    bb.anim.SetTrigger(AnimTriggerName);
+                    timer = 0f;
+                    currentPhase = Phase.Execute;
+                }
                 return NodeState.RUNNING;
+
             case Phase.Execute:
                 if (!isAnimationSignalReceived)
                 {
                     return NodeState.RUNNING;
                 }
-                return OnExecuteUpdate(); 
+                return OnExecuteUpdate();
         }
         return NodeState.SUCCESS;
     }
 
     public virtual void OnEnd() {
+        bb.isAttacking = false;
+        bb.cooldownTimer = bb.attackCooldown;
         if (activeIndicator != null) Object.Destroy(activeIndicator);
     }
 

@@ -2,16 +2,50 @@ using UnityEngine;
 
 public class RockController : MonoBehaviour
 {
-
     public float speed = 20.0f;
+    public float lifetime = 5f;
     public Quaternion moveRotation;
+    public GameObject impactEffectPrefab;
+
+    private float _elapsed;
+
     void Update()
     {
-        // 1. 쿼터니언과 월드 기준 앞방향(Vector3.forward)을 곱해 회전된 방향 벡터를 구함
         Vector3 direction = moveRotation * Vector3.up;
         direction.z = 0;
-
-        // 2. 구한 방향 벡터(월드 기준)로 오브젝트를 이동시킴
         transform.position += direction.normalized * speed * Time.deltaTime;
+
+        _elapsed += Time.deltaTime;
+        if (_elapsed >= lifetime)
+            DestroyWithEffect();
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            DestroyWithEffect();
+        }
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (!collision.collider.CompareTag("Boss"))
+        {
+            DestroyWithEffect();
+        }
+    }
+
+    private void DestroyWithEffect()
+    {
+        CameraShakeController.Instance?.Shake(0.15f, 0.25f);
+
+        if (impactEffectPrefab != null)
+        {
+            GameObject fx = Object.Instantiate(impactEffectPrefab, transform.position, Quaternion.identity);
+            Object.Destroy(fx, 2f);
+        }
+
+        Destroy(gameObject);
     }
 }
