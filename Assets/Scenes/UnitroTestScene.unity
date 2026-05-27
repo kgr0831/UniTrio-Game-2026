@@ -20513,7 +20513,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 421795173}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.99997514
+  m_Size: 0.9999981
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -22193,7 +22193,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.00006938098}
+  m_AnchoredPosition: {x: 0, y: 0.0010242248}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1124094281
@@ -26356,6 +26356,10 @@ PrefabInstance:
       value: 2.6666667
       objectReference: {fileID: 0}
     - target: {fileID: 1941232120923058647, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
+      propertyPath: _useOffsetSystem
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1941232120923058647, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
       propertyPath: _aimedShotBowPrefab
       value: 
       objectReference: {fileID: 8493334755477145656, guid: 5f4e7650781b7b641b15df75e16e3950, type: 3}
@@ -26395,6 +26399,18 @@ PrefabInstance:
       propertyPath: '_weaponBehaviours.Array.data[2]'
       value: 
       objectReference: {fileID: 1403098244}
+    - target: {fileID: 2471571467625433920, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2471571467625433920, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2471571467625433920, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 2471571467625433920, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
       propertyPath: m_LocalPosition.x
       value: -6.43
@@ -26599,6 +26615,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9062955646089067132, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 1293997204, guid: 8315c80ce3cfa064cb6c720cbbdf8dcb, type: 3}
     - target: {fileID: 9095547287722266170, guid: 8b2f2491e94bcf54091bc4003f7d19d1, type: 3}
       propertyPath: m_LocalPosition.y
       value: 2.2

@@ -430,6 +430,16 @@ public class PlayerWeaponController : MonoBehaviour
             _activeBehaviour.gameObject.SetActive(true);
             _activeBehaviour.BeginAttack(_comboStep);
 
+            if (_playerAnimator != null)
+            {
+                // 검은 1타,3타가 정방향 스윙(왼손), 2타가 역방향 스윙(오른손)입니다.
+                // 다른 무기는 항상 1타->2타 교대입니다.
+                // 결론적으로 모든 무기에 대해 (홀수=1타/왼손, 짝수=2타/오른손)가 성립합니다.
+                int animCombo = (_comboStep % 2 == 1) ? 1 : 2;
+                _playerAnimator.SetInteger("AttackCombo", animCombo);
+                _playerAnimator.SetTrigger("Attack");
+            }
+
             // 다음 클릭/연사를 위해 스텝 순환
             _comboStep = (_comboStep % _activeBehaviour.MaxComboSteps) + 1;
         }

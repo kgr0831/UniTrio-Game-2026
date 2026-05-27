@@ -91,7 +91,7 @@ public class BowBehaviour : WeaponBehaviourBase
 
     // ── WeaponBehaviourBase 오버라이드 ───────────────────────────
     public override WeaponType WeaponType          => WeaponType.Bow;
-    public override float PivotRotationOffset      => -45f;
+    public override float PivotRotationOffset      => 0f;
     
     // 오프셋 시스템 사용 시 FloatingWeaponMotion의 위치 제어 비활성화
     public override bool DisableFloatingMotion => _useOffsetSystem;
@@ -593,8 +593,26 @@ public class BowBehaviour : WeaponBehaviourBase
         float damageMul = Mathf.Lerp(_aimedShotMinCoeff, _aimedShotDamageMult, chargeRatio);
         float damage    = statAtk * damageMul;
 
+        // 커서 방향 지향 회전값 계산
+        Quaternion arrowRot = _aimedShotArrowPos != null ? _aimedShotArrowPos.rotation : Quaternion.identity;
+        if (_mainCamera != null && _aimedShotArrowPos != null)
+        {
+            Vector3 mouseScreenPos = Input.mousePosition;
+            mouseScreenPos.z = Mathf.Abs(_mainCamera.transform.position.z - _aimedShotArrowPos.position.z);
+            Vector3 mouseWorld = _mainCamera.ScreenToWorldPoint(mouseScreenPos);
+            Vector3 dir = mouseWorld - _aimedShotArrowPos.position;
+            dir.z = 0;
+            if (dir.sqrMagnitude > 0.0001f)
+            {
+                arrowRot = Quaternion.Euler(0, 0, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);
+            }
+        }
+
         if (_aimedShotArrowSpawned && _aimedShotArrowInstance != null)
         {
+            // 발사 직전 커서 방향으로 갱신하여 조준 교정
+            _aimedShotArrowInstance.transform.rotation = arrowRot;
+            
             // 이미 생성된 AImArrow를 Launch
             _aimedShotArrowScript.SetStats(speed, damage);
             _aimedShotArrowScript.Launch();
@@ -605,7 +623,7 @@ public class BowBehaviour : WeaponBehaviourBase
             GameObject arrowObj = Instantiate(
                 _aimShootArrowPrefab,
                 _aimedShotArrowPos.position,
-                _aimedShotArrowPos.rotation);
+                arrowRot);
 
             AimedShotArrow arrow = arrowObj.GetComponent<AimedShotArrow>();
             if (arrow != null)
@@ -961,16 +979,30 @@ public class BowBehaviour : WeaponBehaviourBase
         _hasFired = true;
         if (_arrowPrefab == null || _arrowPos == null) return;
 
-        UpdateOffsetTransform();
-
         // 속도, 데미지 보간 (무기 데미지 + 플레이어 Atk 보너스)
         float speed       = Mathf.Lerp(_minArrowSpeed, _maxArrowSpeed, chargeRatio);
         float weaponDmg   = Mathf.Lerp(_minArrowDamage, _maxArrowDamage, chargeRatio);
         float statAtk     = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
         float damage      = DamageCalculator.CalcOutgoingDamage(statAtk, weaponDmg) * _skillDamageMult;
 
+        // 커서 방향 지향 회전값 계산
+        Quaternion arrowRot = _arrowPos.rotation;
+        if (_mainCamera != null)
+        {
+            Vector3 mouseScreenPos = Input.mousePosition;
+            mouseScreenPos.z = Mathf.Abs(_mainCamera.transform.position.z - _arrowPos.position.z);
+            Vector3 mouseWorld = _mainCamera.ScreenToWorldPoint(mouseScreenPos);
+            Vector3 dir = mouseWorld - _arrowPos.position;
+            dir.z = 0;
+            if (dir.sqrMagnitude > 0.0001f)
+            {
+                float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+                arrowRot = Quaternion.Euler(0, 0, angle);
+            }
+        }
+
         // 최적화: Instantiate 대신 SimpleObjectPool에서 가져옵니다.
-        GameObject arrowObj = SimpleObjectPool.Instance.Get(_arrowPrefab, _arrowPos.position, _arrowPos.rotation);
+        GameObject arrowObj = SimpleObjectPool.Instance.Get(_arrowPrefab, _arrowPos.position, arrowRot);
         
         // ArrowProjectile에 차징 값 전달
         ArrowProjectile ap = arrowObj.GetComponent<ArrowProjectile>();

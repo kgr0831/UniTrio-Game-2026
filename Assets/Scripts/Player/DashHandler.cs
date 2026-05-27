@@ -16,7 +16,7 @@ public class DashHandler : MonoBehaviour
     [Tooltip("대시 키 (기본: Space)")]
     [SerializeField] private KeyCode _dashKey      = KeyCode.Space;
     [Tooltip("대시 이동 속도")]
-    [SerializeField] private float   _dashForce    = 14f;
+    [SerializeField] private float   _dashForce    = 28f;
     [Tooltip("대시 지속 시간 (초)")]
     [SerializeField] private float   _dashDuration = 0.18f;
     [Tooltip("대시 쿨다운 (초)")]

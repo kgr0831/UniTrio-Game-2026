@@ -21,6 +21,7 @@ public class PlayerMovement : MonoBehaviour
 
     private Rigidbody2D _rb;
     private Animator    _anim;
+    private SpriteRenderer _spriteRenderer;
     private Camera      _mainCamera;
     private float       _camToWorldZ;
     private StatSystem  _statSystem; // optional – 없으면 moveSpeed 사용
@@ -37,17 +38,21 @@ public class PlayerMovement : MonoBehaviour
     {
         _rb         = GetComponent<Rigidbody2D>();
         _anim       = GetComponent<Animator>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
         _mainCamera = Camera.main;
         if (_mainCamera != null)
             _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
         _statSystem = GetComponent<StatSystem>(); // nullable
         _weaponController = GetComponent<PlayerWeaponController>();
+        
+        FacingDirection = Vector2.down; // 기본 바라보는 방향
 
         // ── 충돌 밀림 방지 설정 ──
         _rb.mass         = 100f;
         _rb.linearDamping = 0f;
         _rb.gravityScale  = 0f;
         _rb.constraints   = RigidbodyConstraints2D.FreezeRotation;
+        _rb.interpolation = RigidbodyInterpolation2D.Interpolate; // 카메라 트래킹/이동 덜덜 떨림(Jitter) 현상 방지
 
         if (_sharedNoPushMat == null)
             _sharedNoPushMat = new PhysicsMaterial2D("NoPush")
@@ -69,14 +74,21 @@ public class PlayerMovement : MonoBehaviour
         {
             _anim.SetBool(HashIsMoving, MoveInput.sqrMagnitude > 0.001f);
 
-            if (_mainCamera == null) return;
+            // 커서가 아닌 이동 방향으로 FacingDirection 결정 (이동 중일 때만 업데이트하여 정지 시 마지막 방향 유지)
+            if (MoveInput.sqrMagnitude > 0.001f)
+            {
+                FacingDirection = MoveInput;
+                
+                // 스프라이트 좌우 반전 (왼쪽 이동 시 flipX = true)
+                if (_spriteRenderer != null)
+                {
+                    if (FacingDirection.x < -0.01f)
+                        _spriteRenderer.flipX = true;
+                    else if (FacingDirection.x > 0.01f)
+                        _spriteRenderer.flipX = false;
+                }
+            }
 
-            // 커서 방향 계산 (애니메이션 + FacingDirection 동기화)
-            Vector3 mouseScreenPos = Input.mousePosition;
-            mouseScreenPos.z       = _camToWorldZ;
-            Vector3 mouseWorld     = _mainCamera.ScreenToWorldPoint(mouseScreenPos);
-
-            FacingDirection = ((Vector2)mouseWorld - (Vector2)transform.position).normalized;
             _anim.SetFloat(HashDirX, FacingDirection.x);
             _anim.SetFloat(HashDirY, FacingDirection.y);
         }

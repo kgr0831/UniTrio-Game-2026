@@ -37,9 +37,9 @@ public class DashState : PlayerState
         Machine.WeaponCtrl.enabled = false;
         Machine.Movement.enabled   = false;
 
-        // 공통: 현재 프레임 고정
+        // 공통: 대시 애니메이션 재생
         if (Machine.Animator != null)
-            Machine.Animator.speed = 0f;
+            Machine.Animator.SetBool("IsDashing", true);
 
         if (Machine.Sprite != null)
             Machine.Sprite.color = DashTint;
@@ -70,7 +70,7 @@ public class DashState : PlayerState
         Machine.Movement.enabled   = true;
 
         if (Machine.Animator != null)
-            Machine.Animator.speed = 1f;
+            Machine.Animator.SetBool("IsDashing", false);
 
         if (Machine.Sprite != null)
             Machine.Sprite.color = Color.white;
