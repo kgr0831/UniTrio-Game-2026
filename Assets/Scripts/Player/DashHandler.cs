@@ -39,10 +39,12 @@ public class DashHandler : MonoBehaviour
     private float       _dashTimer;
     private float       _cooldownTimer;
     private bool        _dashInputBuffered;
+    private ChargeSystem _chargeSystem;
 
     private void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
+        _chargeSystem = GetComponent<ChargeSystem>();
     }
 
     private void Update()
@@ -76,6 +78,7 @@ public class DashHandler : MonoBehaviour
     /// </summary>
     public bool TryConsumeDashInput()
     {
+        if (_chargeSystem != null && _chargeSystem.IsCharging) return false;
         if (!_dashInputBuffered || _cooldownTimer > 0f) return false;
         _dashInputBuffered = false;
         return true;

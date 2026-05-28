@@ -73,8 +73,12 @@ public class PlayerWeaponController : MonoBehaviour
     // 공격이 끝난 첫 프레임에 자동 실행되어 피봇 트랜스폼 오염을 방지합니다.
     private int _pendingSlotIndex = -1;
 
+    private ChargeSystem _chargeSystem;
+
     private void Awake()
     {
+        _chargeSystem = GetComponent<ChargeSystem>();
+
         _mainCamera = Camera.main;
         if (_mainCamera != null)
             _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
@@ -340,6 +344,9 @@ public class PlayerWeaponController : MonoBehaviour
     private void HandleAttackInput()
     {
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return;
+            
+        if (_chargeSystem != null && _chargeSystem.IsCharging)
             return;
 
         // "GetMouseButtonDown" (최초 클릭)으로 변경하여 꾹 누르기 자동 연사 제거

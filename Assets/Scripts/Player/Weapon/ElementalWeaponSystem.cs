@@ -4,7 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// 무기 속성 전환 시스템.
-/// 우클릭(Mouse1)으로 Earth → Fire → Ice → Earth 순환하며,
+/// O 키로 Earth → Fire → Ice → Earth 순환하며,
 /// 현재 장착된 무기 스프라이트 위에 절차적 오버레이를 렌더링합니다.
 ///
 /// v2: 궤적(TrailRenderer), 잔상(Ghost Trail), 무기 아우라 색상까지
@@ -206,17 +206,11 @@ public class ElementalWeaponSystem : MonoBehaviour
     }
 
     // ──────────────────────────────────────────────────────
-    //  Input: 우클릭 속성 전환
+    //  Input: O 키 속성 전환
     // ──────────────────────────────────────────────────────
     private void HandleElementSwitch()
     {
-        // 우클릭 감지 확인 (디버그)
-        if (Input.GetMouseButtonDown(1))
-        {
-            Debug.Log($"[ElementSwitch] 우클릭 감지됨! _weaponController={_weaponController != null}, ActiveBehaviour={(_weaponController != null ? _weaponController.ActiveBehaviour?.GetType().Name : "N/A")}");
-        }
-
-        if (!Input.GetMouseButtonDown(1)) return;
+        if (!Input.GetKeyDown(KeyCode.O)) return;
 
         // 무기 미장착 시 무시
         if (_weaponController == null)
@@ -248,13 +242,7 @@ public class ElementalWeaponSystem : MonoBehaviour
             }
         }
 
-        // UI 위에서 클릭했으면 무시
-        if (UnityEngine.EventSystems.EventSystem.current != null &&
-            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
-        {
-            Debug.Log("[ElementSwitch] 차단: UI 위에서 클릭");
-            return;
-        }
+
 
         // 순환: Earth → Fire → Ice → Earth
         _currentElement = (ElementType)(((int)_currentElement + 1) % 3);
@@ -678,7 +666,33 @@ public class ElementalWeaponSystem : MonoBehaviour
     private void NotifyGaugesChanged()
     {
         float ratio = _unifiedGauge / GAUGE_MAX;
-        Debug.Log($"[NotifyGaugesChanged] Firing event. Gauge: {ratio:F2}, Element: {_currentElement}");
         OnGaugeChanged?.Invoke(ratio, _currentElement);
+    }
+
+    // ──────────────────────────────────────────────────────
+    //  차징 시스템 연동 API
+    // ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// 속성 게이지를 amount만큼 소모합니다. 실제 소모된 양을 반환합니다.
+    /// 차징 시스템(ChargeSystem)에서 호출됩니다.
+    /// </summary>
+    public float ConsumeGauge(float amount)
+    {
+        if (amount <= 0f) return 0f;
+        float consumed = Mathf.Min(amount, _unifiedGauge);
+        _unifiedGauge -= consumed;
+        NotifyGaugesChanged();
+        return consumed;
+    }
+
+    /// <summary>
+    /// 게이지 자동 감소 타이머를 리셋하여, 현재 시점부터 일정 시간(7초) 뒤에 감소가 시작되도록 연장합니다.
+    /// 차징 중에 계속 호출되어 차징 중 자동 감소를 방지합니다.
+    /// </summary>
+    public void ResetDecayTimer()
+    {
+        _lastAttackHitTime = Time.time;
+        _gaugeDecayTimer = 0f;
     }
 }
