@@ -28,6 +28,10 @@ public class BossAI : MonoBehaviour
     public GameObject rushImpactPrefab;
     public GameObject groundCrackPrefab;
 
+    [Header("Rush VFX Textures (Casual_Hit)")]
+    public Texture2D rushStreakTex; // Trail_1: 스피드라인
+    public Texture2D rushRingTex;   // Ring_1: 확산 충격파 링
+
     public virtual void Start()
     {
         blackboard = new BossBlackboard

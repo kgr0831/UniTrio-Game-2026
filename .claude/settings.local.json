@@ -69,7 +69,8 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "PowerShell(Start-Sleep -Seconds 7; \"waited\")",
-      "PowerShell(Start-Sleep -Seconds 10; \"waited\")"
+      "PowerShell(Start-Sleep -Seconds 10; \"waited\")",
+      "WebFetch(domain:pokemon.fandom.com)"
     ]
   }
 }

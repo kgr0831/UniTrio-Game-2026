@@ -267,6 +267,19 @@ public class RushSkill : BaseSkillAction
     private GameObject staticIndicator;
     private GameObject fillIndicator;
 
+    // 돌진 VFX(가산) — Casual_Hit Trail_1(스피드라인) + Ring_1(확산 충격파). 본체 스프라이트는 건드리지 않는다.
+    private Material vfxMat;        // 공유 가산 머티리얼(런타임)
+    private Sprite streakSprite;    // Trail_1 런타임 스프라이트
+    private Sprite ringSprite;      // Ring_1 런타임 스프라이트
+    private float streakTimer;
+    private float ringTimer;
+    private static readonly Color RushGlowColor = new Color(1f, 0.5f, 0.12f); // 주황 (HDR 배율로 발광)
+    private const float VfxHdrBoost = 1.8f;             // HDR 배율(Bloom 유도, 과하면 흰색)
+    private const float StreakInterval = 0.025f;        // 스피드라인 생성 간격(초)
+    private const float RingInterval = 0.09f;           // 충격파 링 생성 간격(초)
+    private const float VfxScale = 0.3f;                // 전체 VFX 크기 배율(작게)
+    private float golemSizeCached;                      // 골렘 월드 크기(VfxScale 적용 전 기준)
+
     private Vector3 startPosition;
     private Vector3 targetPosition;
     private Vector3 rushDir;
@@ -353,6 +366,8 @@ public class RushSkill : BaseSkillAction
             // 다 차면 인디케이터 2개 모두 제거
             if (staticIndicator != null) staticIndicator.SetActive(false);
             if (fillIndicator != null) fillIndicator.SetActive(false);
+            // 돌진 VFX 이미터 초기화
+            InitRushVfx();
             // 돌진 애니메이션은 UpdateRushing에서 진행도에 맞춰 수동 재생
             bb.anim.Play("Attack03", 0, 0f);
             bb.anim.speed = 0f;
@@ -376,6 +391,9 @@ public class RushSkill : BaseSkillAction
         bb.anim.speed = 0f;
         bb.anim.Update(0f);
 
+        // 이동 중 스피드라인 + 충격파 링 방출
+        EmitRushVfx();
+
         if (Vector3.Distance(owner.transform.position, targetPosition) <= 0.05f)
         {
             owner.transform.position = targetPosition;
@@ -396,6 +414,108 @@ public class RushSkill : BaseSkillAction
             GameObject fx = Object.Instantiate(bb.bossAI.rushImpactPrefab, owner.transform.position, Quaternion.identity);
             Object.Destroy(fx, 2f);
         }
+    }
+
+    // 돌진 VFX 초기화: 공유 가산 머티리얼 + 텍스처→스프라이트 준비. 돌진 진입 시 1회 호출.
+    private void InitRushVfx()
+    {
+        golemSizeCached = (bb.sr != null) ? Mathf.Max(bb.sr.bounds.size.x, bb.sr.bounds.size.y) : 2f;
+        streakTimer = 0f;
+        ringTimer = 0f;
+
+        Shader add = Shader.Find("Custom/AdditiveSpriteVFX");
+        if (add != null)
+        {
+            vfxMat = new Material(add);
+            vfxMat.SetColor("_Color", RushGlowColor * VfxHdrBoost); // HDR 주황 → Bloom 발광
+        }
+
+        if (bossAI.rushStreakTex != null)
+        {
+            var t = bossAI.rushStreakTex;
+            streakSprite = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 100f);
+        }
+        if (bossAI.rushRingTex != null)
+        {
+            var t = bossAI.rushRingTex;
+            ringSprite = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 100f);
+        }
+    }
+
+    // 이동 중 일정 간격으로 스피드라인/충격파 링을 방출한다.
+    private void EmitRushVfx()
+    {
+        float dt = Time.deltaTime;
+
+        streakTimer += dt;
+        if (streakTimer >= StreakInterval)
+        {
+            streakTimer = 0f;
+            SpawnStreak();
+        }
+
+        ringTimer += dt;
+        if (ringTimer >= RingInterval)
+        {
+            ringTimer = 0f;
+            SpawnRing();
+        }
+    }
+
+    // 스피드라인: 진행 축을 따라 길쭉한 Trail_1을, 골렘 주변 임의 위치에 월드 고정으로 남긴다(이동하면 뒤로 흘러감).
+    private void SpawnStreak()
+    {
+        if (vfxMat == null || streakSprite == null) return;
+
+        var go = new GameObject("RushStreak");
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = streakSprite;
+        sr.sharedMaterial = vfxMat;
+        sr.sortingLayerID = bb.sr != null ? bb.sr.sortingLayerID : 0;
+        sr.sortingOrder = (bb.sr != null ? bb.sr.sortingOrder : 10) - 1; // 본체 뒤
+        sr.color = new Color(1f, 1f, 1f, 1f); // 페이드 시작 알파(가산: 흰색=머티리얼 색 그대로)
+
+        // 진행 방향(+X)을 rushDir로 정렬 (Trail_1은 가로로 누운 빛줄기)
+        float angle = Mathf.Atan2(rushDir.y, rushDir.x) * Mathf.Rad2Deg;
+        go.transform.rotation = Quaternion.Euler(0f, 0f, angle);
+
+        float s = golemSizeCached * VfxScale;
+
+        // 골렘 중심에서 진행축에 수직으로 임의 분산
+        Vector3 perp = new Vector3(-rushDir.y, rushDir.x, 0f);
+        float side = Random.Range(-0.45f, 0.45f) * s;
+        float along = Random.Range(-0.2f, 0.2f) * s;
+        go.transform.position = owner.transform.position + perp * side + rushDir * along;
+
+        // 길쭉하고 얇게
+        float len = s * Random.Range(1.1f, 1.7f);
+        float thin = s * Random.Range(0.08f, 0.16f);
+        go.transform.localScale = new Vector3(len, thin, 1f);
+
+        // 월드 고정(vel=0) → 골렘이 앞으로 가면 상대적으로 뒤로 흘러 스피드라인
+        go.AddComponent<RushFxPiece>().Init(0.16f, Random.Range(0.5f, 0.8f), 0f, Vector3.zero);
+    }
+
+    // 충격파 링: 골렘 앞에서 Ring_1을 진행 방향으로 밀어내며 확대+페이드.
+    private void SpawnRing()
+    {
+        if (vfxMat == null || ringSprite == null) return;
+
+        var go = new GameObject("RushRing");
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = ringSprite;
+        sr.sharedMaterial = vfxMat;
+        sr.sortingLayerID = bb.sr != null ? bb.sr.sortingLayerID : 0;
+        sr.sortingOrder = (bb.sr != null ? bb.sr.sortingOrder : 10) + 1; // 본체 앞
+        sr.color = new Color(1f, 1f, 1f, 1f);
+
+        float s = golemSizeCached * VfxScale;
+        go.transform.position = owner.transform.position + rushDir * (s * 0.4f);
+        float start = s * 0.5f;
+        go.transform.localScale = new Vector3(start, start, 1f);
+
+        // 진행 방향으로 밀려나가며 커지고 옅어짐
+        go.AddComponent<RushFxPiece>().Init(0.3f, 0.85f, 1.6f, rushDir * (s * 1.2f));
     }
 
     private void SpawnIndicators()
@@ -437,6 +557,11 @@ public class RushSkill : BaseSkillAction
 
         if (staticIndicator != null) Object.Destroy(staticIndicator);
         if (fillIndicator != null) Object.Destroy(fillIndicator);
+
+        // 이미 방출된 스피드라인/링은 각자 페이드 후 자가 소멸한다(공유 머티리얼은 그들이 사라진 뒤 정리).
+        if (vfxMat != null) Object.Destroy(vfxMat, 1f);
+        if (streakSprite != null) Object.Destroy(streakSprite, 1f);
+        if (ringSprite != null) Object.Destroy(ringSprite, 1f);
     }
 }
 
@@ -480,5 +605,49 @@ public class ThrowSkill : BaseSkillAction
     {
         IndicatorRotation = Quaternion.Euler(0, 0, Random.Range(0f, 360f));
         base.OnStart();
+    }
+}
+
+// 돌진 VFX 한 조각(스피드라인/링)의 확대+이동+페이드를 스스로 처리하고 끝나면 소멸한다.
+public class RushFxPiece : MonoBehaviour
+{
+    private SpriteRenderer sr;
+    private float life, elapsed, startAlpha, scaleGrowth;
+    private Vector3 vel, baseScale;
+
+    public void Init(float lifetime, float startAlpha, float scaleGrowth, Vector3 worldVel)
+    {
+        sr = GetComponent<SpriteRenderer>();
+        life = Mathf.Max(0.01f, lifetime);
+        this.startAlpha = startAlpha;
+        this.scaleGrowth = scaleGrowth;
+        vel = worldVel;
+        baseScale = transform.localScale;
+        elapsed = 0f;
+
+        if (sr != null)
+        {
+            Color c = sr.color;
+            c.a = startAlpha;
+            sr.color = c;
+        }
+    }
+
+    private void Update()
+    {
+        elapsed += Time.deltaTime;
+        float k = elapsed / life;
+        if (k >= 1f || sr == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        transform.localScale = baseScale * (1f + scaleGrowth * k);
+        transform.position += vel * Time.deltaTime;
+
+        Color c = sr.color;
+        c.a = Mathf.Lerp(startAlpha, 0f, k);
+        sr.color = c;
     }
 }
