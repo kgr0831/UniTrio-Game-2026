@@ -232,7 +232,7 @@ public class SpearBehaviour : WeaponBehaviourBase
         main.loop = true;
         main.startLifetime = 0.5f;
         main.startSpeed = 2f;
-        main.startSize = 0.5f;
+        main.startSize = 0.25f; // 0.5배로 축소 (기존 0.5f)
         main.simulationSpace = ParticleSystemSimulationSpace.Local;
 
         var em = ps.emission;
