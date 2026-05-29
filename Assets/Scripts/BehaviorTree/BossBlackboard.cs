@@ -5,6 +5,7 @@ public class BossBlackboard
     public Transform bossTransform;
     public Rigidbody2D rb;
     public Animator anim;
+    public SpriteRenderer sr;
     public Transform playerTarget;
     public BossAI bossAI;
     public GameObject indicator;

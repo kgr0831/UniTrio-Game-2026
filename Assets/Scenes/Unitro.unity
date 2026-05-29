@@ -4955,6 +4955,51 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1031490681}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &25042375
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 25042377}
+  - component: {fileID: 25042376}
+  m_Layer: 0
+  m_Name: ScreenFlashEffect
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &25042376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 25042375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e262ae3c0223e2d4bb5cb0c3e8c22fa1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScreenFlashEffect
+  flashImage: {fileID: 0}
+--- !u!4 &25042377
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 25042375}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &69071312
 GameObject:
   m_ObjectHideFlags: 0
@@ -10995,6 +11040,7 @@ GameObject:
   - component: {fileID: 667831445}
   - component: {fileID: 667831449}
   - component: {fileID: 667831448}
+  - component: {fileID: 667831450}
   m_Layer: 0
   m_Name: CinemachineCamera
   m_TagString: Untagged
@@ -11156,6 +11202,18 @@ MonoBehaviour:
     FrequencyGain: 1
     Duration: 1
     m_NoiseOffsets: {x: 0, y: 0, z: 0}
+--- !u!114 &667831450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 667831444}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa1e082190b5262449d077a5a6fef288, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraShakeController
 --- !u!114 &740226020 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2814023477388444962, guid: 0fa811f04c28d9049ac3f04b4044b7a4, type: 3}
@@ -12974,6 +13032,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8dd9c519f6d3e194887e17a3fbd61c44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
+--- !u!1 &1915150483
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1915150485}
+  - component: {fileID: 1915150484}
+  m_Layer: 0
+  m_Name: HitStopManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1915150484
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1915150483}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6d9524e687e83d4f8a40fe8dab83a23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitStopManager
+--- !u!4 &1915150485
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1915150483}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1930110838
 GameObject:
   m_ObjectHideFlags: 0
@@ -13439,6 +13541,18 @@ PrefabInstance:
       propertyPath: detectionRange
       value: 15
       objectReference: {fileID: 0}
+    - target: {fileID: 2883854663442188943, guid: 1ecdc1908a352db4681b4fb3076241a6, type: 3}
+      propertyPath: rushImpactPrefab
+      value: 
+      objectReference: {fileID: 2816269824691112985, guid: 5b3358e47549bd84f97ddfb7faf360c2, type: 3}
+    - target: {fileID: 2883854663442188943, guid: 1ecdc1908a352db4681b4fb3076241a6, type: 3}
+      propertyPath: slamImpactPrefab
+      value: 
+      objectReference: {fileID: 6183295925516227169, guid: 90d577d437c56c7418d3fdb299597c44, type: 3}
+    - target: {fileID: 2883854663442188943, guid: 1ecdc1908a352db4681b4fb3076241a6, type: 3}
+      propertyPath: groundCrackPrefab
+      value: 
+      objectReference: {fileID: 2267308982708671441, guid: d9d425dc53790e04d832da03fb9fb991, type: 3}
     - target: {fileID: 4276610936224291595, guid: 1ecdc1908a352db4681b4fb3076241a6, type: 3}
       propertyPath: m_LocalScale.x
       value: 3
@@ -13521,3 +13635,5 @@ SceneRoots:
   - {fileID: 1530210930}
   - {fileID: 1282206406}
   - {fileID: 2988256048522770355}
+  - {fileID: 25042377}
+  - {fileID: 1915150485}

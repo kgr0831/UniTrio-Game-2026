@@ -62,7 +62,14 @@
       "Bash(git mv *)",
       "Bash(git checkout *)",
       "mcp__UnityMCP__manage_script_capabilities",
-      "mcp__UnityMCP__execute_custom_tool"
+      "mcp__UnityMCP__execute_custom_tool",
+      "mcp__UnityMCP__manage_animation",
+      "mcp__UnityMCP__execute_code",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "PowerShell(Start-Sleep -Seconds 7; \"waited\")",
+      "PowerShell(Start-Sleep -Seconds 10; \"waited\")"
     ]
   }
 }

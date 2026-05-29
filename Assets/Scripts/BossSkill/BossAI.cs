@@ -35,6 +35,7 @@ public class BossAI : MonoBehaviour
             bossTransform = transform,
             rb = GetComponent<Rigidbody2D>(),
             anim = GetComponent<Animator>(),
+            sr = GetComponentInChildren<SpriteRenderer>(),
             moveSpeed = this.moveSpeed,
             attackRange = this.attackRange,
             detectionRange = this.detectionRange,
@@ -50,7 +51,7 @@ public class BossAI : MonoBehaviour
         List<Node> skillPool = new List<Node>
         {
             new SkillExecuteNode(blackboard, new SlamSkill()),
-            // new SkillExecuteNode(blackboard, new RushSkill()),
+            new SkillExecuteNode(blackboard, new RushSkill()),
             // new SkillExecuteNode(blackboard, new ThrowSkill()),
         };
 

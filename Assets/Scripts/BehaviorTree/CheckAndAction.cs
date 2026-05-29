@@ -58,6 +58,10 @@ public class FollowPlayerNode : Node
         blackboard.rb.linearVelocity = direction * blackboard.moveSpeed;
         blackboard.anim.SetBool("isMove", true);
 
+        // 플레이어 방향으로 좌우 반전 (수직에 가까우면 유지)
+        if (blackboard.sr != null && Mathf.Abs(direction.x) > 0.01f)
+            blackboard.sr.flipX = direction.x < 0f;
+
         return NodeState.RUNNING;
     }
 }
