@@ -73,8 +73,12 @@ public class PlayerWeaponController : MonoBehaviour
     // 공격이 끝난 첫 프레임에 자동 실행되어 피봇 트랜스폼 오염을 방지합니다.
     private int _pendingSlotIndex = -1;
 
+    private ChargeSystem _chargeSystem;
+
     private void Awake()
     {
+        _chargeSystem = GetComponent<ChargeSystem>();
+
         _mainCamera = Camera.main;
         if (_mainCamera != null)
             _camToWorldZ = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
@@ -341,6 +345,9 @@ public class PlayerWeaponController : MonoBehaviour
     {
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return;
+            
+        if (_chargeSystem != null && _chargeSystem.IsCharging)
+            return;
 
         // "GetMouseButtonDown" (최초 클릭)으로 변경하여 꾹 누르기 자동 연사 제거
         if (Input.GetMouseButtonDown(0))
@@ -429,6 +436,16 @@ public class PlayerWeaponController : MonoBehaviour
             // 공격 시 무기 오브젝트 활성화 보장 (페이드 아웃으로 꺼졌을 수 있음)
             _activeBehaviour.gameObject.SetActive(true);
             _activeBehaviour.BeginAttack(_comboStep);
+
+            if (_playerAnimator != null)
+            {
+                // 검은 1타,3타가 정방향 스윙(왼손), 2타가 역방향 스윙(오른손)입니다.
+                // 다른 무기는 항상 1타->2타 교대입니다.
+                // 결론적으로 모든 무기에 대해 (홀수=1타/왼손, 짝수=2타/오른손)가 성립합니다.
+                int animCombo = (_comboStep % 2 == 1) ? 1 : 2;
+                _playerAnimator.SetInteger("AttackCombo", animCombo);
+                _playerAnimator.SetTrigger("Attack");
+            }
 
             // 다음 클릭/연사를 위해 스텝 순환
             _comboStep = (_comboStep % _activeBehaviour.MaxComboSteps) + 1;

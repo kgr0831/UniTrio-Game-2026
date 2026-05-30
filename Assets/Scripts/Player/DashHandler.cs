@@ -16,7 +16,7 @@ public class DashHandler : MonoBehaviour
     [Tooltip("대시 키 (기본: Space)")]
     [SerializeField] private KeyCode _dashKey      = KeyCode.Space;
     [Tooltip("대시 이동 속도")]
-    [SerializeField] private float   _dashForce    = 14f;
+    [SerializeField] private float   _dashForce    = 28f;
     [Tooltip("대시 지속 시간 (초)")]
     [SerializeField] private float   _dashDuration = 0.18f;
     [Tooltip("대시 쿨다운 (초)")]
@@ -39,10 +39,12 @@ public class DashHandler : MonoBehaviour
     private float       _dashTimer;
     private float       _cooldownTimer;
     private bool        _dashInputBuffered;
+    private ChargeSystem _chargeSystem;
 
     private void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
+        _chargeSystem = GetComponent<ChargeSystem>();
     }
 
     private void Update()
@@ -76,6 +78,7 @@ public class DashHandler : MonoBehaviour
     /// </summary>
     public bool TryConsumeDashInput()
     {
+        if (_chargeSystem != null && _chargeSystem.IsCharging) return false;
         if (!_dashInputBuffered || _cooldownTimer > 0f) return false;
         _dashInputBuffered = false;
         return true;

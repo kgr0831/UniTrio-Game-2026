@@ -12,8 +12,26 @@ public class ElementalGaugeUI : MonoBehaviour
     [SerializeField] private ElementalWeaponSystem _weaponSystem;
 
     [Header("UI References")]
-    [Tooltip("게이지 상태를 반영할 UI 이미지 목록")]
-    [SerializeField] private Image[] _gaugeImages;
+    [Tooltip("게이지 상태를 반영할 단일 UI 이미지")]
+    [SerializeField] private Image _gaugeImage;
+    [Tooltip("게이지의 그라데이션을 조절할 UIGradient 컴포넌트")]
+    [SerializeField] private UIGradient _gaugeGradient;
+
+    [Header("Gradient Colors")]
+    [Tooltip("대지(Earth) - 왼쪽(연함)")]
+    [SerializeField] private Color _earthLight = new Color(1f, 0.95f, 0.6f);
+    [Tooltip("대지(Earth) - 오른쪽(진함)")]
+    [SerializeField] private Color _earthDark = new Color(0.7f, 0.5f, 0.1f);
+    
+    [Tooltip("화염(Fire) - 왼쪽(연함)")]
+    [SerializeField] private Color _fireLight = new Color(1f, 0.8f, 0.3f);
+    [Tooltip("화염(Fire) - 오른쪽(진함)")]
+    [SerializeField] private Color _fireDark = new Color(0.9f, 0.2f, 0.05f);
+    
+    [Tooltip("얼음(Ice) - 왼쪽(연함)")]
+    [SerializeField] private Color _iceLight = new Color(0.7f, 0.9f, 1f);
+    [Tooltip("얼음(Ice) - 오른쪽(진함)")]
+    [SerializeField] private Color _iceDark = new Color(0.1f, 0.4f, 0.9f);
 
     private void Awake()
     {
@@ -30,28 +48,10 @@ public class ElementalGaugeUI : MonoBehaviour
 
     private void Start()
     {
-        if (_weaponSystem == null)
-        {
-            _weaponSystem = GetComponentInParent<ElementalWeaponSystem>();
-            if (_weaponSystem == null)
-            {
-                _weaponSystem = ElementalWeaponSystem.Instance;
-            }
-            if (_weaponSystem != null)
-            {
-                _weaponSystem.OnGaugesChanged += UpdateGaugeUI;
-            }
-        }
-
-        // 시작 시 초기값 반영
         if (_weaponSystem != null)
         {
-            float[] initialRatios = new float[3];
-            for(int i=0; i<3; i++)
-            {
-                initialRatios[i] = _weaponSystem.CurrentGauges[i] / 100f; // GAUGE_MAX is 100
-            }
-            UpdateGaugeUI(initialRatios);
+            float initialRatio = _weaponSystem.CurrentGauge / 300f; // GAUGE_MAX is 300
+            UpdateGaugeUI(initialRatio, _weaponSystem.CurrentElement);
         }
     }
 
@@ -60,7 +60,7 @@ public class ElementalGaugeUI : MonoBehaviour
         if (_weaponSystem != null)
         {
             // 이벤트 구독
-            _weaponSystem.OnGaugesChanged += UpdateGaugeUI;
+            _weaponSystem.OnGaugeChanged += UpdateGaugeUI;
         }
     }
 
@@ -69,43 +69,43 @@ public class ElementalGaugeUI : MonoBehaviour
         if (_weaponSystem != null)
         {
             // 메모리 누수 방지를 위한 구독 해제
-            _weaponSystem.OnGaugesChanged -= UpdateGaugeUI;
+            _weaponSystem.OnGaugeChanged -= UpdateGaugeUI;
         }
     }
 
     /// <summary>
     /// 게이지 이벤트에 반응하여 UI를 업데이트합니다.
     /// </summary>
-    /// <param name="fillRatios">현재 게이지의 비율 배열 (0.0 ~ 1.0)</param>
-    private void UpdateGaugeUI(float[] fillRatios)
+    /// <param name="fillRatio">현재 게이지의 비율 (0.0 ~ 1.0)</param>
+    /// <param name="currentElement">현재 선택된 속성</param>
+    private void UpdateGaugeUI(float fillRatio, ElementType currentElement)
     {
-        if (_gaugeImages == null || _weaponSystem == null || fillRatios == null) return;
+        if (_gaugeImage == null || _weaponSystem == null) return;
 
-        // 현재 선택된 무기 속성의 인덱스를 가져옵니다 (Earth=0, Fire=1, Ice=2)
-        int activeIndex = (int)_weaponSystem.CurrentElement;
+        // 게이지 채우기 업데이트
+        _gaugeImage.fillAmount = fillRatio;
 
-        for (int i = 0; i < _gaugeImages.Length; i++)
+        // 속성에 따른 그라데이션 색상 업데이트
+        if (_gaugeGradient != null)
         {
-            if (_gaugeImages[i] != null)
+            switch (currentElement)
             {
-                // 각 속성의 실제 게이지 값을 반영합니다
-                if (i < fillRatios.Length)
-                {
-                    _gaugeImages[i].fillAmount = fillRatios[i];
-                }
-
-                // 활성화/비활성화 시각적 효과만 변경
-                if (i == activeIndex)
-                {
-                    // 활성화된 상태를 시각적으로 보여주기 위해 불투명도 100%
-                    _gaugeImages[i].color = new Color(_gaugeImages[i].color.r, _gaugeImages[i].color.g, _gaugeImages[i].color.b, 1f);
-                }
-                else
-                {
-                    // 비활성화된 상태를 시각적으로 보여주기 위해 반투명 처리
-                    _gaugeImages[i].color = new Color(_gaugeImages[i].color.r, _gaugeImages[i].color.g, _gaugeImages[i].color.b, 0.3f);
-                }
+                case ElementType.Earth:
+                    _gaugeGradient.colorBottom = _earthLight;
+                    _gaugeGradient.colorTop = _earthDark;
+                    break;
+                case ElementType.Fire:
+                    _gaugeGradient.colorBottom = _fireLight;
+                    _gaugeGradient.colorTop = _fireDark;
+                    break;
+                case ElementType.Ice:
+                    _gaugeGradient.colorBottom = _iceLight;
+                    _gaugeGradient.colorTop = _iceDark;
+                    break;
             }
+            
+            // 변경된 색상 즉시 반영을 위해 메쉬 갱신 플래그 세팅
+            _gaugeImage.SetVerticesDirty();
         }
     }
 }
