@@ -13,6 +13,12 @@ public class PlayerMovement : MonoBehaviour
     /// <summary>외부(활 차징 등)에서 임시로 이동속도를 조절합니다. 정상 = 1.0f</summary>
     [HideInInspector] public float SpeedMultiplier = 1f;
 
+    /// <summary>
+    /// true이면 이동 입력을 무시합니다(MoveInput = zero). 단, FixedUpdate는 계속 돌아
+    /// ApplyRecoil로 가해진 넉백은 정상 적용됩니다. 피격 스태거(HitState) 중 사용합니다.
+    /// </summary>
+    public bool InputLocked { get; set; }
+
     /// <summary>현재 프레임의 정규화된 이동 입력. 입력 없으면 Vector2.zero.</summary>
     public Vector2 MoveInput       { get; private set; }
 
@@ -63,7 +69,7 @@ public class PlayerMovement : MonoBehaviour
         float y = Input.GetAxisRaw("Vertical");
         Vector2 raw = new Vector2(x, y);
         bool attacking = _weaponController != null && _weaponController.IsAttacking;
-        MoveInput = (!attacking && raw.sqrMagnitude > 0.001f) ? raw.normalized : Vector2.zero;
+        MoveInput = (!attacking && !InputLocked && raw.sqrMagnitude > 0.001f) ? raw.normalized : Vector2.zero;
 
         if (_anim != null)
         {

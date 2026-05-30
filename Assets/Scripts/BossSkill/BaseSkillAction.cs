@@ -92,4 +92,24 @@ public abstract class BaseSkillAction
 
     protected abstract void OnExecuteStart();
     protected abstract NodeState OnExecuteUpdate();
+
+    /// <summary>
+    /// 플레이어에게 데미지와 넉백을 적용한다. knockback이 zero면 넉백 없음.
+    /// 넉백은 PlayerMovement.ApplyRecoil(속도 단위)로 가해진다.
+    /// </summary>
+    protected void DamagePlayer(float damage, Vector2 knockback)
+    {
+        if (bb.playerTarget == null) return;
+
+        var target = bb.playerTarget.GetComponentInParent<IDamageable>();
+        if (target == null || !target.IsAlive) return;
+
+        target.TakeDamage(damage, owner);
+
+        if (knockback != Vector2.zero)
+        {
+            var move = bb.playerTarget.GetComponentInParent<PlayerMovement>();
+            if (move != null) move.ApplyRecoil(knockback);
+        }
+    }
 }

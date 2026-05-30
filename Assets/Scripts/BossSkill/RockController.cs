@@ -8,6 +8,7 @@ public class RockController : MonoBehaviour
     public Quaternion moveRotation;
     public GameObject impactEffectPrefab;
     public float damage = 10f;        // 플레이어 적중 데미지
+    public float knockback = 10f;     // 적중 시 진행 방향 넉백 세기 (약하게)
     public GameObject source;         // 데미지 출처(보스)
 
     [Header("Shatter")]
@@ -17,6 +18,7 @@ public class RockController : MonoBehaviour
     private float _elapsed;
     private Vector3 _startPos;
     private SpriteRenderer _sr;
+    private bool _shattered;
 
     void Start()
     {
@@ -48,6 +50,17 @@ public class RockController : MonoBehaviour
         {
             IDamageable target = other.GetComponentInParent<IDamageable>();
             if (target != null) target.TakeDamage(damage, source);
+
+            // 돌 진행 방향으로 약한 넉백
+            var move = other.GetComponentInParent<PlayerMovement>();
+            if (move != null)
+            {
+                Vector3 dir = moveRotation * Vector3.up;
+                dir.z = 0f;
+                if (dir.sqrMagnitude > 0.0001f)
+                    move.ApplyRecoil((Vector2)dir.normalized * knockback);
+            }
+
             Shatter();
         }
     }
@@ -63,6 +76,11 @@ public class RockController : MonoBehaviour
     // 충돌/사거리 도달 시 여러 조각으로 비산하며 파괴된다.
     private void Shatter()
     {
+        // Destroy는 프레임 끝까지 지연되므로 같은 프레임에 trigger/collision/사거리가 겹치면
+        // 중복 호출될 수 있다. 가드로 1회만 실행.
+        if (_shattered) return;
+        _shattered = true;
+
         CameraShakeController.Instance?.Shake(0.15f, 0.25f);
 
         if (impactEffectPrefab != null)

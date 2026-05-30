@@ -16,6 +16,10 @@ public class SlamSkill : BaseSkillAction
     private const float SlamAnimTime = 0.2f;
     private const float PostImpactFreeze = 2.0f;
 
+    private const float SlamDamage = 20f;
+    private const float SlamDamageRadius = 6f; // 시각 반경(AreaScale 12 ≈ 지름) 기준 절반. 필요시 조정
+    private const float SlamKnockback = 12f;   // 약한 방사형 넉백
+
     private GameObject outerIndicator;
     private GameObject redIndicator;
     private GameObject chargingParticles;
@@ -161,6 +165,17 @@ public class SlamSkill : BaseSkillAction
         HitStopManager.Instance?.TriggerHitStop(0.12f);
         ScreenFlashEffect.Instance?.Flash(new Color(1f, 1f, 1f, 0.6f), 0.15f);
 
+        // 반경 내 플레이어에게 데미지 + 보스 반대 방향 약한 넉백
+        if (bb.playerTarget != null)
+        {
+            Vector2 toPlayer = bb.playerTarget.position - owner.transform.position;
+            if (toPlayer.magnitude <= SlamDamageRadius)
+            {
+                Vector2 dir = toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : Vector2.up;
+                DamagePlayer(SlamDamage, dir * SlamKnockback);
+            }
+        }
+
         if (bb.bossAI.slamImpactPrefab != null)
         {
             GameObject fx = Object.Instantiate(bb.bossAI.slamImpactPrefab, owner.transform.position, Quaternion.identity);
@@ -264,6 +279,11 @@ public class RushSkill : BaseSkillAction
     private const float WidthScale = 2f;
     private const float RushAnimLoops = 2f; // 돌진 동안 Attack03 반복 횟수
 
+    private const float RushDamage = 15f;
+    private const float RushHitRadius = 1.8f; // 돌진 폭(WidthScale 2) 기준
+    private const float RushKnockback = 35f;  // 강한 옆 넉백
+    private bool rushHit;                      // 돌진 1회당 1번만 타격
+
     private GameObject staticIndicator;
     private GameObject fillIndicator;
 
@@ -282,6 +302,7 @@ public class RushSkill : BaseSkillAction
     {
         timer = 0f;
         chargeTimer = 0f;
+        rushHit = false;
         rushPhase = RushPhase.Charging;
 
         // 시작 시점의 플레이어 방향으로 돌진 방향 고정 (텔레그래프)
@@ -368,6 +389,20 @@ public class RushSkill : BaseSkillAction
             targetPosition,
             RushSpeed * Time.deltaTime);
 
+        // 돌진 경로상에서 플레이어와 겹치면 데미지 + 옆(경로 수직) 넉백 (1회)
+        if (!rushHit && bb.playerTarget != null)
+        {
+            Vector2 toPlayer = bb.playerTarget.position - owner.transform.position;
+            if (toPlayer.magnitude <= RushHitRadius)
+            {
+                rushHit = true;
+                // 돌진 방향에 수직인 좌측 벡터, 플레이어가 있는 쪽으로 부호 결정
+                Vector2 perp = new Vector2(-rushDir.y, rushDir.x);
+                float side = Vector2.Dot(toPlayer, perp) >= 0f ? 1f : -1f;
+                DamagePlayer(RushDamage, perp * side * RushKnockback);
+            }
+        }
+
         // 돌진 진행도(이동 거리)에 맞춰 Attack03를 RushAnimLoops회 반복 재생
         float traveled = Vector3.Distance(startPosition, owner.transform.position);
         float progress = Mathf.Clamp01(traveled / RushDistance);
@@ -453,10 +488,12 @@ public class ThrowSkill : BaseSkillAction
     protected override Sprite IndicatorSprite => bossAI.squareSprite;
 
     private const float ThrowDamage = 10f;
+    private const float ThrowKnockback = 10f; // 약한 진행방향 넉백
     private const float RockSpeed = 40f;
     private const float BoxLength = 12.5f; // 25 × 0.5
     private const float BoxWidth = 2.25f;  // 1.5 × 1.5
     private const float PostThrowHold = 0.5f; // 발사 후 마지막 프레임 유지하며 정지하는 시간
+    private const float ChargeTimeout = 5f;   // 안전장치: 애니 이벤트 누락 시 강제 발사까지의 최대 준비 시간
 
     private GameObject staticIndicator;
     private GameObject fillIndicator;
@@ -466,6 +503,8 @@ public class ThrowSkill : BaseSkillAction
     private float lengthScale;         // 스프라이트 단위높이 → BoxLength 스케일
     private float nearEdgeLocalY;      // 피벗 기준 근접 끝단(min.y) 오프셋
     private float holdTimer;
+    private float chargeTimer;         // 준비 페이즈 경과 시간(안전장치용)
+    private float lastProgress;        // 직전 프레임 진행도(전이 중 0 리셋 방지)
     private bool thrown;
 
     protected override void OnExecuteStart() { }
@@ -475,6 +514,8 @@ public class ThrowSkill : BaseSkillAction
     {
         timer = 0f;
         holdTimer = 0f;
+        chargeTimer = 0f;
+        lastProgress = 0f;
         thrown = false;
         throwPhase = ThrowPhase.Charging;
 
@@ -520,10 +561,18 @@ public class ThrowSkill : BaseSkillAction
         AimAtPlayer();
 
         // 준비 진행도 = Attack02 정규화 시간 (프레임 40에서 1)
+        // 전이/첫 프레임에 Attack02가 아니면 직전 진행도 유지(0으로 튀어 깜빡임 방지)
         var st = bb.anim.GetCurrentAnimatorStateInfo(0);
-        float progress = st.IsName("Attack02") ? Mathf.Clamp01(st.normalizedTime) : 0f;
+        float progress = st.IsName("Attack02") ? Mathf.Clamp01(st.normalizedTime) : lastProgress;
+        lastProgress = progress;
 
         UpdateIndicatorTransforms(progress);
+
+        // 안전장치: 프레임 40 TriggerAttack 이벤트가 누락되어도(Exit Time 등)
+        // 진행도 도달 또는 최대 준비시간 초과 시 강제 발사 → 무한 정지 방지.
+        chargeTimer += Time.deltaTime;
+        if (!thrown && (progress >= 0.999f || chargeTimer >= ChargeTimeout))
+            OnThrowSignal();
 
         return NodeState.RUNNING;
     }
@@ -565,6 +614,7 @@ public class ThrowSkill : BaseSkillAction
         rc.moveRotation = throwRotation;
         rc.speed = RockSpeed;
         rc.damage = ThrowDamage;
+        rc.knockback = ThrowKnockback;
         rc.source = owner;
         rc.maxRange = BoxLength; // 텔레그래프 길이 = 실제 사거리
 
