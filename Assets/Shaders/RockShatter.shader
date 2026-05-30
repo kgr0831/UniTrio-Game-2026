@@ -24,9 +24,13 @@ Shader "Custom/RockShatter"
 
         [Header(Shatter)]
         _Progress        ("Progress (0=intact  1=gone)", Range(0, 1)) = 0
-        _ScatterDistance ("Scatter Distance",            Range(0, 5)) = 1.2
+        _ScatterDistance ("Scatter Distance",            Range(0, 12)) = 1.2
         _RotateAmount    ("Rotate Amount (radians)",     Range(0, 12)) = 4.0
         _Gravity         ("Gravity",                     Range(0, 8)) = 1.5
+
+        [Header(Glow)]
+        [HDR] _GlowColor ("Shatter Glow (0=off)", Color) = (0,0,0,0)
+        _GlowBoost       ("Glow Boost",            Range(0, 8)) = 0
     }
 
     SubShader
@@ -66,6 +70,8 @@ Shader "Custom/RockShatter"
                 float  _ScatterDistance;
                 float  _RotateAmount;
                 float  _Gravity;
+                half4  _GlowColor;
+                float  _GlowBoost;
             CBUFFER_END
 
             struct Attributes
@@ -139,6 +145,10 @@ Shader "Custom/RockShatter"
 
                 // 진행에 따른 알파 페이드 (후반부에 빠르게 사라짐)
                 c.a *= saturate(1.0 - _Progress * _Progress);
+
+                // 폭발 초반 발광 (차오름의 푸른 과열을 이어받아 조각이 빛난 채 날아가다 식음)
+                float glowFade = saturate(1.0 - _Progress * 2.0); // 1(시작)→0(중반)
+                c.rgb += _GlowColor.rgb * _GlowBoost * glowFade;
 
                 c.rgb *= c.a; // Premultiplied Alpha
                 return c;

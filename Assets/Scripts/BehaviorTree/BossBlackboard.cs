@@ -17,4 +17,7 @@ public class BossBlackboard
 
     public bool isAttacking = false;
     public float cooldownTimer = 0f;
+
+    /// <summary>현재 실행 중인 스킬. 사망 등으로 중단 시 OnEnd로 인디케이터를 정리하기 위해 추적.</summary>
+    public BaseSkillAction currentSkill = null;
 }

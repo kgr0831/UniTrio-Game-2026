@@ -13,9 +13,14 @@ GameObject:
   - component: {fileID: 7483045696725760729}
   - component: {fileID: 6632740875744982694}
   - component: {fileID: 2883854663442188943}
-  m_Layer: 0
+  - component: {fileID: 2243543472266777788}
+  - component: {fileID: 3049807906610570148}
+  - component: {fileID: 6975109964286707551}
+  - component: {fileID: 4051080489176903389}
+  - component: {fileID: 5558311164276736586}
+  m_Layer: 8
   m_Name: Golem
-  m_TagString: Untagged
+  m_TagString: Entity
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -110,7 +115,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 9dfc825aed78fcd4ba02077103263b40, type: 2}
+  - {fileID: 2100000, guid: e874dd0cac54ea94987184128e68feaa, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -155,14 +160,134 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 84c910c311ba4634395e37d10e7c0a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossAI
-  moveSpeed: 3
+  moveSpeed: 3.6
   attackRange: 15
   detectionRange: 20
+  attackCooldown: 1.5
   playerTag: Player
   indicator: {fileID: 0}
   circleSprite: {fileID: 21300000, guid: 46196d734a8e92d4aafe6beb4c178d08, type: 3}
   squareSprite: {fileID: 21300000, guid: 984ee8bd016d41446acd10a84872f035, type: 3}
   halfCircleSprite: {fileID: 21300000, guid: 638fc9e329dbe0d4b96afd6d53011257, type: 3}
   halfAndhalfCircleSprite: {fileID: 21300000, guid: 2922590ca02e8a24a9ceee558bc4b192, type: 3}
+  rockPrefeb: {fileID: 0}
+  slamImpactPrefab: {fileID: 0}
+  rushImpactPrefab: {fileID: 0}
+  groundCrackPrefab: {fileID: 0}
   rushStreakTex: {fileID: 2800000, guid: e9ebef42be5d84f409621ca710de38be, type: 3}
   rushRingTex: {fileID: 2800000, guid: c11b46ba1c87bd14396788157adb2e7c, type: 3}
+--- !u!114 &2243543472266777788
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8992042086741285878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28829a976b9058542b5e9e7d08b6053b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StatSystem
+  _baseAtk: 50
+  _baseMagicAtk: 5
+  _baseDef: 60
+  _baseMoveSpeed: 3.6
+  _baseMana: 100
+  _baseMaxHP: 1900
+  _manaRegen: 1
+  _baseFireAtk: 100
+  _baseIceAtk: 100
+  _baseEarthAtk: 100
+  _permMaxHP: 0
+  _permAtk: 0
+  _permMagicAtk: 0
+  _currentMana: 0
+--- !u!114 &3049807906610570148
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8992042086741285878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65aa398753a6cc84384da5487e25c7e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
+  _maxHp: 1900
+  _flashDuration: 0.12
+  _currentHealth: 0
+  _isAlive: 0
+--- !u!114 &6975109964286707551
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8992042086741285878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90b30cb9144688c41b5f62937930afa2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GolemEntity
+--- !u!61 &4051080489176903389
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8992042086741285878}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1.56, y: 1.73}
+    newSize: {x: 0.64, y: 0.64}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 1.3, y: 1.6}
+  m_EdgeRadius: 0
+--- !u!114 &5558311164276736586
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8992042086741285878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66107a05688daa241933f272ef7ef900, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterHPBar
+  _yOffset: 3
+  _barWidth: 1.3
+  _barHeight: 0.13

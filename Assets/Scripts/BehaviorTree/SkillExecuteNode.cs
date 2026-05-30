@@ -13,13 +13,15 @@ public class SkillExecuteNode : Node
     public override NodeState Evaluate() {
         if (!isStarted) {
             skill.OnStart();
+            blackboard.currentSkill = skill; // 중단 시 정리할 수 있도록 기록
             isStarted = true;
         }
-        
+
         NodeState state = skill.OnUpdate();
-        
+
         if (state != NodeState.RUNNING) {
             skill.OnEnd();
+            if (blackboard.currentSkill == skill) blackboard.currentSkill = null;
             isStarted = false;
         }
         return state;

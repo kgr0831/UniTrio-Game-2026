@@ -16,7 +16,7 @@ public class SlamSkill : BaseSkillAction
     private const float SlamAnimTime = 0.2f;
     private const float PostImpactFreeze = 2.0f;
 
-    private const float SlamDamage = 20f;
+    private const float SlamDamage = 75f;
     private const float SlamDamageRadius = 6f; // 시각 반경(AreaScale 12 ≈ 지름) 기준 절반. 필요시 조정
     private const float SlamKnockback = 12f;   // 약한 방사형 넉백
 
@@ -279,7 +279,7 @@ public class RushSkill : BaseSkillAction
     private const float WidthScale = 2f;
     private const float RushAnimLoops = 2f; // 돌진 동안 Attack03 반복 횟수
 
-    private const float RushDamage = 15f;
+    private const float RushDamage = 75f;
     private const float RushHitRadius = 1.8f; // 돌진 폭(WidthScale 2) 기준
     private const float RushKnockback = 35f;  // 강한 옆 넉백
     private bool rushHit;                      // 돌진 1회당 1번만 타격
@@ -487,7 +487,7 @@ public class ThrowSkill : BaseSkillAction
     protected override GameObject IndicatorPrefab => bb.indicator;
     protected override Sprite IndicatorSprite => bossAI.squareSprite;
 
-    private const float ThrowDamage = 10f;
+    private const float ThrowDamage = 50f;
     private const float ThrowKnockback = 10f; // 약한 진행방향 넉백
     private const float RockSpeed = 40f;
     private const float BoxLength = 12.5f; // 25 × 0.5

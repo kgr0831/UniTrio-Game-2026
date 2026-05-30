@@ -102,4 +102,17 @@ public class BossAI : MonoBehaviour
     {
         OnAttackPoint?.Invoke();
     }
+
+    /// <summary>
+    /// 현재 실행 중인 스킬을 강제 종료한다(사망 등). 스킬의 OnEnd가 호출되어
+    /// 인디케이터(원/박스)·파티클 등이 정리된다. 중복 호출에 안전.
+    /// </summary>
+    public void AbortCurrentSkill()
+    {
+        if (blackboard != null && blackboard.currentSkill != null)
+        {
+            blackboard.currentSkill.OnEnd();
+            blackboard.currentSkill = null;
+        }
+    }
 }
