@@ -39,7 +39,9 @@ public sealed class HealthSystem : MonoBehaviour
 
     private void Awake()
     {
-        _spriteRenderer = GetComponent<SpriteRenderer>();
+        // 루트에 없으면 자식에서 탐색 (플레이어처럼 계층이 있는 경우 대비)
+        _spriteRenderer = GetComponent<SpriteRenderer>()
+                       ?? GetComponentInChildren<SpriteRenderer>();
         _statSystem     = GetComponent<StatSystem>();
 
         // StatSystem이 있으면 초기 최대 체력을 동기화

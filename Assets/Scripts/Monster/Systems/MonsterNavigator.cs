@@ -43,8 +43,15 @@ public sealed class MonsterNavigator : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // 스태거 중에는 이동 완전 차단 (AI가 MoveToward 등을 호출해도 무시)
+        if (_runtime.IsStaggered)
+        {
+            _intendedVelocity      = Vector2.zero;
+            _rb.linearVelocity     = Vector2.zero;
+            return;
+        }
+
         // ── 충돌 밀림 방지: 매 물리 스텝마다 의도한 속도로 강제 복원 ──
-        // Unity 물리 엔진이 충돌 해소 시 추가한 속도를 덮어써서 밀림 방지
         _rb.linearVelocity = _intendedVelocity;
 
         if (!_isDecelerating) return;

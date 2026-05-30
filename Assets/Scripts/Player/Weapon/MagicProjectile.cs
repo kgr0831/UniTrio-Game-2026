@@ -57,8 +57,15 @@ public class MagicProjectile : MonoBehaviour
     private static readonly int   _glowIntensityId = Shader.PropertyToID("_EmissionIntensity");
     private static readonly int   _glowColorId     = Shader.PropertyToID("_EmissionColor");
 
-    private Color _elementGlowColor;
-    private bool  _hasElementColor;
+    private Color   _elementGlowColor;
+    private bool    _hasElementColor;
+    private Vector3 _originalScale;    // 프리팹의 원본 스케일 (차징 스킬 사용 후 복원용)
+    private float   _sizeMultiplier = 1f; // 투사체·폭발 동시 스케일 배율 (기본 1 = 원본 크기)
+
+    // ── 차징 스킬에서 폭발 VFX/데미지 텍스트 프리팹을 참조할 때 사용
+    public GameObject   ExplosionVfxPrefab => _explosionVfxPrefab;
+    public GameObject[] HitVfxPrefabs      => _hitVfxPrefabs;
+    public GameObject   DamageTextPrefab   => _damageTextPrefab;
 
     /// <summary>WandBehaviour에서 발사 시 호출. damage를 float으로 수신합니다.</summary>
     public void SetStats(float speed, float damage, Vector2 direction)
@@ -66,6 +73,16 @@ public class MagicProjectile : MonoBehaviour
         _speed         = speed;
         _damage        = damage;
         _moveDirection = direction.sqrMagnitude > 0.001f ? direction.normalized : Vector2.right;
+    }
+
+    /// <summary>
+    /// 투사체 크기와 폭발 범위를 원본 스케일 기준으로 동시에 조정합니다.
+    /// 차징 스킬에서 "원본보다 X배 크게" 발사할 때 사용합니다.
+    /// </summary>
+    public void SetSizeMultiplier(float multiplier)
+    {
+        _sizeMultiplier      = multiplier;
+        transform.localScale = _originalScale * multiplier;
     }
 
     /// <summary>속성 색상을 주입합니다. 투사체와 폭발 모두에 반영됩니다.</summary>
@@ -78,7 +95,8 @@ public class MagicProjectile : MonoBehaviour
 
     private void Awake()
     {
-        _propBlock = new MaterialPropertyBlock();
+        _propBlock     = new MaterialPropertyBlock();
+        _originalScale = transform.localScale;   // 프리팹 원본 스케일 저장
 
         if (_glowRenderer == null) _glowRenderer = GetComponent<SpriteRenderer>();
         if (_light        == null) _light        = GetComponentInChildren<Light>();
@@ -92,13 +110,16 @@ public class MagicProjectile : MonoBehaviour
 
     private void OnEnable()
     {
+        // 풀 재사용 시 원본 스케일·배율 복원 (차징 스킬이 변경했을 수 있음)
+        _sizeMultiplier      = 1f;
+        transform.localScale = _originalScale;
+
         _spawnPos = transform.position;
         _exploded = false;
 
-        // 충돌 시 숨겼던 렌더러 및 빛 복원
         if (_glowRenderer != null) _glowRenderer.enabled = true;
         if (_light != null) _light.enabled = true;
-        
+
         ApplyGlow(_glowIntensity);
         Invoke(nameof(ReturnToPool), _lifeTime);
     }
@@ -185,11 +206,12 @@ public class MagicProjectile : MonoBehaviour
     {
         if (_explosionVfxPrefab == null) return;
 
-        GameObject     vfx = SimpleObjectPool.Instance.Get(_explosionVfxPrefab, transform.position, Quaternion.identity);
-        ExplosionEffect fx  = vfx.GetComponent<ExplosionEffect>();
+        GameObject vfx = SimpleObjectPool.Instance.Get(_explosionVfxPrefab, transform.position, Quaternion.identity);
+        ExplosionEffect fx = vfx.GetComponent<ExplosionEffect>();
         if (fx != null)
         {
-            fx.SetupExplosion(_damage, _damageTextPrefab);
+            // sizeMultiplier를 함께 전달 → ExplosionEffect 내부에서 스케일 적용 후 데미지 계산
+            fx.SetupExplosion(_damage, _damageTextPrefab, _sizeMultiplier);
             if (_hasElementColor)
                 fx.SetElementColor(_elementGlowColor);
         }

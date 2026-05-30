@@ -505,7 +505,8 @@ public class FloatingWeaponMotion : MonoBehaviour
                 // ── 변경: 커서 거리 무관, 커서 방향으로 고정 거리에서 찌르기 ──
                 // 소환 시작: 플레이어 약간 뒤(-_spearStartBack)
                 // 찌르기 도달: 커서 방향으로 고정 거리(_attackLungeDistance)
-                float fixedThrustDist = _attackLungeDistance; // 기본 3.0
+                float chargeMultLunge = (_weapon != null) ? _weapon.ChargeSizeMultiplier : 1f;
+                float fixedThrustDist = _attackLungeDistance * chargeMultLunge; // 기본 3.0
 
                 bool isFlipped = _weapon != null && _weapon.IsFlipped;
                 // Y오프셋 없이 직선 찌르기 (커서 방향 = Local X축)
@@ -576,7 +577,7 @@ public class FloatingWeaponMotion : MonoBehaviour
                     float sign = (_weapon != null && _weapon.IsAimingLeft) ? -1f : 1f;
                     _orbitAngle = Mathf.Lerp(-90f * sign, 90f * sign, ease);
                 }
-                else if (combo == 3) // 3타: 360도 대회전
+                else if (combo >= 3) // 3타 이상: 360도 대회전
                 {
                     // 3타는 초반 가속이 너무 심해 잔상이 안 보이는 문제를 해결하기 위해 이징 파워를 낮춤 (더 균일한 속도)
                     float ease = 1f - Mathf.Pow(1f - p, 2.0f); 
@@ -759,11 +760,12 @@ public class FloatingWeaponMotion : MonoBehaviour
         transform.localPosition = newPos;
         transform.localRotation = Quaternion.Euler(0f, 0f, _savedBaseRot.eulerAngles.z + totalRotAngle);
         
+        float chargeMultScale = (_weapon != null) ? _weapon.ChargeSizeMultiplier : 1f;
         // 스케일: _restBaseScale + punch로 절대 계산 (누적/드리프트/flipY 스케일 반전 없음)
         transform.localScale = new Vector3(
-            _restBaseScale.x * _currentScalePunch,
-            _restBaseScale.y * _currentScalePunch,
-            _restBaseScale.z
+            _restBaseScale.x * _currentScalePunch * chargeMultScale,
+            _restBaseScale.y * _currentScalePunch * chargeMultScale,
+            _restBaseScale.z * chargeMultScale
         );
         
         // 오프셋이 적용되었음을 표시 (다음 프레임에서 복원 필요)

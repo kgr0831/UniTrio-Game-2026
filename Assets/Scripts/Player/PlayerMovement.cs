@@ -13,11 +13,38 @@ public class PlayerMovement : MonoBehaviour
     /// <summary>외부(활 차징 등)에서 임시로 이동속도를 조절합니다. 정상 = 1.0f</summary>
     [HideInInspector] public float SpeedMultiplier = 1f;
 
+    /// <summary>
+    /// 외부에서 플레이어를 강제 이동시킬 속도 (units/sec).
+    /// Vector2.zero가 아니면 일반 이동 입력을 완전히 무시하고 이 속도로 이동합니다.
+    /// 사용 후 반드시 Vector2.zero로 초기화하세요.
+    /// </summary>
+    [HideInInspector] public Vector2 DashVelocity = Vector2.zero;
+
     /// <summary>현재 프레임의 정규화된 이동 입력. 입력 없으면 Vector2.zero.</summary>
     public Vector2 MoveInput       { get; private set; }
 
     /// <summary>커서를 향하는 방향. 애니메이션과 대시 방향(idle 시) 결정에 사용됩니다.</summary>
     public Vector2 FacingDirection { get; private set; }
+
+    /// <summary>
+    /// 공격 시작 시 커서 방향으로 FacingDirection을 고정합니다.
+    /// 이동 입력이 들어오기 전까지 해당 방향으로 유지됩니다.
+    /// </summary>
+    public void SetFacingDirection(Vector2 dir)
+    {
+        if (dir.sqrMagnitude < 0.001f) return;
+        FacingDirection = dir.normalized;
+        if (_spriteRenderer != null)
+        {
+            if (FacingDirection.x < -0.01f)      _spriteRenderer.flipX = true;
+            else if (FacingDirection.x > 0.01f)  _spriteRenderer.flipX = false;
+        }
+        if (_anim != null)
+        {
+            _anim.SetFloat(HashDirX, FacingDirection.x);
+            _anim.SetFloat(HashDirY, FacingDirection.y);
+        }
+    }
 
     private Rigidbody2D _rb;
     private Animator    _anim;
@@ -74,12 +101,12 @@ public class PlayerMovement : MonoBehaviour
         {
             _anim.SetBool(HashIsMoving, MoveInput.sqrMagnitude > 0.001f);
 
-            // 커서가 아닌 이동 방향으로 FacingDirection 결정 (이동 중일 때만 업데이트하여 정지 시 마지막 방향 유지)
-            if (MoveInput.sqrMagnitude > 0.001f)
+            // 이동 입력이 있고 공격 중이 아닐 때만 FacingDirection 갱신
+            // (공격 중에는 SetFacingDirection으로 고정된 커서 방향 유지)
+            if (MoveInput.sqrMagnitude > 0.001f && !attacking)
             {
                 FacingDirection = MoveInput;
-                
-                // 스프라이트 좌우 반전 (왼쪽 이동 시 flipX = true)
+
                 if (_spriteRenderer != null)
                 {
                     if (FacingDirection.x < -0.01f)
@@ -104,20 +131,26 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
-        // 충돌에 의한 잔여 물리 속도 제거 (밀림 방지)
         _rb.linearVelocity = Vector2.zero;
 
-        // StatSystem이 있으면 TotalMoveSpeed 사용, 없으면 moveSpeed 폴백
-        float speed = _statSystem != null ? _statSystem.TotalMoveSpeed : moveSpeed;
-        
-        // 이동 입력 + 반동 속도
-        _rb.MovePosition(_rb.position + (MoveInput * speed * SpeedMultiplier + _recoilVelocity) * Time.fixedDeltaTime);
-        
-        // 반동 속도는 프레임마다 0으로 수렴 (점진적 감쇠 - 수치를 낮춰 더 멀리 밀려나가게 함)
-        if (_recoilVelocity.sqrMagnitude > 0.01f)
-            _recoilVelocity = Vector2.Lerp(_recoilVelocity, Vector2.zero, Time.fixedDeltaTime * 6f);
+        Vector2 movement;
+        if (DashVelocity.sqrMagnitude > 0.001f)
+        {
+            // 외부 강제 이동 (돌진 등): 일반 입력/SpeedMultiplier 무시
+            movement = DashVelocity;
+        }
         else
-            _recoilVelocity = Vector2.zero;
+        {
+            float speed = _statSystem != null ? _statSystem.TotalMoveSpeed : moveSpeed;
+            movement = MoveInput * speed * SpeedMultiplier + _recoilVelocity;
+
+            if (_recoilVelocity.sqrMagnitude > 0.01f)
+                _recoilVelocity = Vector2.Lerp(_recoilVelocity, Vector2.zero, Time.fixedDeltaTime * 6f);
+            else
+                _recoilVelocity = Vector2.zero;
+        }
+
+        _rb.MovePosition(_rb.position + movement * Time.fixedDeltaTime);
     }
 
     private void OnTriggerEnter2D(Collider2D other) // 테스트 코드

@@ -64,11 +64,14 @@ public class BowBehaviour : WeaponBehaviourBase
     [ColorUsage(true, true)]
     [SerializeField] private Color _glowColor = new Color(0.7f, 0f, 1f, 1f); // 보랏빛 기본값
 
-    [Header("조준 사격 (Aimed Shot) 스킬")]
+    [Header("조준 사격 (AimedShot) 스킬")]
     [Tooltip("스킬 차징 시 표시할 AimedShot_Bow 프리팹")]
     [SerializeField] private GameObject _aimedShotBowPrefab;
     [Tooltip("발사할 AimShootArrow(관통 화살) 프리팹")]
     [SerializeField] private GameObject _aimShootArrowPrefab;
+
+    public GameObject NormalArrowPrefab => _arrowPrefab;
+    public GameObject PiercingArrowPrefab => _aimShootArrowPrefab;
 
 
     [Header("새로운 오프셋 시스템 (Offset System)")]

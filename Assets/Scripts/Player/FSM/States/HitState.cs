@@ -1,21 +1,34 @@
 using UnityEngine;
 
 /// <summary>
-/// Hit 상태: 피격 직후 0.2초 동안 이동·공격 잠금 (스태거).
-/// 타이머 종료 후 입력 여부에 따라 Idle / Walk로 복귀합니다.
+/// Hit 상태: 피격 직후 스태거 동안 이동·공격 잠금 + VFX.
+/// - 카메라 쉐이킹 (강도 높고 짧게)
+/// - 애니메이션 프리즈 (Animator.speed = 0)
+/// - 타이머 종료 후 Idle / Walk로 복귀
 /// </summary>
 public class HitState : PlayerState
 {
-    private const float StaggerDuration = 0.2f;
+    private const float StaggerDuration      = 0.2f;
+    private const float CameraShakeIntensity = 0.35f;
+    private const float CameraShakeDuration  = 0.18f;
+
     private float _timer;
 
     public HitState(PlayerStateMachine machine) : base(machine) { }
 
     public override void Enter()
     {
-        _timer                     = StaggerDuration;
+        _timer = StaggerDuration;
+
         Machine.Movement.enabled   = false;
         Machine.WeaponCtrl.enabled = false;
+
+        // 애니메이션 피격 자세로 고정
+        if (Machine.Animator != null)
+            Machine.Animator.speed = 0f;
+
+        // 강도 높고 짧은 카메라 쉐이킹
+        CameraShakeController.Instance?.Shake(CameraShakeIntensity, CameraShakeDuration);
     }
 
     public override void Update()
@@ -23,18 +36,22 @@ public class HitState : PlayerState
         _timer -= Time.deltaTime;
         if (_timer > 0f) return;
 
-        // 스태거 종료 – 복귀
-        Machine.Movement.enabled   = true;
-        Machine.WeaponCtrl.enabled = true;
-
+        RestoreState();
         bool moving = Machine.Movement.MoveInput.sqrMagnitude > 0.01f;
         Machine.TransitionTo(moving ? Machine.Walk : (PlayerState)Machine.Idle);
     }
 
     public override void Exit()
     {
-        // Exit에서도 보장 (외부에서 강제 전환 시 컴포넌트 잠김 방지)
+        RestoreState();
+    }
+
+    private void RestoreState()
+    {
         Machine.Movement.enabled   = true;
         Machine.WeaponCtrl.enabled = true;
+
+        if (Machine.Animator != null)
+            Machine.Animator.speed = 1f;
     }
 }

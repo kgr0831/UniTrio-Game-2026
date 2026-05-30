@@ -92,6 +92,7 @@ public class SwordHitbox : MonoBehaviour
         {
             float bashMult = _weaponBehaviour.CurrentSwingBashMultiplier;
             damage *= bashMult;
+            damage *= _weaponBehaviour.ChargeDamageMultiplier;
             if (bashMult > 1.0f) isBashActive = true;
         }
 
@@ -99,7 +100,7 @@ public class SwordHitbox : MonoBehaviour
         bool isTipCritical = false;
         if (_weaponBehaviour != null && _weaponBehaviour is SpearBehaviour spear)
         {
-            if (spear.IsTipHit(other.transform.position))
+            if (spear.ForceIsTip || spear.IsTipHit(other.transform.position))
             {
                 damage *= spear.TipDamageMultiplier;
                 isTipCritical = true;

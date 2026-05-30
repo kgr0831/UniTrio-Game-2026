@@ -60,6 +60,14 @@ public class WandBehaviour : WeaponBehaviourBase
     [Tooltip("즉시 발사 모드일 때 다음 공격까지의 딜레이(쿨타임).")]
     [SerializeField] private float _instantCastDelay = 0.5f;
 
+    /// <summary>차징 스킬에서 투사체 프리팹을 직접 사용할 때 참조합니다.</summary>
+    public GameObject ProjectilePrefab => _projectilePrefab;
+
+    /// <summary>차징 스킬에서 폭발 VFX 등 투사체 컴포넌트 정보를 얻을 때 사용합니다.</summary>
+    public MagicProjectile ProjectileTemplate => _projectilePrefab != null
+        ? _projectilePrefab.GetComponent<MagicProjectile>()
+        : null;
+
     // ── WeaponBehaviourBase 오버라이드 ──────────────────────────────
     public override WeaponType WeaponType          => WeaponType.Staff;
     public override bool  LockRotationDuringAttack => true;

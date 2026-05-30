@@ -16,7 +16,10 @@ public interface IStaggerable
 [RequireComponent(typeof(MonsterRuntimeData))]
 public sealed class HitStaggerHandler : MonoBehaviour, IStaggerable
 {
-    [SerializeField] private float _staggerDuration = 0.1f;
+    [SerializeField] private float _staggerDuration = 0.2f;
+
+    /// <summary>스태거 지속 시간 배율. NeutralMonster 등에서 외부 설정 가능.</summary>
+    private float _staggerMultiplier = 1f;
 
     private MonsterRuntimeData _runtimeData;
     private HealthSystem       _healthSystem;
@@ -67,11 +70,19 @@ public sealed class HitStaggerHandler : MonoBehaviour, IStaggerable
         ApplyStagger(_staggerDuration);
     }
 
+    /// <summary>스태거 지속 시간 배율을 설정합니다. NeutralMonster 등에서 호출합니다.</summary>
+    public void SetStaggerMultiplier(float multiplier)
+    {
+        _staggerMultiplier = Mathf.Max(0.1f, multiplier);
+    }
+
     public void ApplyStagger(float duration)
     {
+        float actualDuration = duration * _staggerMultiplier;
+
         _runtimeData.IsStaggered = true;
         _runtimeData.CurrentState = MonsterState.Stagger;
-        _staggerTimer = duration;
+        _staggerTimer = actualDuration;
 
         // 히트스탑 효과 (애니메이션 일시 정지)
         if (_animator != null) _animator.speed = 0f;
@@ -80,9 +91,9 @@ public sealed class HitStaggerHandler : MonoBehaviour, IStaggerable
         var rb = GetComponent<Rigidbody2D>();
         if (rb != null) rb.linearVelocity = Vector2.zero;
 
-        // 피격 애니메이션 트리거 (속도가 0이므로 다음 프레임이나 복구 후 재생됨을 고려)
-        // 여기선 한 프레임 피격 자세를 보여주기 위해 강제로 수동 업데이트를 하거나, 
-        // 그냥 0.1초 멈춘 뒤 재생하게 둡니다.
+        // 스프라이트 점멸 타이머도 실제 스태거 시간에 맞게 동기화
+        _healthSystem?.OverrideFlashTimer(actualDuration);
+
         GetComponent<MonsterAnimatorController>()?.PlayHit();
     }
 }
