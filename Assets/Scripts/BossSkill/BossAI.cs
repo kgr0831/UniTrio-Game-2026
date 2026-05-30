@@ -51,12 +51,11 @@ public class BossAI : MonoBehaviour
         GameObject player = GameObject.FindGameObjectWithTag(playerTag);
         if (player != null) blackboard.playerTarget = player.transform;
 
-        // TODO: RushSkill, ThrowSkill 임시 비활성화 — 내려찍기 테스트용
         List<Node> skillPool = new List<Node>
         {
             new SkillExecuteNode(blackboard, new SlamSkill()),
             new SkillExecuteNode(blackboard, new RushSkill()),
-            // new SkillExecuteNode(blackboard, new ThrowSkill()),
+            new SkillExecuteNode(blackboard, new ThrowSkill()),
         };
 
         // 공격 중이면 거리/쿨다운 무시하고 스킬 계속 실행

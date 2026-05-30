@@ -267,19 +267,6 @@ public class RushSkill : BaseSkillAction
     private GameObject staticIndicator;
     private GameObject fillIndicator;
 
-    // 돌진 VFX(가산) — Casual_Hit Trail_1(스피드라인) + Ring_1(확산 충격파). 본체 스프라이트는 건드리지 않는다.
-    private Material vfxMat;        // 공유 가산 머티리얼(런타임)
-    private Sprite streakSprite;    // Trail_1 런타임 스프라이트
-    private Sprite ringSprite;      // Ring_1 런타임 스프라이트
-    private float streakTimer;
-    private float ringTimer;
-    private static readonly Color RushGlowColor = new Color(1f, 0.5f, 0.12f); // 주황 (HDR 배율로 발광)
-    private const float VfxHdrBoost = 1.8f;             // HDR 배율(Bloom 유도, 과하면 흰색)
-    private const float StreakInterval = 0.025f;        // 스피드라인 생성 간격(초)
-    private const float RingInterval = 0.09f;           // 충격파 링 생성 간격(초)
-    private const float VfxScale = 0.3f;                // 전체 VFX 크기 배율(작게)
-    private float golemSizeCached;                      // 골렘 월드 크기(VfxScale 적용 전 기준)
-
     private Vector3 startPosition;
     private Vector3 targetPosition;
     private Vector3 rushDir;
@@ -366,8 +353,6 @@ public class RushSkill : BaseSkillAction
             // 다 차면 인디케이터 2개 모두 제거
             if (staticIndicator != null) staticIndicator.SetActive(false);
             if (fillIndicator != null) fillIndicator.SetActive(false);
-            // 돌진 VFX 이미터 초기화
-            InitRushVfx();
             // 돌진 애니메이션은 UpdateRushing에서 진행도에 맞춰 수동 재생
             bb.anim.Play("Attack03", 0, 0f);
             bb.anim.speed = 0f;
@@ -391,9 +376,6 @@ public class RushSkill : BaseSkillAction
         bb.anim.speed = 0f;
         bb.anim.Update(0f);
 
-        // 이동 중 스피드라인 + 충격파 링 방출
-        EmitRushVfx();
-
         if (Vector3.Distance(owner.transform.position, targetPosition) <= 0.05f)
         {
             owner.transform.position = targetPosition;
@@ -414,108 +396,6 @@ public class RushSkill : BaseSkillAction
             GameObject fx = Object.Instantiate(bb.bossAI.rushImpactPrefab, owner.transform.position, Quaternion.identity);
             Object.Destroy(fx, 2f);
         }
-    }
-
-    // 돌진 VFX 초기화: 공유 가산 머티리얼 + 텍스처→스프라이트 준비. 돌진 진입 시 1회 호출.
-    private void InitRushVfx()
-    {
-        golemSizeCached = (bb.sr != null) ? Mathf.Max(bb.sr.bounds.size.x, bb.sr.bounds.size.y) : 2f;
-        streakTimer = 0f;
-        ringTimer = 0f;
-
-        Shader add = Shader.Find("Custom/AdditiveSpriteVFX");
-        if (add != null)
-        {
-            vfxMat = new Material(add);
-            vfxMat.SetColor("_Color", RushGlowColor * VfxHdrBoost); // HDR 주황 → Bloom 발광
-        }
-
-        if (bossAI.rushStreakTex != null)
-        {
-            var t = bossAI.rushStreakTex;
-            streakSprite = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 100f);
-        }
-        if (bossAI.rushRingTex != null)
-        {
-            var t = bossAI.rushRingTex;
-            ringSprite = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 100f);
-        }
-    }
-
-    // 이동 중 일정 간격으로 스피드라인/충격파 링을 방출한다.
-    private void EmitRushVfx()
-    {
-        float dt = Time.deltaTime;
-
-        streakTimer += dt;
-        if (streakTimer >= StreakInterval)
-        {
-            streakTimer = 0f;
-            SpawnStreak();
-        }
-
-        ringTimer += dt;
-        if (ringTimer >= RingInterval)
-        {
-            ringTimer = 0f;
-            SpawnRing();
-        }
-    }
-
-    // 스피드라인: 진행 축을 따라 길쭉한 Trail_1을, 골렘 주변 임의 위치에 월드 고정으로 남긴다(이동하면 뒤로 흘러감).
-    private void SpawnStreak()
-    {
-        if (vfxMat == null || streakSprite == null) return;
-
-        var go = new GameObject("RushStreak");
-        var sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = streakSprite;
-        sr.sharedMaterial = vfxMat;
-        sr.sortingLayerID = bb.sr != null ? bb.sr.sortingLayerID : 0;
-        sr.sortingOrder = (bb.sr != null ? bb.sr.sortingOrder : 10) - 1; // 본체 뒤
-        sr.color = new Color(1f, 1f, 1f, 1f); // 페이드 시작 알파(가산: 흰색=머티리얼 색 그대로)
-
-        // 진행 방향(+X)을 rushDir로 정렬 (Trail_1은 가로로 누운 빛줄기)
-        float angle = Mathf.Atan2(rushDir.y, rushDir.x) * Mathf.Rad2Deg;
-        go.transform.rotation = Quaternion.Euler(0f, 0f, angle);
-
-        float s = golemSizeCached * VfxScale;
-
-        // 골렘 중심에서 진행축에 수직으로 임의 분산
-        Vector3 perp = new Vector3(-rushDir.y, rushDir.x, 0f);
-        float side = Random.Range(-0.45f, 0.45f) * s;
-        float along = Random.Range(-0.2f, 0.2f) * s;
-        go.transform.position = owner.transform.position + perp * side + rushDir * along;
-
-        // 길쭉하고 얇게
-        float len = s * Random.Range(1.1f, 1.7f);
-        float thin = s * Random.Range(0.08f, 0.16f);
-        go.transform.localScale = new Vector3(len, thin, 1f);
-
-        // 월드 고정(vel=0) → 골렘이 앞으로 가면 상대적으로 뒤로 흘러 스피드라인
-        go.AddComponent<RushFxPiece>().Init(0.16f, Random.Range(0.5f, 0.8f), 0f, Vector3.zero);
-    }
-
-    // 충격파 링: 골렘 앞에서 Ring_1을 진행 방향으로 밀어내며 확대+페이드.
-    private void SpawnRing()
-    {
-        if (vfxMat == null || ringSprite == null) return;
-
-        var go = new GameObject("RushRing");
-        var sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = ringSprite;
-        sr.sharedMaterial = vfxMat;
-        sr.sortingLayerID = bb.sr != null ? bb.sr.sortingLayerID : 0;
-        sr.sortingOrder = (bb.sr != null ? bb.sr.sortingOrder : 10) + 1; // 본체 앞
-        sr.color = new Color(1f, 1f, 1f, 1f);
-
-        float s = golemSizeCached * VfxScale;
-        go.transform.position = owner.transform.position + rushDir * (s * 0.4f);
-        float start = s * 0.5f;
-        go.transform.localScale = new Vector3(start, start, 1f);
-
-        // 진행 방향으로 밀려나가며 커지고 옅어짐
-        go.AddComponent<RushFxPiece>().Init(0.3f, 0.85f, 1.6f, rushDir * (s * 1.2f));
     }
 
     private void SpawnIndicators()
@@ -557,32 +437,122 @@ public class RushSkill : BaseSkillAction
 
         if (staticIndicator != null) Object.Destroy(staticIndicator);
         if (fillIndicator != null) Object.Destroy(fillIndicator);
-
-        // 이미 방출된 스피드라인/링은 각자 페이드 후 자가 소멸한다(공유 머티리얼은 그들이 사라진 뒤 정리).
-        if (vfxMat != null) Object.Destroy(vfxMat, 1f);
-        if (streakSprite != null) Object.Destroy(streakSprite, 1f);
-        if (ringSprite != null) Object.Destroy(ringSprite, 1f);
     }
 }
 
 public class ThrowSkill : BaseSkillAction
 {
-    protected override float IndicatorDuration => 1f;
-    protected override float DelayDuration => 0.3f;
+    private enum ThrowPhase { Charging, Holding, Done }
+    private ThrowPhase throwPhase;
+
+    // BaseSkillAction의 표준 흐름(Indicator/Delay)은 쓰지 않고 OnStart/OnUpdate를 직접 구동한다.
+    protected override float IndicatorDuration => 0f;
+    protected override float DelayDuration => 0f;
     protected override string AnimTriggerName => "Attack02";
     protected override GameObject IndicatorPrefab => bb.indicator;
-    protected override Vector3 IndicatorScale => new Vector3(2f, 20f, 1f);
-    protected override Sprite IndicatorSprite => owner.GetComponent<BossAI>().squareSprite;
+    protected override Sprite IndicatorSprite => bossAI.squareSprite;
+
+    private const float ThrowDamage = 10f;
+    private const float RockSpeed = 40f;
+    private const float BoxLength = 12.5f; // 25 × 0.5
+    private const float BoxWidth = 2.25f;  // 1.5 × 1.5
+    private const float PostThrowHold = 0.5f; // 발사 후 마지막 프레임 유지하며 정지하는 시간
+
+    private GameObject staticIndicator;
+    private GameObject fillIndicator;
+
+    private Vector3 throwDir;          // 현재 조준 방향 (매 프레임 갱신)
+    private Quaternion throwRotation;  // 로컬 up이 throwDir을 향하는 회전
+    private float lengthScale;         // 스프라이트 단위높이 → BoxLength 스케일
+    private float nearEdgeLocalY;      // 피벗 기준 근접 끝단(min.y) 오프셋
+    private float holdTimer;
+    private bool thrown;
 
     protected override void OnExecuteStart() { }
+    protected override NodeState OnExecuteUpdate() { return NodeState.SUCCESS; }
 
-    protected override NodeState OnExecuteUpdate() {
-        if (timer >= 0.5f) return NodeState.SUCCESS;
+    public override void OnStart()
+    {
+        timer = 0f;
+        holdTimer = 0f;
+        thrown = false;
+        throwPhase = ThrowPhase.Charging;
+
+        bb.isAttacking = true;
+        bb.rb.linearVelocity = Vector2.zero;
+        bb.anim.SetBool("isMove", false);
+
+        // 초기 조준 (이후 Charging 동안 매 프레임 갱신)
+        AimAtPlayer();
+
+        SpawnIndicators();
+        UpdateIndicatorTransforms(0f);
+
+        // 프레임 40의 TriggerAttack 애니메이션 이벤트로 발사 시점을 받는다.
+        if (bossAI != null)
+            bossAI.OnAttackPoint = OnThrowSignal;
+
+        // Attack02 자연 재생 → 프레임 40에서 TriggerAttack 이벤트 발동
+        bb.anim.Play("Attack02", 0, 0f);
+        bb.anim.speed = 1f;
+        bb.anim.Update(0f);
+    }
+
+    public override NodeState OnUpdate()
+    {
+        bb.rb.linearVelocity = Vector2.zero; // 스킬 내내 이동 금지
+
+        switch (throwPhase)
+        {
+            case ThrowPhase.Charging:
+                return UpdateCharging();
+            case ThrowPhase.Holding:
+                return UpdateHolding();
+            case ThrowPhase.Done:
+                return NodeState.SUCCESS;
+        }
+        return NodeState.SUCCESS;
+    }
+
+    private NodeState UpdateCharging()
+    {
+        // 매 프레임 플레이어 추적: flipX/박스 방향이 플레이어를 향한다.
+        AimAtPlayer();
+
+        // 준비 진행도 = Attack02 정규화 시간 (프레임 40에서 1)
+        var st = bb.anim.GetCurrentAnimatorStateInfo(0);
+        float progress = st.IsName("Attack02") ? Mathf.Clamp01(st.normalizedTime) : 0f;
+
+        UpdateIndicatorTransforms(progress);
+
         return NodeState.RUNNING;
     }
 
-    protected override void HandleActionSignal()
+    private NodeState UpdateHolding()
     {
+        // 마지막 프레임 고정 유지
+        bb.anim.Play("Attack02", 0, 1f);
+        bb.anim.speed = 0f;
+        bb.anim.Update(0f);
+
+        holdTimer += Time.deltaTime;
+        if (holdTimer >= PostThrowHold)
+        {
+            throwPhase = ThrowPhase.Done;
+            return NodeState.SUCCESS;
+        }
+        return NodeState.RUNNING;
+    }
+
+    // 프레임 40 TriggerAttack 이벤트 → 그 순간의 경로로 돌 발사
+    private void OnThrowSignal()
+    {
+        if (thrown) return;
+        thrown = true;
+
+        // 발사 순간의 플레이어 방향으로 경로 확정
+        AimAtPlayer();
+
         CameraShakeController.Instance?.Shake(0.15f, 0.3f);
 
         Vector3 spawnPos = new Vector3(
@@ -590,64 +560,102 @@ public class ThrowSkill : BaseSkillAction
             owner.transform.position.y + 0.66f,
             owner.transform.position.z);
 
-        GameObject rock = Object.Instantiate(
-            owner.GetComponent<BossAI>().rockPrefeb,
-            spawnPos,
-            owner.transform.rotation);
-
+        GameObject rock = Object.Instantiate(bossAI.rockPrefeb, spawnPos, owner.transform.rotation);
         var rc = rock.GetComponent<RockController>();
-        rc.moveRotation = IndicatorRotation;
+        rc.moveRotation = throwRotation;
+        rc.speed = RockSpeed;
+        rc.damage = ThrowDamage;
+        rc.source = owner;
+        rc.maxRange = BoxLength; // 텔레그래프 길이 = 실제 사거리
 
-        base.HandleActionSignal();
+        // 인디케이터 제거, 마지막 프레임 고정 + 정지 페이즈 진입
+        if (staticIndicator != null) staticIndicator.SetActive(false);
+        if (fillIndicator != null) fillIndicator.SetActive(false);
+
+        bb.anim.speed = 0f;
+        bb.anim.Play("Attack02", 0, 1f);
+        bb.anim.Update(0f);
+
+        holdTimer = 0f;
+        throwPhase = ThrowPhase.Holding;
     }
 
-    public override void OnStart()
+    // 현재 플레이어 위치로 throwDir/throwRotation/flipX 갱신
+    private void AimAtPlayer()
     {
-        IndicatorRotation = Quaternion.Euler(0, 0, Random.Range(0f, 360f));
-        base.OnStart();
-    }
-}
-
-// 돌진 VFX 한 조각(스피드라인/링)의 확대+이동+페이드를 스스로 처리하고 끝나면 소멸한다.
-public class RushFxPiece : MonoBehaviour
-{
-    private SpriteRenderer sr;
-    private float life, elapsed, startAlpha, scaleGrowth;
-    private Vector3 vel, baseScale;
-
-    public void Init(float lifetime, float startAlpha, float scaleGrowth, Vector3 worldVel)
-    {
-        sr = GetComponent<SpriteRenderer>();
-        life = Mathf.Max(0.01f, lifetime);
-        this.startAlpha = startAlpha;
-        this.scaleGrowth = scaleGrowth;
-        vel = worldVel;
-        baseScale = transform.localScale;
-        elapsed = 0f;
-
-        if (sr != null)
+        Vector3 dir = owner.transform.up;
+        if (bb.playerTarget != null)
         {
-            Color c = sr.color;
-            c.a = startAlpha;
-            sr.color = c;
+            Vector3 diff = bb.playerTarget.position - owner.transform.position;
+            diff.z = 0f;
+            if (diff.sqrMagnitude > 0.0001f) dir = diff.normalized;
+        }
+        throwDir = dir;
+
+        // 로컬 up이 throwDir을 향하도록 (RockController는 moveRotation*Vector3.up으로 이동)
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
+        throwRotation = Quaternion.Euler(0f, 0f, angle);
+
+        if (bb.sr != null && Mathf.Abs(dir.x) > 0.01f)
+            bb.sr.flipX = dir.x < 0f;
+    }
+
+    private void SpawnIndicators()
+    {
+        // 정적 인디케이터: 전체 길이, 주황 (돌진과 동일 메커니즘, 크기만 다름)
+        staticIndicator = Object.Instantiate(bb.indicator, owner.transform.position, throwRotation);
+        var staticSR = staticIndicator.GetComponent<SpriteRenderer>();
+        staticSR.sprite = bossAI.squareSprite;
+        staticSR.color = new Color(1f, 0.5f, 0.2f, 0.45f);
+        staticSR.sortingOrder = 3; // 바닥 Tilemap(2) 위, 골렘/플레이어 아래
+
+        float unitHeight = staticSR.sprite.bounds.size.y;
+        lengthScale = unitHeight > 0.0001f ? BoxLength / unitHeight : 1f;
+        nearEdgeLocalY = staticSR.sprite.bounds.min.y;
+
+        // 채우는 인디케이터: 길이 0→풀로 신장, 빨강
+        fillIndicator = Object.Instantiate(bb.indicator, owner.transform.position, throwRotation);
+        var fillSR = fillIndicator.GetComponent<SpriteRenderer>();
+        fillSR.sprite = bossAI.squareSprite;
+        fillSR.color = new Color(1f, 0.15f, 0.1f, 0.55f);
+        fillSR.sortingOrder = 4; // static(3) 위, 골렘/플레이어 아래
+    }
+
+    // 박스 2개를 골렘에 근접 끝단 고정, throwRotation 정렬, fill은 progress만큼 신장
+    private void UpdateIndicatorTransforms(float progress)
+    {
+        Vector3 pos = owner.transform.position;
+
+        if (staticIndicator != null)
+        {
+            staticIndicator.transform.rotation = throwRotation;
+            staticIndicator.transform.localScale = new Vector3(BoxWidth, lengthScale, 1f);
+            staticIndicator.transform.position = pos - throwDir * (nearEdgeLocalY * lengthScale);
+        }
+
+        if (fillIndicator != null)
+        {
+            float curScale = lengthScale * progress;
+            fillIndicator.transform.rotation = throwRotation;
+            fillIndicator.transform.localScale = new Vector3(BoxWidth, curScale, 1f);
+            fillIndicator.transform.position = pos - throwDir * (nearEdgeLocalY * curScale);
         }
     }
 
-    private void Update()
+    public override void OnEnd()
     {
-        elapsed += Time.deltaTime;
-        float k = elapsed / life;
-        if (k >= 1f || sr == null)
-        {
-            Destroy(gameObject);
-            return;
-        }
+        bb.isAttacking = false;
+        bb.cooldownTimer = bb.attackCooldown;
 
-        transform.localScale = baseScale * (1f + scaleGrowth * k);
-        transform.position += vel * Time.deltaTime;
+        if (bossAI != null) bossAI.OnAttackPoint = null;
 
-        Color c = sr.color;
-        c.a = Mathf.Lerp(startAlpha, 0f, k);
-        sr.color = c;
+        bb.anim.speed = 1f;
+        bb.anim.Play("Idle", 0, 0f);
+        bb.anim.Update(0f);
+
+        if (staticIndicator != null) Object.Destroy(staticIndicator);
+        if (fillIndicator != null) Object.Destroy(fillIndicator);
     }
 }
+
+
