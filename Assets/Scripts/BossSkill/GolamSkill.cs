@@ -11,13 +11,13 @@ public class SlamSkill : BaseSkillAction
     protected override GameObject IndicatorPrefab => bb.indicator;
     protected override Vector3 IndicatorScale => new Vector3(AreaScale, AreaScale, 1f);
 
-    private const float AreaScale = 12f;
+    private const float AreaScale = 18f; // 시각 텔레그래프 크기(기존 12의 1.5배). 균열도 이에 비례해 커짐
     private const float ChargeDuration = 1.1f;
     private const float SlamAnimTime = 0.2f;
     private const float PostImpactFreeze = 2.0f;
 
     private const float SlamDamage = 75f;
-    private const float SlamDamageRadius = 6f; // 시각 반경(AreaScale 12 ≈ 지름) 기준 절반. 필요시 조정
+    private const float SlamDamageRadius = 9f; // 명중 반경(AreaScale 1.5배에 맞춰 6→9). 시각 텔레그래프와 정합
     private const float SlamKnockback = 12f;   // 약한 방사형 넉백
 
     private GameObject outerIndicator;
@@ -179,7 +179,7 @@ public class SlamSkill : BaseSkillAction
         if (bb.bossAI.slamImpactPrefab != null)
         {
             GameObject fx = Object.Instantiate(bb.bossAI.slamImpactPrefab, owner.transform.position, Quaternion.identity);
-            fx.transform.localScale = Vector3.one * 3f;
+            fx.transform.localScale = Vector3.one * 4.5f; // 1.5배 확대(슬램 크기와 정합)
             Object.Destroy(fx, 2f);
         }
 
@@ -489,7 +489,9 @@ public class ThrowSkill : BaseSkillAction
 
     private const float ThrowDamage = 50f;
     private const float ThrowKnockback = 10f; // 약한 진행방향 넉백
-    private const float RockSpeed = 40f;
+    private const float ThrowAnimSpeed = 0.7f; // 투척 애니메이션 재생 속도 (기존 1.0의 0.7배)
+    private const float RockSpeed = 28f;       // 40 × 0.7 (느려진 투사체)
+    private const float AimResponse = 2.2f;    // 조준 추적 응답성(지수 감쇠). 낮을수록 플레이어를 더 늦게(지연) 따라감
     private const float BoxLength = 12.5f; // 25 × 0.5
     private const float BoxWidth = 2.25f;  // 1.5 × 1.5
     private const float PostThrowHold = 0.5f; // 발사 후 마지막 프레임 유지하며 정지하는 시간
@@ -506,6 +508,7 @@ public class ThrowSkill : BaseSkillAction
     private float chargeTimer;         // 준비 페이즈 경과 시간(안전장치용)
     private float lastProgress;        // 직전 프레임 진행도(전이 중 0 리셋 방지)
     private bool thrown;
+    private Vector3 aimDir = Vector3.zero; // 현재(보간된) 조준 방향 — 느린 추적용
 
     protected override void OnExecuteStart() { }
     protected override NodeState OnExecuteUpdate() { return NodeState.SUCCESS; }
@@ -523,8 +526,8 @@ public class ThrowSkill : BaseSkillAction
         bb.rb.linearVelocity = Vector2.zero;
         bb.anim.SetBool("isMove", false);
 
-        // 초기 조준 (이후 Charging 동안 매 프레임 갱신)
-        AimAtPlayer();
+        // 초기 조준 (즉시 플레이어 정렬, 이후 Charging 동안 느리게 추적)
+        AimAtPlayer(true);
 
         SpawnIndicators();
         UpdateIndicatorTransforms(0f);
@@ -533,9 +536,9 @@ public class ThrowSkill : BaseSkillAction
         if (bossAI != null)
             bossAI.OnAttackPoint = OnThrowSignal;
 
-        // Attack02 자연 재생 → 프레임 40에서 TriggerAttack 이벤트 발동
+        // Attack02 자연 재생(0.7배 속도) → 프레임 40에서 TriggerAttack 이벤트 발동
         bb.anim.Play("Attack02", 0, 0f);
-        bb.anim.speed = 1f;
+        bb.anim.speed = ThrowAnimSpeed;
         bb.anim.Update(0f);
     }
 
@@ -630,16 +633,28 @@ public class ThrowSkill : BaseSkillAction
         throwPhase = ThrowPhase.Holding;
     }
 
-    // 현재 플레이어 위치로 throwDir/throwRotation/flipX 갱신
-    private void AimAtPlayer()
+    // 플레이어 방향으로 throwDir/throwRotation/flipX 갱신.
+    // instant=false면 AimTurnSpeed(도/초)로 천천히 추적(즉시 스냅 X) → 느린 조준.
+    private void AimAtPlayer(bool instant = false)
     {
-        Vector3 dir = owner.transform.up;
+        Vector3 target = (aimDir != Vector3.zero) ? aimDir : owner.transform.up;
         if (bb.playerTarget != null)
         {
             Vector3 diff = bb.playerTarget.position - owner.transform.position;
             diff.z = 0f;
-            if (diff.sqrMagnitude > 0.0001f) dir = diff.normalized;
+            if (diff.sqrMagnitude > 0.0001f) target = diff.normalized;
         }
+
+        if (instant || aimDir == Vector3.zero)
+            aimDir = target;
+        else
+        {
+            // 지수 감쇠 보간: 거리와 무관하게 일정한 지연으로 플레이어를 트레일링(늦게 따라감)
+            float k = 1f - Mathf.Exp(-AimResponse * Time.deltaTime);
+            aimDir = Vector3.Slerp(aimDir, target, k).normalized;
+        }
+
+        Vector3 dir = aimDir;
         throwDir = dir;
 
         // 로컬 up이 throwDir을 향하도록 (RockController는 moveRotation*Vector3.up으로 이동)

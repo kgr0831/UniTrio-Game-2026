@@ -70,7 +70,10 @@
       "Bash(git push *)",
       "PowerShell(Start-Sleep -Seconds 7; \"waited\")",
       "PowerShell(Start-Sleep -Seconds 10; \"waited\")",
-      "WebFetch(domain:pokemon.fandom.com)"
+      "WebFetch(domain:pokemon.fandom.com)",
+      "Bash(git commit -m 'feat: 골렘 공격 피격 처리 및 넉백 추가 *)",
+      "Bash(grep -iE \"\\\\.\\(shader|png|mat\\)$\")",
+      "Bash(git commit -m 'feat: 보스 미니 데모 씬 + 플레이어→골렘 피격/사망 연출 *)"
     ]
   }
 }

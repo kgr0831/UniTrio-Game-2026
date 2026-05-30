@@ -10,6 +10,10 @@ public class BossAI : MonoBehaviour
     [Header("Settings")]
     public float moveSpeed = 6.0f;
     public float attackRange = 2.5f;
+    [Tooltip("이 거리 이내면 내려찍기(근거리 AOE)를 선택지에 포함")]
+    public float slamRange = 7.5f;
+    [Tooltip("이 거리 이내면 근거리 밖이라도 돌진·투척 등 원거리 스킬을 사용")]
+    public float rangedAttackRange = 13.0f;
     public float detectionRange = 10.0f;
     public float attackCooldown = 1.5f;
     public string playerTag = "Player";
@@ -42,6 +46,8 @@ public class BossAI : MonoBehaviour
             sr = GetComponentInChildren<SpriteRenderer>(),
             moveSpeed = this.moveSpeed,
             attackRange = this.attackRange,
+            slamRange = this.slamRange,
+            rangedAttackRange = this.rangedAttackRange,
             detectionRange = this.detectionRange,
             attackCooldown = this.attackCooldown,
             bossAI = this,
@@ -51,20 +57,23 @@ public class BossAI : MonoBehaviour
         GameObject player = GameObject.FindGameObjectWithTag(playerTag);
         if (player != null) blackboard.playerTarget = player.transform;
 
-        List<Node> skillPool = new List<Node>
-        {
-            new SkillExecuteNode(blackboard, new SlamSkill()),
-            new SkillExecuteNode(blackboard, new RushSkill()),
-            new SkillExecuteNode(blackboard, new ThrowSkill()),
-        };
+        // 스킬 노드 (인스턴스 공유 — 한 번에 하나만 실행되므로 두 풀에 같은 노드를 넣어도 안전)
+        var slam  = new SkillExecuteNode(blackboard, new SlamSkill());
+        var rush  = new SkillExecuteNode(blackboard, new RushSkill());
+        var throwSkill = new SkillExecuteNode(blackboard, new ThrowSkill());
 
-        // 공격 중이면 거리/쿨다운 무시하고 스킬 계속 실행
+        // 근거리: 전 스킬 / 원거리: 돌진·투척만 (내려찍기는 보스 주변 AOE라 근거리 전용)
+        List<Node> nearSkills = new List<Node> { slam, rush, throwSkill };
+        List<Node> farSkills  = new List<Node> { rush, throwSkill };
+
+        // 공격 중이면 거리/쿨다운 무시하고 스킬 계속 실행.
+        // 그 외엔 원거리 사거리(rangedAttackRange) 이내 + 쿨다운이면 공격 진입.
         Selector attackCondition = new Selector(blackboard, new List<Node>
         {
             new CheckIsAttacking(blackboard),
             new Sequence(blackboard, new List<Node>
             {
-                new CheckPlayerDistance(blackboard, blackboard.attackRange),
+                new CheckPlayerDistance(blackboard, blackboard.rangedAttackRange),
                 new CooldownGateNode(blackboard),
             })
         });
@@ -72,7 +81,8 @@ public class BossAI : MonoBehaviour
         Sequence attackSequence = new Sequence(blackboard, new List<Node>
         {
             attackCondition,
-            new RandomSkillSelector(blackboard, skillPool)
+            // slamRange 이내면 전 스킬(내려찍기 포함), 그 밖이면 돌진·투척만 무작위 실행
+            new DistanceSkillSelector(blackboard, nearSkills, farSkills, blackboard.slamRange)
         });
 
         Sequence followSequence = new Sequence(blackboard, new List<Node>
