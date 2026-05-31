@@ -21,6 +21,17 @@ public sealed class MonsterRuntimeData : MonoBehaviour
     public float       AttackSpeed  => _data.AttackSpeed;
     public float       AttackDelay  => _data.AttackDelay;
 
+    /// <summary>
+    /// 이번 타격에 사용할 공격력을 반환.
+    /// ATKMax가 ATKMin보다 크면 [ATKMin, ATKMax] 범위에서 랜덤, 아니면 단일 ATK.
+    /// </summary>
+    public float RollAttackDamage()
+    {
+        if (_data != null && _data.ATKMax > _data.ATKMin)
+            return Random.Range(_data.ATKMin, _data.ATKMax);
+        return BaseATK;
+    }
+
     // ── 속성 저항 ──────────────────────────────────────────
     public float FireResistance  => _data != null ? _data.FireResistance  : 0f;
     public float IceResistance   => _data != null ? _data.IceResistance   : 0f;

@@ -14,7 +14,11 @@ public class MonsterData : ScriptableObject
 
     [Header("═══ Base Stats ═══")]
     public float MaxHP;                 // 최대 체력
-    public float ATK;                   // 공격력
+    public float ATK;                   // 공격력 (ATKMin/ATKMax 미사용 시 기본값)
+    [Tooltip("공격력 최소값. ATKMax보다 작으면 [ATKMin, ATKMax] 랜덤 데미지 사용. 0이면 ATK 단일값 사용.")]
+    public float ATKMin;                // 공격력 최소 (랜덤 범위)
+    [Tooltip("공격력 최대값. ATKMin보다 크면 랜덤 데미지 활성화.")]
+    public float ATKMax;                // 공격력 최대 (랜덤 범위)
     public float DEF;                   // 방어력
     public float Speed;                 // 이동속도 (Unity 단위/초)
     [Tooltip("공격 속도 배율. 1.0 = 1초, 2.0 = 0.5초, 0.5 = 2초. 공식: 쿨다운 = 1 / AttackSpeed")]
