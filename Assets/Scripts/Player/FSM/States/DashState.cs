@@ -34,21 +34,20 @@ public class DashState : PlayerState
     {
         _wasUpgraded = Machine.Dash.IsUpgraded;
 
-        Machine.WeaponCtrl.enabled = false;
-        Machine.Movement.enabled   = false;
+        Machine.WeaponCtrl.enabled  = false;
+        Machine.Movement.enabled    = false;
 
-        // 공통: 대시 애니메이션 재생
+        // 대시 중 항상 무적 (업그레이드 여부 무관)
+        Machine.Entity.IsInvincible = true;
+
         if (Machine.Animator != null)
             Machine.Animator.SetBool("IsDashing", true);
 
         if (Machine.Sprite != null)
             Machine.Sprite.color = DashTint;
 
-        // 업그레이드 전용
         if (_wasUpgraded)
         {
-            Machine.Entity.IsInvincible = true;
-
             if (_rb != null)
                 _rb.excludeLayers = _rb.excludeLayers | EnemyLayerMask;
 
@@ -66,8 +65,11 @@ public class DashState : PlayerState
 
     public override void Exit()
     {
-        Machine.WeaponCtrl.enabled = true;
-        Machine.Movement.enabled   = true;
+        Machine.WeaponCtrl.enabled  = true;
+        Machine.Movement.enabled    = true;
+
+        // 무적 해제
+        Machine.Entity.IsInvincible = false;
 
         if (Machine.Animator != null)
             Machine.Animator.SetBool("IsDashing", false);
@@ -77,8 +79,6 @@ public class DashState : PlayerState
 
         if (_wasUpgraded)
         {
-            Machine.Entity.IsInvincible = false;
-
             if (_rb != null)
                 _rb.excludeLayers = _rb.excludeLayers & ~EnemyLayerMask;
 

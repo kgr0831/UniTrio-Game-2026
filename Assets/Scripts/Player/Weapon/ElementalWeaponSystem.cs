@@ -695,4 +695,12 @@ public class ElementalWeaponSystem : MonoBehaviour
         _lastAttackHitTime = Time.time;
         _gaugeDecayTimer = 0f;
     }
+
+    /// <summary>게이지를 최대치(300)로 즉시 채웁니다. 테스트/디버그 용도.</summary>
+    public void SetGaugeToMax()
+    {
+        _unifiedGauge = GAUGE_MAX;
+        ResetDecayTimer();
+        NotifyGaugesChanged();
+    }
 }

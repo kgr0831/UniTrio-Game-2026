@@ -291,7 +291,7 @@ public class SwordBehaviour : WeaponBehaviourBase
 
         // 회전/스케일 강제 영구 고정 (음수 스케일/회전 대칭 방지)
         transform.localRotation = Quaternion.identity;
-        transform.localScale = _restLocalScale;
+        transform.localScale = _restLocalScale * ChargeSizeMultiplier;
 
         // 히트박스 크기 조절 및 활성화
         if (_hitboxCollider is BoxCollider2D box)

@@ -68,6 +68,21 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
     /// <summary>강타 시각 효과(블룸, 스프라이트 교체 등)를 활성화/비활성화 합니다.</summary>
     public virtual void SetBashEffectActive(bool active) { }
 
+    // 현재 애니메이션 속도 보너스 (차징 등에 의한 가속/감속 포함)
+    protected float _animationSpeedBonus = 0f;
+
+    /// <summary>차징 스킬 등에서 일시적으로 스케일(크기/범위)을 증폭시킬 때 사용합니다.</summary>
+    public float ChargeSizeMultiplier { get; set; } = 1f;
+
+    /// <summary>차징 스킬 등에서 일시적으로 데미지를 증폭시킬 때 사용합니다.</summary>
+    public float ChargeDamageMultiplier { get; set; } = 1f;
+
+    /// <summary>차징 스킬 등에서 일시적으로 공격 속도를 증폭시킬 때 사용합니다.</summary>
+    public float ChargeSpeedMultiplier { get; set; } = 1f;
+
+    public void AddAnimationSpeedBonus(float amount) { _animationSpeedBonus += amount; }
+    public void ResetAnimationSpeedBonus() { _animationSpeedBonus = 0f; }
+
     /// <summary>장착된 WeaponData의 Icon 스프라이트를 무기 비주얼에 반영합니다.</summary>
     public virtual void SetWeaponSprite(Sprite sprite) { }
 
@@ -94,7 +109,8 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
     public float GetAnimationSpeedBonus()
     {
         var controller = GetComponentInParent<PlayerWeaponController>();
-        return (controller != null) ? (controller.SpearStacks * 0.1f) : 0f;
+        float spearBonus = (controller != null) ? (controller.SpearStacks * 0.1f) : 0f;
+        return spearBonus + _animationSpeedBonus + (ChargeSpeedMultiplier - 1f);
     }
 
     /// <summary>
@@ -115,4 +131,23 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
 
     /// <summary>무기 교체 또는 오브젝트 비활성화 시 내부 상태를 깔끔하게 정리합니다.</summary>
     public abstract void OnDeactivated();
+
+    /// <summary>
+    /// 차징 스킬에서 무기 휘두르는 모션(이펙트 제외, 순수 모션)만 재생하고 싶을 때 호출합니다.
+    /// 기본적으로 하위의 Animator에서 "Attack" 트리거를 발동합니다.
+    /// 파생 클래스에서 필요 시 오버라이드하여 추가 연출을 적용할 수 있습니다.
+    /// </summary>
+    public virtual void PlayChargeAnimation(float speedMultiplier = 1f)
+    {
+        Animator[] animators = GetComponentsInChildren<Animator>();
+        foreach (var anim in animators)
+        {
+            // VFXAnimator 등은 피하기 위해 주로 0번째나 이름 등으로 필터링할 수도 있으나,
+            // 기본 동작으로는 모든 Animator의 속도를 맞추고 Attack 트리거를 켭니다.
+            if (anim.gameObject.name.Contains("VFX")) continue;
+
+            anim.speed = speedMultiplier;
+            anim.SetTrigger("Attack");
+        }
+    }
 }

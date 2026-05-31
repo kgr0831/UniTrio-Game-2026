@@ -179,7 +179,7 @@ public class ChargeVFXController : MonoBehaviour
         float elapsed = 0f;
         
         Vector3 initialScale = new Vector3(_vfxScale, _vfxScale, 1f);
-        Vector3 targetScale = initialScale * 1.5f; // 터질 때 반경을 더 크게 팽창
+        Vector3 targetScale = initialScale * 1.2f; // 기존(1.5) 대비 0.8배 축소
 
         while (elapsed < duration)
         {

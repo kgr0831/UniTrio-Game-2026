@@ -425,7 +425,24 @@ public class PlayerWeaponController : MonoBehaviour
 
             ApplyAttackStartScale(_comboStep);
 
-            // 공격 시 커서 방향으로 순간 이동
+            // 공격 시작 시 FacingDirection을 커서 방향으로 고정 (4방향 공격 애니메이션 동기화)
+            if (_mainCamera != null)
+            {
+                Vector3 mScreen = Input.mousePosition;
+                mScreen.z = _camToWorldZ;
+                Vector3 mWorld = _mainCamera.ScreenToWorldPoint(mScreen);
+                float adx = mWorld.x - transform.position.x;
+                float ady = mWorld.y - transform.position.y;
+                Vector2 cursorDir = new Vector2(adx, ady);
+                if (cursorDir.sqrMagnitude > 0.001f)
+                    cursorDir.Normalize();
+
+                var pm = GetComponent<PlayerMovement>();
+                if (pm != null)
+                    pm.SetFacingDirection(cursorDir);
+            }
+
+            // 검 공격 시 커서 방향으로 약간 전진 (타격감 연출)
             if (_activeBehaviour.WeaponType == WeaponType.Sword)
             {
                 var pm = GetComponent<PlayerMovement>();
@@ -437,18 +454,47 @@ public class PlayerWeaponController : MonoBehaviour
             _activeBehaviour.gameObject.SetActive(true);
             _activeBehaviour.BeginAttack(_comboStep);
 
-            if (_playerAnimator != null)
-            {
-                // 검은 1타,3타가 정방향 스윙(왼손), 2타가 역방향 스윙(오른손)입니다.
-                // 다른 무기는 항상 1타->2타 교대입니다.
-                // 결론적으로 모든 무기에 대해 (홀수=1타/왼손, 짝수=2타/오른손)가 성립합니다.
-                int animCombo = (_comboStep % 2 == 1) ? 1 : 2;
-                _playerAnimator.SetInteger("AttackCombo", animCombo);
-                _playerAnimator.SetTrigger("Attack");
-            }
+            TriggerPlayerAttackAnimation(_comboStep, _activeBehaviour.GetCurrentAttackSpeedMultiplier());
 
             // 다음 클릭/연사를 위해 스텝 순환
             _comboStep = (_comboStep % _activeBehaviour.MaxComboSteps) + 1;
+        }
+    }
+
+    /// <summary>
+    /// 차징 스킬 등에서 강제로 특정 콤보 스텝의 공격을 시작할 때 사용합니다.
+    /// (내부 타이머를 갱신하여 즉각 취소되는 현상을 방지합니다.)
+    /// </summary>
+    public void ForceBeginAttack(int comboStep)
+    {
+        if (_activeBehaviour == null) return;
+
+        _attackStartTime = Time.time;
+        // _comboStep은 건드리지 않는다 — 일반 콤보 흐름을 오염시키지 않기 위함
+
+        _activeBehaviour.gameObject.SetActive(true);
+        _activeBehaviour.BeginAttack(comboStep);
+
+        TriggerPlayerAttackAnimation(comboStep, _activeBehaviour.GetCurrentAttackSpeedMultiplier());
+    }
+
+    /// <summary>차징 스킬 종료 후 콤보 상태를 초기화합니다.</summary>
+    public void ResetComboStep()
+    {
+        _comboStep = 1;
+        _lastAttackEndTime = 0f;
+    }
+
+    public void TriggerPlayerAttackAnimation(int comboStep, float speedMultiplier = 1f)
+    {
+        if (_playerAnimator != null)
+        {
+            // 검은 1타,3타가 정방향 스윙(왼손), 2타가 역방향 스윙(오른손)입니다.
+            // 다른 무기는 항상 1타->2타 교대입니다.
+            int animCombo = (comboStep % 2 == 1) ? 1 : 2;
+            _playerAnimator.speed = speedMultiplier;
+            _playerAnimator.SetInteger("AttackCombo", animCombo);
+            _playerAnimator.SetTrigger("Attack");
         }
     }
 
@@ -484,6 +530,8 @@ public class PlayerWeaponController : MonoBehaviour
 
         if (_activeBehaviour.PollFinished(_attackStartTime))
         {
+            if (_playerAnimator != null) _playerAnimator.speed = 1f;
+
             _lastAttackEndTime = Time.time;
             float baseCooldown = _activeBehaviour.GetPostAttackCooldown();
             

@@ -60,9 +60,14 @@ public class PlayerStateMachine : MonoBehaviour
 
     private void Start()
     {
-        // Awake(PlayerEntity) 이후 보장하기 위해 Start에서 이벤트 구독
         Entity.Health.OnHit  += HandleHit;
         Entity.Health.OnDied += HandleDied;
+
+        // 피격 화면 오버레이 자동 생성 (씬에 별도 프리팹 불필요)
+        GameObject overlayObj = new GameObject("PlayerHitOverlay");
+        DontDestroyOnLoad(overlayObj);
+        PlayerHitOverlay overlay = overlayObj.AddComponent<PlayerHitOverlay>();
+        Entity.Health.OnHit += overlay.TriggerHit;
 
         TransitionTo(Idle);
     }

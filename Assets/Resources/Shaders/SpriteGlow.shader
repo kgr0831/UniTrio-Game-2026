@@ -4,7 +4,7 @@ Shader "Custom/SpriteGlow"
     {
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
-        
+
         [Header(Glow)]
         [NoScaleOffset] _EmissionTex ("Emission Texture (Secondary)", 2D) = "black" {}
         [HDR] _GlowColor ("Glow Color", Color) = (1, 1, 1, 1)
@@ -14,6 +14,10 @@ Shader "Custom/SpriteGlow"
 
         [Toggle(_USE_MAIN_ALPHA_AS_GLOW)] _UseMainAlphaAsGlow ("Use Whole Sprite Glow", Float) = 0
         [Toggle(_USE_OUTLINE_GLOW)] _UseOutlineGlow ("Use Outline Glow Only", Float) = 0
+
+        [Header(Hit Flash)]
+        _FlashColor ("Flash Color", Color) = (1,1,1,1)
+        _FlashAmount ("Flash Amount", Range(0.0, 1.0)) = 0.0
 
         [MaterialToggle] PixelSnap ("Pixel snap", Float) = 0
         [HideInInspector] _RendererColor ("RendererColor", Color) = (1,1,1,1)
@@ -52,10 +56,14 @@ Shader "Custom/SpriteGlow"
 
             CBUFFER_START(UnityPerMaterial)
                 fixed4 _GlowColor;
-                float _GlowIntensity;
-                float _OutlineWidth;
-                float _InteriorAlpha;
+                float  _GlowIntensity;
+                float  _OutlineWidth;
+                float  _InteriorAlpha;
             CBUFFER_END
+
+            // CBUFFER 밖에 선언 → MaterialPropertyBlock으로 per-renderer 오버라이드 가능
+            fixed4 _FlashColor;
+            float  _FlashAmount;
 
             sampler2D _EmissionTex;
             float4 _MainTex_TexelSize; // Unity가 자동 제공 (1/width, 1/height, width, height)
@@ -151,8 +159,11 @@ Shader "Custom/SpriteGlow"
                 c.a = saturate(c.a + (mask * _GlowIntensity * 0.1));
 
                 // ── 최대 밝기 제한 (Clamp) ──
-                // 여러 잔상이 겹쳐도 순백색으로 타버리지 않도록 억제
                 c.rgb = min(c.rgb, float3(2.5, 2.5, 2.5));
+
+                // ── 피격 흰 점멸 (HealthSystem._FlashAmount) ──
+                // _FlashAmount = 0 이면 원본, 1 이면 완전 FlashColor
+                c.rgb = lerp(c.rgb, _FlashColor.rgb * c.a, _FlashAmount);
 
                 return c;
             }

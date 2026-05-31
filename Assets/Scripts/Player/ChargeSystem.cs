@@ -86,6 +86,16 @@ public class ChargeSystem : MonoBehaviour
             return;
         }
 
+        // P 키: 게이지 즉시 300 만충 (테스트용)
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            if (_elementSystem != null)
+            {
+                _elementSystem.SetGaugeToMax();
+                Debug.Log("[ChargeSystem] P키 — 게이지 300 만충");
+            }
+        }
+
         if (_isCharging)
         {
             UpdateCharging();
@@ -193,6 +203,12 @@ public class ChargeSystem : MonoBehaviour
         Debug.Log($"[ChargeSystem] 차징 종료 — 단계: {chargeLevel}, 소모량: {_totalConsumed:F1}, 소요시간: {Time.time - _chargeStartTime:F2}초");
 
         CleanupCharge(chargeLevel >= 1);
+
+        // ── 차징 스킬 발동 ──
+        if (chargeLevel >= 1)
+        {
+            ExecuteChargeSkill(chargeLevel);
+        }
     }
 
     // ── 차징 캔슬 (대시 등) ──────────────────────────────────
@@ -221,6 +237,68 @@ public class ChargeSystem : MonoBehaviour
             _chargeVFX.StopCharge(isBurst);
     }
 
+    // ── 차징 스킬 실행 ──────────────────────────────────────
+
+    private void ExecuteChargeSkill(int chargeLevel)
+    {
+        if (_weaponController == null || _weaponController.ActiveBehaviour == null)
+            return;
+
+        WeaponType weaponType = _weaponController.ActiveBehaviour.WeaponType;
+        IChargeSkill skill = ChargeSkillFactory.GetSkill(weaponType, chargeLevel);
+
+        if (skill == null)
+        {
+            Debug.LogWarning($"[ChargeSystem] 스킬을 찾을 수 없음: {weaponType} Lv{chargeLevel}");
+            return;
+        }
+
+        ChargeSkillContext context = BuildContext(chargeLevel, weaponType);
+        skill.Execute(context);
+
+        Debug.Log($"[ChargeSystem] 스킬 발동: {weaponType} {chargeLevel}단계");
+    }
+
+    private ChargeSkillContext BuildContext(int chargeLevel, WeaponType weaponType)
+    {
+        PlayerEntity playerEntity = GetComponent<PlayerEntity>();
+        StatSystem statSystem = GetComponent<StatSystem>();
+        Camera mainCamera = Camera.main;
+
+        // 커서 방향 계산
+        Vector2 cursorDir = Vector2.right;
+        if (mainCamera != null)
+        {
+            float camZ = Mathf.Abs(mainCamera.transform.position.z - transform.position.z);
+            Vector3 screenPos = Input.mousePosition;
+            screenPos.z = camZ;
+            Vector3 worldPos = mainCamera.ScreenToWorldPoint(screenPos);
+            Vector2 dir = (Vector2)worldPos - (Vector2)transform.position;
+            if (dir.sqrMagnitude > 0.001f)
+                cursorDir = dir.normalized;
+        }
+
+        // 일반 공격 1타 기준 데미지 계산
+        float totalAtk = playerEntity != null ? playerEntity.TotalAtk : 0f;
+        float baseDamage = DamageCalculator.CalcOutgoingDamage(totalAtk, 0f);
+
+        return new ChargeSkillContext
+        {
+            ChargeLevel      = chargeLevel,
+            WeaponType       = weaponType,
+            PlayerEntity     = playerEntity,
+            WeaponBehaviour  = _weaponController.ActiveBehaviour,
+            CursorDirection  = cursorDir,
+            PlayerTransform  = transform,
+            ElementSystem    = _elementSystem,
+            BaseDamage       = baseDamage,
+            WeaponController = _weaponController,
+            PlayerMovement   = _playerMovement,
+            StatSystem       = statSystem,
+            MainCamera       = mainCamera
+        };
+    }
+
     // ── 차징 단계 판정 ──────────────────────────────────────
 
     /// <summary>
@@ -229,9 +307,9 @@ public class ChargeSystem : MonoBehaviour
     /// </summary>
     private int GetChargeLevel(float consumed)
     {
-        if (consumed >= 300f) return 3;
-        if (consumed >= 200f) return 2;
-        if (consumed >= 100f) return 1;
+        if (consumed >= 299.5f) return 3;
+        if (consumed >= 199.5f) return 2;
+        if (consumed >= 99.5f) return 1;
         return 0;
     }
 }

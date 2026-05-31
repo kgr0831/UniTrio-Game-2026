@@ -35,8 +35,9 @@ public class ExplosionEffect : MonoBehaviour
     [SerializeField] private float _maxLightIntensity = 10f;
 
     // MagicProjectile 이 SetupExplosion() 으로 주입하는 값
-    private float _damage;
-    private bool  _ready;
+    private float   _damage;
+    private bool    _ready;
+    private Vector3 _originalScale;   // Awake 시 프리팹 원본 스케일 저장
 
     private CircleCollider2D      _circleCol;
     private MaterialPropertyBlock _propBlock;
@@ -51,6 +52,7 @@ public class ExplosionEffect : MonoBehaviour
 
     private void Awake()
     {
+        _originalScale = transform.localScale;   // 프리팹 원본 스케일 저장
         _circleCol = GetComponent<CircleCollider2D>();
         _propBlock = new MaterialPropertyBlock();
 
@@ -75,12 +77,21 @@ public class ExplosionEffect : MonoBehaviour
         _contactFilter.useTriggers = true;
     }
 
-    /// <summary>MagicProjectile이 풀에서 꺼낸 직후 호출합니다.</summary>
-    public void SetupExplosion(float damage, GameObject damageTextPrefab = null)
+    /// <summary>
+    /// MagicProjectile이 풀에서 꺼낸 직후 호출합니다.
+    /// sizeMultiplier > 1 이면 폭발 범위(CircleCollider2D)를 원본 대비 해당 배율로 확대합니다.
+    /// </summary>
+    public void SetupExplosion(float damage, GameObject damageTextPrefab = null, float sizeMultiplier = 1f)
     {
         _damage           = damage;
         _damageTextPrefab = damageTextPrefab != null ? damageTextPrefab : _damageTextPrefab;
         _ready            = true;
+
+        // 스케일을 먼저 적용한 뒤 데미지를 계산해야 CircleCollider2D 월드 반경이 정확해짐
+        if (!Mathf.Approximately(sizeMultiplier, 1f))
+            transform.localScale = _originalScale * sizeMultiplier;
+
+        ApplyAreaDamage();
     }
 
     /// <summary>속성 색상을 주입합니다. 폭발 글로우에 반영됩니다.</summary>
@@ -92,10 +103,11 @@ public class ExplosionEffect : MonoBehaviour
     private void OnEnable()
     {
         _elapsed = 0f;
-        if (!_ready) _ready = true;
-
-        ApplyAreaDamage();
+        _ready   = false;
+        // 풀 재사용 시 스케일 초기화 (이전 차징 스킬이 변경했을 수 있음)
+        transform.localScale = _originalScale;
         SetGlow(_maxGlowIntensity);
+        // ApplyAreaDamage는 SetupExplosion에서 스케일 설정 후 호출됩니다.
     }
 
     private void Update()
@@ -113,6 +125,8 @@ public class ExplosionEffect : MonoBehaviour
 
     private void ApplyAreaDamage()
     {
+        if (_damage <= 0f) return;   // VFX 전용 호출(damage=0)이면 AoE 적용 안 함
+
         float worldRadius = _circleCol.radius * Mathf.Max(
             Mathf.Abs(transform.lossyScale.x),
             Mathf.Abs(transform.lossyScale.y));

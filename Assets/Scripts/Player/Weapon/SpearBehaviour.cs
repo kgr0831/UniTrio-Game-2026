@@ -30,6 +30,9 @@ public class SpearBehaviour : WeaponBehaviourBase
     /// <summary>팁 크리티컬 데미지 배율 (SwordHitbox에서 참조)</summary>
     public float TipDamageMultiplier => _tipDamageMultiplier;
 
+    /// <summary>true일 때 거리 판정 없이 항상 끝사거리 크리티컬 처리</summary>
+    public bool ForceIsTip { get; set; }
+
     // 공격 시 방향 벡터 (거리 판정용)
     private Vector2 _attackDirection;
     private Transform _playerRoot;
@@ -232,7 +235,7 @@ public class SpearBehaviour : WeaponBehaviourBase
         main.loop = true;
         main.startLifetime = 0.5f;
         main.startSpeed = 2f;
-        main.startSize = 0.5f;
+        main.startSize = 0.25f; // 0.5배로 축소 (기존 0.5f)
         main.simulationSpace = ParticleSystemSimulationSpace.Local;
 
         var em = ps.emission;
@@ -436,6 +439,7 @@ public class SpearBehaviour : WeaponBehaviourBase
         Transform pivot = transform.parent;
         _attackDirection = pivot != null ? (Vector2)pivot.right : Vector2.right;
 
+        transform.localScale = Vector3.one * ChargeSizeMultiplier;
         Physics2D.SyncTransforms();
 
         float speed = 1.3f + GetAnimationSpeedBonus();

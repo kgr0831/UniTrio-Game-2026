@@ -44,6 +44,9 @@ public sealed class NeutralMonster : MonsterBase
         _detection = GetComponent<DetectionSystem>();
         _navigator = GetComponent<MonsterNavigator>();
         _wander    = GetComponent<WanderSystem>();
+
+        // 동물은 스태거 시간 1.5배 적용 (점멸·애니메이션 고정 효과도 비례)
+        GetComponent<HitStaggerHandler>()?.SetStaggerMultiplier(1.5f);
     }
 
     protected override void OnEnable()

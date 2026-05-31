@@ -48,6 +48,11 @@ public class ArrowProjectile : MonoBehaviour
             Color tint = hdrColor;
             tint.a = 1f;
             _spriteRenderer.color = tint;
+
+            // SpriteGlow 머티리얼이 적용된 경우 발광 색상도 속성 색상으로 동기화
+            var mat = _spriteRenderer.material;
+            if (mat != null && mat.HasProperty("_GlowColor"))
+                mat.SetColor("_GlowColor", hdrColor * 2f);
         }
 
         if (_trailParticle != null)
@@ -68,6 +73,9 @@ public class ArrowProjectile : MonoBehaviour
     private void Awake()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
+
+        // 다른 마법 무기들과 동일한 SpriteGlow 셰이더 적용 (에너지 발광 느낌)
+        ApplySpriteGlow();
 
         GameObject trailObj = new GameObject("ArrowTrailVFX");
         trailObj.transform.SetParent(transform);
@@ -150,6 +158,22 @@ public class ArrowProjectile : MonoBehaviour
         {
             ReturnToPool();
         }
+    }
+
+    private void ApplySpriteGlow()
+    {
+        if (_spriteRenderer == null) return;
+
+        Shader glowShader = Shader.Find("Custom/SpriteGlow");
+        if (glowShader == null) return;
+
+        Material glowMat = new Material(glowShader);
+        glowMat.EnableKeyword("_USE_OUTLINE_GLOW");
+        glowMat.SetColor("_GlowColor",     new Color(1f, 0.9f, 0.4f, 1f) * 2f); // 기본 황금 발광
+        glowMat.SetFloat("_GlowIntensity", 2.5f);
+        glowMat.SetFloat("_OutlineWidth",  1.5f);
+        glowMat.SetFloat("_InteriorAlpha", 0.95f);
+        _spriteRenderer.material = glowMat;
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
