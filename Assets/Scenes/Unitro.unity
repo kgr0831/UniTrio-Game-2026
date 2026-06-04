@@ -13395,7 +13395,17 @@ MonoBehaviour:
   tilemap: {fileID: 2051489253}
   player: {fileID: 928606629}
   chunkSize: 64
-  noiseScale: 0.005
+  noiseScale: 0.04
+  seed: 2147142254
+  octaves: 2
+  persistence: 0.505
+  lacunarity: 2
+  usePathMode: 1
+  pathLevel: 0.5
+  pathWidth: 0.06
+  useDomainWarp: 1
+  warpStrength: 5
+  warpScale: 0.07
   biomes:
   - name: grass
     priority: 2
@@ -13418,9 +13428,8 @@ MonoBehaviour:
     - {fileID: 11400000, guid: eb4fed7e2c8477e4c92e6f6136f4f5bc, type: 2}
     prefabs:
     - {fileID: 4351201107849012885, guid: f11fad816431e5c4e85929dd4e585fe3, type: 3}
-    - {fileID: 4351201107849012885, guid: f26945a3e06f71d40aeeb0a1c0d2b632, type: 3}
     weight: 0.312
-    spawnChance: 0.006
+    spawnChance: 0.3
     minSpacing: 5
     threshold: 0
     tileSize: {x: 1, y: 1}
@@ -13443,10 +13452,11 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 793e000168d91a14c90e50b1e37e34e8, type: 2}
     - {fileID: 11400000, guid: 82e7c71120a839147a30522868ffeb1e, type: 2}
     - {fileID: 11400000, guid: 46223a94467c1c84d93fca186d7a4fa1, type: 2}
-    prefabs: []
+    prefabs:
+    - {fileID: 4351201107849012885, guid: f26945a3e06f71d40aeeb0a1c0d2b632, type: 3}
     weight: 0.5
-    spawnChance: 0
-    minSpacing: 0
+    spawnChance: 0.3
+    minSpacing: 5
     threshold: 0
     tileSize: {x: 1, y: 1}
   renderDistance: 3

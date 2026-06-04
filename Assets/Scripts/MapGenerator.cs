@@ -28,7 +28,40 @@ public class MapGenerator : MonoBehaviour
     [Header("지형 설정")]
     public int chunkSize = 16;
     public float noiseScale = 0.05f;
+
+    [Header("노이즈 시드 / 옥타브(fBm)")]
+    [Tooltip("같은 시드는 항상 같은 맵을 만듭니다. 값을 바꾸면 전혀 다른 지형이 됩니다.")]
+    public int seed = 0;
+    [Tooltip("옥타브 수. 1이면 단일 주파수(밋밋), 클수록 디테일이 쌓여 자연스러워집니다.")]
+    [Range(1, 8)] public int octaves = 4;
+    [Tooltip("옥타브마다 진폭이 줄어드는 비율(0~1). 작을수록 큰 덩어리 위주, 클수록 잔디테일이 강해집니다.")]
+    [Range(0f, 1f)] public float persistence = 0.5f;
+    [Tooltip("옥타브마다 주파수가 커지는 배수(보통 2). 클수록 옥타브 간 디테일 간격이 벌어집니다.")]
+    public float lacunarity = 2f;
+
+    [Header("길(Path) 모드 — 연한 영역을 얇은 띠로")]
+    [Tooltip("켜면 연한(낮은 우선순위) 바이옴이 면적이 아니라 등치선 띠로 생성되어 길처럼 이어집니다.")]
+    public bool usePathMode = false;
+    [Tooltip("길이 지나는 노이즈 높이(0~1). 길의 위치/형태가 바뀝니다.")]
+    [Range(0f, 1f)] public float pathLevel = 0.5f;
+    [Tooltip("띠 두께(반폭). 길 폭을 결정합니다. 너무 작으면 길이 끊깁니다.")]
+    public float pathWidth = 0.07f;
+
+    [Header("도메인 워핑 — 길이 유기적으로 굽이치게")]
+    [Tooltip("켜면 샘플 좌표를 저주파 노이즈로 휘게 해서 직선적인 느낌이 사라집니다.")]
+    public bool useDomainWarp = true;
+    [Tooltip("좌표를 휘게 하는 세기(월드 타일 단위). 클수록 더 크게 굽이칩니다.")]
+    public float warpStrength = 40f;
+    [Tooltip("워프 노이즈의 주파수. 작을수록 더 완만하고 길게 굽이칩니다.")]
+    public float warpScale = 0.01f;
+
     public List<BiomeSetting> biomes = new List<BiomeSetting>();
+
+    // 시드 기반 옥타브별 오프셋. 원점(0,0) 거울 대칭/격자 아티팩트를 피하기 위해 사용
+    private Vector2[] octaveOffsets;
+    private Vector2 warpOffset;        // 도메인 워핑 노이즈용 오프셋
+    private int pathBiomeIndex;        // 연한(길) = 우선순위 최저 바이옴
+    private int groundBiomeIndex;      // 진한(땅) = 우선순위 최고 바이옴
 
     [Header("렌더링 설정")]
     public int renderDistance = 3;
@@ -59,7 +92,42 @@ public class MapGenerator : MonoBehaviour
 
     void Awake()
     {
+        InitNoise();
         CalculateThresholds();
+        ResolvePathBiomes();
+    }
+
+    // 길 모드용: 연한(우선순위 최저) / 진한(우선순위 최고) 바이옴 인덱스를 찾는다.
+    void ResolvePathBiomes()
+    {
+        if (biomes == null || biomes.Count == 0) return;
+        pathBiomeIndex = 0;
+        groundBiomeIndex = 0;
+        int minP = int.MaxValue, maxP = int.MinValue;
+        for (int i = 0; i < biomes.Count; i++)
+        {
+            if (biomes[i].priority < minP) { minP = biomes[i].priority; pathBiomeIndex = i; }
+            if (biomes[i].priority > maxP) { maxP = biomes[i].priority; groundBiomeIndex = i; }
+        }
+    }
+
+    // 시드로부터 옥타브별 오프셋을 산출한다.
+    // Unity Mathf.PerlinNoise는 원점(0,0) 기준 거울 대칭이라 음수/원점 부근을 그대로 샘플링하면
+    // 맵이 좌우·상하 대칭으로 찍힌다. 큰 양수 오프셋으로 샘플 영역을 원점에서 멀리 떨어뜨려 이를 회피한다.
+    void InitNoise()
+    {
+        System.Random prng = new System.Random(seed);
+        int count = Mathf.Max(1, octaves);
+        octaveOffsets = new Vector2[count];
+        for (int i = 0; i < count; i++)
+        {
+            // 1,000 ~ 100,000 사이의 큰 양수 오프셋 → 원점에서 충분히 떨어진 영역만 샘플링
+            float ox = prng.Next(1000, 100000);
+            float oy = prng.Next(1000, 100000);
+            octaveOffsets[i] = new Vector2(ox, oy);
+        }
+        // 워프 노이즈도 본 노이즈와 상관관계가 없도록 별도 오프셋 사용
+        warpOffset = new Vector2(prng.Next(1000, 100000), prng.Next(1000, 100000));
     }
 
     void Update() => UpdateVisibleChunks();
@@ -123,15 +191,90 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
+    // 옥타브(fBm) 합성 노이즈를 0~1 범위로 반환한다. (도메인 워핑 적용)
+    public float SampleNoise(int x, int y)
+    {
+        // 옥타브 수가 런타임에 바뀌었거나 초기화 전이면 보정
+        if (octaveOffsets == null || octaveOffsets.Length != Mathf.Max(1, octaves))
+            InitNoise();
+
+        float sx = x;
+        float sy = y;
+
+        // [도메인 워핑] 좌표를 저주파 노이즈로 휘게 해서 띠가 유기적으로 굽이치게 한다.
+        if (useDomainWarp)
+        {
+            float qx = Mathf.PerlinNoise((x + warpOffset.x) * warpScale, (y + warpOffset.y) * warpScale);
+            float qy = Mathf.PerlinNoise((x + warpOffset.x + 5000f) * warpScale, (y + warpOffset.y + 5000f) * warpScale);
+            sx = x + (qx * 2f - 1f) * warpStrength;
+            sy = y + (qy * 2f - 1f) * warpStrength;
+        }
+
+        return SampleFbm(sx, sy);
+    }
+
+    // 실수 좌표 기반 fBm 합성 (도메인 워핑된 좌표를 받는다)
+    float SampleFbm(float x, float y)
+    {
+        float amplitude = 1f;
+        float frequency = 1f;
+        float noiseHeight = 0f;
+        float amplitudeSum = 0f;
+
+        for (int i = 0; i < octaveOffsets.Length; i++)
+        {
+            float sampleX = (x + octaveOffsets[i].x) * noiseScale * frequency;
+            float sampleY = (y + octaveOffsets[i].y) * noiseScale * frequency;
+
+            float perlin = Mathf.PerlinNoise(sampleX, sampleY);
+            noiseHeight += perlin * amplitude;
+            amplitudeSum += amplitude;
+
+            amplitude *= persistence;
+            frequency *= lacunarity;
+        }
+
+        // 진폭 합으로 나눠 다시 0~1로 정규화 (threshold 비교가 그대로 유효하도록)
+        return amplitudeSum > 0f ? noiseHeight / amplitudeSum : 0f;
+    }
+
     // 1. 노이즈를 기반으로 바이옴의 '인덱스'만 반환 (데이터 생성용)
     public int GetBiomeIndexAt(int x, int y)
     {
-        float noiseValue = Mathf.PerlinNoise(x * noiseScale, y * noiseScale);
+        float noiseValue = SampleNoise(x, y);
+
+        // [길 모드] 등치선 띠 안이면 연한(길) 바이옴, 밖이면 진한(땅) 바이옴
+        if (usePathMode)
+        {
+            bool isPath = Mathf.Abs(noiseValue - pathLevel) < pathWidth;
+            return isPath ? pathBiomeIndex : groundBiomeIndex;
+        }
+
         for (int i = 0; i < biomes.Count; i++)
         {
             if (noiseValue <= biomes[i].threshold) return i;
         }
         return biomes.Count - 1;
+    }
+
+    // 한 셀(localX, localY)에서 실제로 그려지는 '지배 바이옴'의 인덱스를 반환한다.
+    // 듀얼 그리드 4개 코너 중 우선순위가 가장 높은 바이옴이 곧 그 칸의 타일을 결정한다.
+    // (동률일 때 TL > TR > BL > BR 순서는 렌더링과 동일하게 유지)
+    // 오브젝트 배치도 이 결과를 그대로 사용하므로 "보이는 타일 = 배치 기준"이 항상 일치한다.
+    public int GetDominantBiomeIndex(TerrainChunk chunk, int localX, int localY)
+    {
+        int blIdx = chunk.terrainData[localX, localY];
+        int brIdx = chunk.terrainData[localX + 1, localY];
+        int tlIdx = chunk.terrainData[localX, localY + 1];
+        int trIdx = chunk.terrainData[localX + 1, localY + 1];
+
+        int maxP = Mathf.Max(biomes[blIdx].priority, biomes[brIdx].priority,
+                             biomes[tlIdx].priority, biomes[trIdx].priority);
+
+        if (biomes[tlIdx].priority == maxP) return tlIdx;
+        if (biomes[trIdx].priority == maxP) return trIdx;
+        if (biomes[blIdx].priority == maxP) return blIdx;
+        return brIdx;
     }
 
     // 2. [핵심] 데이터 테이블을 참조하여 듀얼 그리드 타일을 실제로 그림
@@ -143,23 +286,16 @@ public class MapGenerator : MonoBehaviour
         int tlIdx = chunk.terrainData[localX, localY + 1];
         int trIdx = chunk.terrainData[localX + 1, localY + 1];
 
-        BiomeSetting bl = biomes[blIdx];
-        BiomeSetting br = biomes[brIdx];
-        BiomeSetting tl = biomes[tlIdx];
-        BiomeSetting tr = biomes[trIdx];
-
-        // 우선순위가 가장 높은 바이옴 찾기
-        int maxP = Mathf.Max(bl.priority, br.priority, tl.priority, tr.priority);
-        BiomeSetting dominant = (tl.priority == maxP) ? tl : 
-                                (tr.priority == maxP) ? tr : 
-                                (bl.priority == maxP) ? bl : br;
+        // 지배 바이옴 (오브젝트 배치와 동일한 판정 로직 공유)
+        BiomeSetting dominant = biomes[GetDominantBiomeIndex(chunk, localX, localY)];
+        int maxP = dominant.priority;
 
         // 비트마스크 계산 (8:TL, 4:TR, 2:BL, 1:BR)
         int mask = 0;
-        if (tl.priority == maxP) mask += 8;
-        if (tr.priority == maxP) mask += 4;
-        if (bl.priority == maxP) mask += 2;
-        if (br.priority == maxP) mask += 1;
+        if (biomes[tlIdx].priority == maxP) mask += 8;
+        if (biomes[trIdx].priority == maxP) mask += 4;
+        if (biomes[blIdx].priority == maxP) mask += 2;
+        if (biomes[brIdx].priority == maxP) mask += 1;
 
         int worldX = chunk.coord.x * chunkSize + localX;
         int worldY = chunk.coord.y * chunkSize + localY;
@@ -170,64 +306,56 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
-    // 기존 이중 루프 방식이 아닌, 청크당 스폰 시도 횟수를 기반으로 호출하도록 변경 권장
-    public void TrySpawnObject(TerrainChunk chunk, BiomeSetting setting)
+    // [변경] 타일(셀) 기준 배치.
+    // 각 셀의 '지배 바이옴'을 구해, 그 바이옴이 가진 프리팹만 그 칸 위에 생성한다.
+    // → 진한 타일(예: dirt) 위엔 dirt 바이옴 프리팹(나무)만, 연한 타일(예: grass) 위엔
+    //    grass 바이옴 프리팹(돌)만 생성된다. 생성 여부는 setting.spawnChance(=칸당 확률, 예 0.3)로 판정.
+    public void TrySpawnAtCell(TerrainChunk chunk, int localX, int localY)
     {
+        int biomeIdx = GetDominantBiomeIndex(chunk, localX, localY);
+        BiomeSetting setting = biomes[biomeIdx];
+
+        // 이 바이옴에 배치할 프리팹이 없으면 스킵 (예: 오브젝트를 두지 않는 바이옴)
         if (setting.prefabs == null || setting.prefabs.Length == 0) return;
 
-        // 1. 청크 면적에 비례하여 스폰 시도 횟수 설정 (spawnChance를 밀도로 사용)
-        int spawnAttempts = Mathf.FloorToInt(chunkSize * chunkSize * setting.spawnChance);
+        int worldX = chunk.coord.x * chunkSize + localX;
+        int worldY = chunk.coord.y * chunkSize + localY;
 
-        for (int i = 0; i < spawnAttempts; i++)
+        // 칸당 생성 확률 판정 (좌표 기반 결정적 난수 → 같은 맵이면 항상 같은 배치)
+        float roll = GetSymmetricRandom(worldX, worldY, 50);
+        if (roll > setting.spawnChance) return;
+
+        // 셀 중심 위치 (타일 앵커가 0.5이므로 +0.5)
+        Vector3 spawnPos = new Vector3(worldX + 0.5f, worldY + 0.5f, 0);
+
+        // minSpacing + 오브젝트 크기 기반 겹침 체크
+        float checkRadius = setting.minSpacing + (Mathf.Max(setting.tileSize.x, setting.tileSize.y) * 0.4f);
+        if (Physics2D.OverlapCircle(spawnPos, checkRadius) != null) return;
+
+        // 오브젝트 풀에서 컨테이너 가져오기
+        GameObject container = objectPool.Get();
+        container.transform.position = spawnPos;
+
+        // 비주얼 프리팹 생성 및 스케일 조절
+        int pIdx = Mathf.FloorToInt(GetSymmetricRandom(worldX, worldY, 3) * setting.prefabs.Length) % setting.prefabs.Length;
+        GameObject visual = Instantiate(setting.prefabs[pIdx], container.transform);
+
+        SpriteRenderer sr = visual.GetComponentInChildren<SpriteRenderer>();
+        if (sr != null && sr.sprite != null)
         {
-            // 2. 정수(int)가 아닌 실수(float) 기반의 자유 좌표 생성
-            // i를 offset으로 활용해 고유한 랜덤값 추출
-            float localX = GetSymmetricRandom(chunk.coord.x, i, 100) * chunkSize;
-            float localY = GetSymmetricRandom(chunk.coord.y, i, 200) * chunkSize;
+            Vector2 spriteSize = sr.sprite.bounds.size;
+            float scaleX = setting.tileSize.x / spriteSize.x;
+            float scaleY = setting.tileSize.y / spriteSize.y;
 
-            Vector3 spawnPos = new Vector3(
-                chunk.coord.x * chunkSize + localX,
-                chunk.coord.y * chunkSize + localY,
-                0
-            );
-
-            // 3. 물리 엔진을 이용한 겹침 체크 (CircleCast 또는 OverlapCircle)
-            // 설정된 minSpacing과 오브젝트의 tileSize 중 큰 값을 기준으로 반경 설정
-            float checkRadius = setting.minSpacing + (Mathf.Max(setting.tileSize.x, setting.tileSize.y) * 0.4f);
-            
-            // 해당 위치에 이미 배치된 오브젝트(Collider2D)가 있는지 확인
-            Collider2D hit = Physics2D.OverlapCircle(spawnPos, checkRadius);
-
-            if (hit == null)
-            {
-                // 4. 오브젝트 풀에서 컨테이너 가져오기 및 위치 설정
-                GameObject container = objectPool.Get();
-                container.transform.position = spawnPos;
-
-                // 5. 비주얼 프리팹 생성 및 스케일 조절 (기존 로직 유지)
-                int pIdx = Mathf.FloorToInt(GetSymmetricRandom((int)spawnPos.x, (int)spawnPos.y, 3) * setting.prefabs.Length) % setting.prefabs.Length;
-                GameObject visual = Instantiate(setting.prefabs[pIdx], container.transform);
-
-                SpriteRenderer sr = visual.GetComponentInChildren<SpriteRenderer>();
-                if (sr != null && sr.sprite != null)
-                {
-                    Vector2 spriteSize = sr.sprite.bounds.size;
-                    float scaleX = setting.tileSize.x / spriteSize.x;
-                    float scaleY = setting.tileSize.y / spriteSize.y;
-                    
-                    // 비율 유지를 원한다면 Mathf.Min(scaleX, scaleY)를 사용하세요.
-                    visual.transform.localScale = new Vector3(scaleX, scaleY, 1);
-                    
-                    // 자유 배치이므로 로컬 위치는 중앙(0,0,0)으로 초기화
-                    visual.transform.localPosition = Vector3.zero;
-                }
-
-                container.transform.SetParent(chunk.objectParent);
-                chunk.AddObject(container);
-                
-                // 주의: 생성된 프리팹에 Collider2D가 있어야 다음 루프에서 hit으로 감지됩니다.
-            }
+            // 비율 유지를 원한다면 Mathf.Min(scaleX, scaleY)를 사용하세요.
+            visual.transform.localScale = new Vector3(scaleX, scaleY, 1);
+            visual.transform.localPosition = Vector3.zero;
         }
+
+        container.transform.SetParent(chunk.objectParent);
+        chunk.AddObject(container);
+
+        // 주의: 생성된 프리팹에 Collider2D가 있어야 겹침 체크에서 감지됩니다.
     }
 
     public void ReleaseObject(GameObject obj) => objectPool.Release(obj);
@@ -287,10 +415,13 @@ public class TerrainChunk
         }
 
         // 3. 오브젝트 배치 (수정된 부분)
-        // 각 바이옴 설정별로 청크 전체에 대해 스폰을 시도하도록 호출합니다.
-        foreach (var biome in gen.biomes)
+        // 셀 단위로 순회하며, 각 칸의 지배 바이옴에 맞는 프리팹만 배치한다.
+        for (int x = 0; x < gen.chunkSize; x++)
         {
-            gen.TrySpawnObject(this, biome);
+            for (int y = 0; y < gen.chunkSize; y++)
+            {
+                gen.TrySpawnAtCell(this, x, y);
+            }
         }
     }
 
