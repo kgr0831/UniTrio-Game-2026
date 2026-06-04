@@ -97,5 +97,9 @@ public class DashHandler : MonoBehaviour
         _cooldownTimer = _cooldown;
 
         _rb.linearVelocity = direction.normalized * _dashForce;
+
+        // 대시음
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayDash();
     }
 }

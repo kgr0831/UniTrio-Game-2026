@@ -1627,7 +1627,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   moveSpeed: 5
+  _footstepStride: 0.9
   SpeedMultiplier: 1
+  DashVelocity: {x: 0, y: 0}
 --- !u!50 &8460174973511288397
 Rigidbody2D:
   serializedVersion: 5
@@ -1732,7 +1734,7 @@ MonoBehaviour:
   _baseAtk: 5
   _baseMagicAtk: 5
   _baseDef: 0
-  _baseMoveSpeed: 5
+  _baseMoveSpeed: 6
   _baseMana: 100
   _baseMaxHP: 100
   _manaRegen: 1

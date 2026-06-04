@@ -315,6 +315,10 @@ public class SwordBehaviour : WeaponBehaviourBase
             _vfxAnimator.speed = speed;
             _vfxAnimator.SetTrigger("Attack");
         }
+
+        // 검 공격음: 콤보 1·2타 → SwordAttack_1, 3타 → SwordAttack_2
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySwordAttack(comboStep);
     }
 
 
