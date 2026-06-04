@@ -12241,6 +12241,97 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MinimapFollow
   target: {fileID: 0}
   offsetZ: -5
+--- !u!1 &1414767271
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1414767273}
+  - component: {fileID: 1414767272}
+  m_Layer: 0
+  m_Name: tile2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!212 &1414767272
+SpriteRenderer:
+  serializedVersion: 2
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1414767271}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 9dfc825aed78fcd4ba02077103263b40, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 50
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: df8f09a9138a629478d6905650e1e7fa, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 4, y: 4}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 0
+  m_SpriteSortPoint: 0
+--- !u!4 &1414767273
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1414767271}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -36.891876, y: -34.445267, z: -68.87287}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1480542206
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13272,7 +13363,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.5, y: 0.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2, y: 2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -13303,28 +13394,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapGenerator
   tilemap: {fileID: 2051489253}
   player: {fileID: 928606629}
-  chunkSize: 16
-  noiseScale: 0.01
+  chunkSize: 64
+  noiseScale: 0.005
   biomes:
   - name: grass
     priority: 2
     tiles:
-    - {fileID: 11400000, guid: 306fae7e6873de64c9fe6c28e855503a, type: 2}
-    - {fileID: 11400000, guid: bceb5b0c03b94fe4d9887a564fcb4a60, type: 2}
-    - {fileID: 11400000, guid: 0cd244884160842469ed48f4f2f56681, type: 2}
-    - {fileID: 11400000, guid: 85a7a97316f4f7541b4b2b82f7595efc, type: 2}
-    - {fileID: 11400000, guid: cbcff9a9b4b6c474db826851e961e308, type: 2}
-    - {fileID: 11400000, guid: 0014b3374190d4c408ff851179d7bc1a, type: 2}
-    - {fileID: 11400000, guid: bceb5b0c03b94fe4d9887a564fcb4a60, type: 2}
-    - {fileID: 11400000, guid: 6832aad5bde812c468806147819be385, type: 2}
-    - {fileID: 11400000, guid: ff87587e3f7cb0c43b71d07be28f33c5, type: 2}
-    - {fileID: 11400000, guid: 0cd244884160842469ed48f4f2f56681, type: 2}
-    - {fileID: 11400000, guid: e5615f2e5fed9aa4396b80cc35ba7d2e, type: 2}
-    - {fileID: 11400000, guid: 8038883a5ea90f042a55cd0e5e3c55d6, type: 2}
-    - {fileID: 11400000, guid: 5d528f79cbf384447995cc22c78911f3, type: 2}
-    - {fileID: 11400000, guid: 1c135cf77b9d7c74daa6c677704dbf6f, type: 2}
-    - {fileID: 11400000, guid: 26b0a4434d3849e4f991ad311e18a0f0, type: 2}
-    - {fileID: 11400000, guid: 4ee52389e980d0744b1bdb1915fdab4c, type: 2}
+    - {fileID: 11400000, guid: eb4fed7e2c8477e4c92e6f6136f4f5bc, type: 2}
+    - {fileID: 11400000, guid: 82e7c71120a839147a30522868ffeb1e, type: 2}
+    - {fileID: 11400000, guid: 793e000168d91a14c90e50b1e37e34e8, type: 2}
+    - {fileID: 11400000, guid: 1caae52cdd04aed4f928318f8ea70b10, type: 2}
+    - {fileID: 11400000, guid: 732e510332997bd44bad7429d1fa2a96, type: 2}
+    - {fileID: 11400000, guid: efe44dd0f976481448638d8a93c64269, type: 2}
+    - {fileID: 11400000, guid: 82e7c71120a839147a30522868ffeb1e, type: 2}
+    - {fileID: 11400000, guid: e17949daa65df7545b2484372d501861, type: 2}
+    - {fileID: 11400000, guid: 5fb2ec1ef9c582c4bb623459f92063a0, type: 2}
+    - {fileID: 11400000, guid: 670bc776a6e50c8419733aac27f0ab02, type: 2}
+    - {fileID: 11400000, guid: db1895035afd7eb4391e15b389981d30, type: 2}
+    - {fileID: 11400000, guid: 2719cbdff8187b34eb6bfc4f795c158e, type: 2}
+    - {fileID: 11400000, guid: efe44dd0f976481448638d8a93c64269, type: 2}
+    - {fileID: 11400000, guid: 71708179086da644a862478f99a9f4d2, type: 2}
+    - {fileID: 11400000, guid: bb869fe44666fa04b9d56ecac5eb55bf, type: 2}
+    - {fileID: 11400000, guid: eb4fed7e2c8477e4c92e6f6136f4f5bc, type: 2}
     prefabs:
     - {fileID: 4351201107849012885, guid: f11fad816431e5c4e85929dd4e585fe3, type: 3}
     - {fileID: 4351201107849012885, guid: f26945a3e06f71d40aeeb0a1c0d2b632, type: 3}
@@ -13336,22 +13427,22 @@ MonoBehaviour:
   - name: dirt
     priority: 3
     tiles:
-    - {fileID: 11400000, guid: 4ee52389e980d0744b1bdb1915fdab4c, type: 2}
-    - {fileID: 11400000, guid: 26b0a4434d3849e4f991ad311e18a0f0, type: 2}
-    - {fileID: 11400000, guid: 1c135cf77b9d7c74daa6c677704dbf6f, type: 2}
-    - {fileID: 11400000, guid: 5d528f79cbf384447995cc22c78911f3, type: 2}
-    - {fileID: 11400000, guid: 8038883a5ea90f042a55cd0e5e3c55d6, type: 2}
-    - {fileID: 11400000, guid: e5615f2e5fed9aa4396b80cc35ba7d2e, type: 2}
-    - {fileID: 11400000, guid: 44baf974c6714044f9316be765c7491f, type: 2}
-    - {fileID: 11400000, guid: ff87587e3f7cb0c43b71d07be28f33c5, type: 2}
-    - {fileID: 11400000, guid: 6832aad5bde812c468806147819be385, type: 2}
-    - {fileID: 11400000, guid: 377fdbd87c1cbcc4d83a12fe86932d62, type: 2}
-    - {fileID: 11400000, guid: 0014b3374190d4c408ff851179d7bc1a, type: 2}
-    - {fileID: 11400000, guid: cbcff9a9b4b6c474db826851e961e308, type: 2}
-    - {fileID: 11400000, guid: 85a7a97316f4f7541b4b2b82f7595efc, type: 2}
-    - {fileID: 11400000, guid: 0cd244884160842469ed48f4f2f56681, type: 2}
-    - {fileID: 11400000, guid: bceb5b0c03b94fe4d9887a564fcb4a60, type: 2}
-    - {fileID: 11400000, guid: 306fae7e6873de64c9fe6c28e855503a, type: 2}
+    - {fileID: 11400000, guid: eb4fed7e2c8477e4c92e6f6136f4f5bc, type: 2}
+    - {fileID: 11400000, guid: bb869fe44666fa04b9d56ecac5eb55bf, type: 2}
+    - {fileID: 11400000, guid: 71708179086da644a862478f99a9f4d2, type: 2}
+    - {fileID: 11400000, guid: efe44dd0f976481448638d8a93c64269, type: 2}
+    - {fileID: 11400000, guid: 2719cbdff8187b34eb6bfc4f795c158e, type: 2}
+    - {fileID: 11400000, guid: db1895035afd7eb4391e15b389981d30, type: 2}
+    - {fileID: 11400000, guid: 670bc776a6e50c8419733aac27f0ab02, type: 2}
+    - {fileID: 11400000, guid: 5fb2ec1ef9c582c4bb623459f92063a0, type: 2}
+    - {fileID: 11400000, guid: e17949daa65df7545b2484372d501861, type: 2}
+    - {fileID: 11400000, guid: d402a48a8ec32a14d902553d304c1eef, type: 2}
+    - {fileID: 11400000, guid: d4990b5637bf8924f993a5bef3e6aefa, type: 2}
+    - {fileID: 11400000, guid: 732e510332997bd44bad7429d1fa2a96, type: 2}
+    - {fileID: 11400000, guid: 1caae52cdd04aed4f928318f8ea70b10, type: 2}
+    - {fileID: 11400000, guid: 793e000168d91a14c90e50b1e37e34e8, type: 2}
+    - {fileID: 11400000, guid: 82e7c71120a839147a30522868ffeb1e, type: 2}
+    - {fileID: 11400000, guid: 46223a94467c1c84d93fca186d7a4fa1, type: 2}
     prefabs: []
     weight: 0.5
     spawnChance: 0
@@ -13521,3 +13612,4 @@ SceneRoots:
   - {fileID: 1530210930}
   - {fileID: 1282206406}
   - {fileID: 2988256048522770355}
+  - {fileID: 1414767273}
