@@ -62,7 +62,10 @@
       "Bash(git mv *)",
       "Bash(git checkout *)",
       "mcp__UnityMCP__manage_script_capabilities",
-      "mcp__UnityMCP__execute_custom_tool"
+      "mcp__UnityMCP__execute_custom_tool",
+      "mcp__coplay-mcp__list_game_objects_in_hierarchy",
+      "mcp__UnityMCP__execute_code",
+      "mcp__UnityMCP__manage_camera"
     ]
   }
 }

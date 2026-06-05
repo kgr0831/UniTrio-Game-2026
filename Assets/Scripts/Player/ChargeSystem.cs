@@ -1,27 +1,25 @@
 using UnityEngine;
 
 /// <summary>
-/// 우클릭(Mouse1) 홀드 차징 시스템.
+/// 우클릭(Mouse1) 홀드 차징 시스템 (컨트롤러).
+/// 스킬 게이지 상태는 SkillGaugeSystem(모델)이 보유하고, 본 클래스는 입력·오케스트레이션만 담당합니다.
 ///
 /// [동작 흐름]
 /// 1. 우클릭 꾹 누르면 차징 시작
-/// 2. 차징 중 속성 게이지가 비선형 속도로 감소:
+/// 2. 차징 중 속성 게이지가 비선형 속도로 감소하며, 소모한 만큼 스킬 게이지에 1:1로 적립:
 ///    - 게이지 200~300 구간: 25/초 (100을 4초에 소모)
 ///    - 게이지 100~200 구간: 33.33/초 (100을 3초에 소모)
 ///    - 게이지 0~100 구간: 50/초 (100을 2초에 소모)
+///    - 스킬 게이지는 300에서 캡, 속성 게이지가 0이 되면 더 이상 충전되지 않음(릴리즈 대기)
 /// 3. 차징 중 이동속도 30% 감소
-/// 4. 우클릭 릴리즈 시 누적 소모량에 따라 차징 단계 판정:
-///    - 소모량 ≥ 100 → 1단계
-///    - 소모량 ≥ 200 → 2단계
-///    - 소모량 ≥ 300 → 3단계
-///    - 소모량 < 100 → 0단계 (차징 실패)
-/// 5. 게이지가 0이 되면 자동 종료
+/// 4. 우클릭 릴리즈 시 스킬 게이지로 도달 단계(100→1, 200→2, 300→3)를 판정해 스킬 1회 발동 후,
+///    발동 단계만큼(stage*100) 스킬 게이지를 차감. 나머지는 누적 유지(자동 감소 없음).
 ///
 /// [차단 조건]
 /// - 무기 미장착
 /// - 공격 중
 /// - 대시 중 (차징 중이면 캔슬)
-/// - 게이지가 0
+/// - 속성 게이지가 0 이고 스킬 게이지도 100 미만 (충전·발동 모두 불가)
 /// - InventoryToggle 패널 열림
 /// </summary>
 public class ChargeSystem : MonoBehaviour
@@ -31,10 +29,10 @@ public class ChargeSystem : MonoBehaviour
     private PlayerWeaponController _weaponController;
     private PlayerMovement         _playerMovement;
     private ChargeVFXController    _chargeVFX;
+    private SkillGaugeSystem       _skillGauge;
 
     // ── 차징 상태 ────────────────────────────────────────────
     private bool  _isCharging;
-    private float _totalConsumed;      // 이번 차징에서 누적 소모량
     private float _chargeStartTime;
 
     /// <summary>현재 차징 중인지 여부. 외부에서 읽을 수 있습니다.</summary>
@@ -73,6 +71,11 @@ public class ChargeSystem : MonoBehaviour
         // ChargeVFXController가 없으면 동적 추가
         if (_chargeVFX == null)
             _chargeVFX = gameObject.AddComponent<ChargeVFXController>();
+
+        // 스킬 게이지 모델 확보 (없으면 동적 추가)
+        _skillGauge = GetComponent<SkillGaugeSystem>();
+        if (_skillGauge == null)
+            _skillGauge = gameObject.AddComponent<SkillGaugeSystem>();
     }
 
     // ── 메인 루프 ────────────────────────────────────────────
@@ -117,7 +120,11 @@ public class ChargeSystem : MonoBehaviour
             return;
         if (_weaponController.IsAttacking)
             return;
-        if (_elementSystem == null || _elementSystem.CurrentGauge <= 0f)
+
+        // 충전 가능(속성 게이지 > 0) 또는 발동 가능(스킬 게이지 ≥ 100) 중 하나는 만족해야 시작
+        bool canCharge  = _elementSystem != null && _elementSystem.CurrentGauge > 0f;
+        bool canRelease = _skillGauge != null && _skillGauge.GetStage() >= 1;
+        if (!canCharge && !canRelease)
             return;
 
         // UI 위에서 클릭 무시
@@ -125,9 +132,8 @@ public class ChargeSystem : MonoBehaviour
             UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
             return;
 
-        // 차징 시작
-        _isCharging     = true;
-        _totalConsumed  = 0f;
+        // 차징 시작 (스킬 게이지는 누적 유지되므로 리셋하지 않음)
+        _isCharging      = true;
         _chargeStartTime = Time.time;
 
         // 이동속도 감소
@@ -167,27 +173,22 @@ public class ChargeSystem : MonoBehaviour
             return;
         }
 
-        // 게이지 소모
-        float currentGauge = _elementSystem.CurrentGauge;
-        if (currentGauge <= 0f)
+        // 속성 게이지를 드레인하여 1:1로 스킬 게이지에 적립
+        if (_elementSystem != null && _skillGauge != null)
         {
-            // 게이지가 0이어도 1단계 이상 도달했으면 차징 강제 종료 안 함 (유지)
-            if (GetChargeLevel(_totalConsumed) < 1)
+            float currentGauge = _elementSystem.CurrentGauge;
+            if (currentGauge > 0f)
             {
-                EndCharge();
-                return;
+                float drainRate = GetDrainRate(currentGauge);
+                float drainAmount = drainRate * Time.deltaTime;
+                float consumed = _elementSystem.ConsumeGauge(drainAmount);
+                _skillGauge.Add(consumed); // 소모한 만큼 스킬 게이지 증가 (300에서 캡)
             }
-        }
-        else
-        {
-            float drainRate = GetDrainRate(currentGauge);
-            float drainAmount = drainRate * Time.deltaTime;
-            float actualConsumed = _elementSystem.ConsumeGauge(drainAmount);
-            _totalConsumed += actualConsumed;
+            // 속성 게이지가 0이면 더 이상 충전하지 않고 릴리즈를 기다린다.
         }
 
-        // VFX 진행도 업데이트 (소모량 0~300 → 0~1)
-        float vfxProgress = Mathf.Clamp01(_totalConsumed / 300f);
+        // VFX 진행도 업데이트 (스킬 게이지 0~300 → 0~1)
+        float vfxProgress = _skillGauge != null ? Mathf.Clamp01(_skillGauge.CurrentGauge / 300f) : 0f;
         if (_chargeVFX != null)
             _chargeVFX.UpdateProgress(vfxProgress);
     }
@@ -198,16 +199,20 @@ public class ChargeSystem : MonoBehaviour
     {
         if (!_isCharging) return;
 
-        int chargeLevel = GetChargeLevel(_totalConsumed);
+        // 릴리즈 시점의 스킬 게이지로 도달 단계 판정
+        int chargeLevel = _skillGauge != null ? _skillGauge.GetStage() : 0;
+        float gaugeNow  = _skillGauge != null ? _skillGauge.CurrentGauge : 0f;
 
-        Debug.Log($"[ChargeSystem] 차징 종료 — 단계: {chargeLevel}, 소모량: {_totalConsumed:F1}, 소요시간: {Time.time - _chargeStartTime:F2}초");
+        Debug.Log($"[ChargeSystem] 차징 종료 — 단계: {chargeLevel}, 스킬게이지: {gaugeNow:F1}, 소요시간: {Time.time - _chargeStartTime:F2}초");
 
         CleanupCharge(chargeLevel >= 1);
 
-        // ── 차징 스킬 발동 ──
+        // ── 차징 스킬 발동 + 발동 단계만큼 게이지 차감 ──
         if (chargeLevel >= 1)
         {
             ExecuteChargeSkill(chargeLevel);
+            if (_skillGauge != null)
+                _skillGauge.ConsumeForStage(chargeLevel);
         }
     }
 
@@ -217,7 +222,7 @@ public class ChargeSystem : MonoBehaviour
     {
         if (!_isCharging) return;
 
-        Debug.Log($"[ChargeSystem] 차징 캔슬 — 소모량: {_totalConsumed:F1}");
+        Debug.Log($"[ChargeSystem] 차징 캔슬 — 스킬게이지: {(_skillGauge != null ? _skillGauge.CurrentGauge : 0f):F1}");
 
         CleanupCharge(false);
     }
@@ -259,6 +264,8 @@ public class ChargeSystem : MonoBehaviour
         Debug.Log($"[ChargeSystem] 스킬 발동: {weaponType} {chargeLevel}단계");
     }
 
+    // (단계 판정은 SkillGaugeSystem.GetStage()로 위임되었습니다.)
+
     private ChargeSkillContext BuildContext(int chargeLevel, WeaponType weaponType)
     {
         PlayerEntity playerEntity = GetComponent<PlayerEntity>();
@@ -299,17 +306,4 @@ public class ChargeSystem : MonoBehaviour
         };
     }
 
-    // ── 차징 단계 판정 ──────────────────────────────────────
-
-    /// <summary>
-    /// 누적 소모량으로 차징 단계를 판정합니다.
-    /// 0 = 실패, 1 = 1단계, 2 = 2단계, 3 = 3단계 (만충)
-    /// </summary>
-    private int GetChargeLevel(float consumed)
-    {
-        if (consumed >= 299.5f) return 3;
-        if (consumed >= 199.5f) return 2;
-        if (consumed >= 99.5f) return 1;
-        return 0;
-    }
 }
