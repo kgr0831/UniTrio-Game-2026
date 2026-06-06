@@ -577,9 +577,10 @@ public class BowBehaviour : WeaponBehaviourBase
         }
 
         // 찰나의 타임 슬로우 (풀 차징에 가까울수록 효과, 50% 이상부터)
+        // HitStopManager로 일원화 — 다른 HitStop과 겹쳐도 timeScale 잔류(0.2배속/정지) 방지
         if (chargeRatio >= 0.5f)
         {
-            StartCoroutine(HitStopRoutine(0.1f, 0.2f)); // 0.1초 동안 0.2배속
+            HitStopManager.Instance?.TriggerHitStop(0.1f, 0.2f); // 0.1초 동안 0.2배속
         }
 
         Debug.Log($"[BowBehaviour] 조준 사격 발사! (차징: {chargeRatio * 100f:F0}%)");
@@ -1144,13 +1145,4 @@ public class BowBehaviour : WeaponBehaviourBase
         }
     }
 
-    /// <summary>
-    /// 매우 짧은 시간 동안 게임 내 시간을 강제로 늦춰(Hit Stop) 타격감을 극대화합니다.
-    /// </summary>
-    private System.Collections.IEnumerator HitStopRoutine(float durationSec, float timeScale)
-    {
-        Time.timeScale = timeScale;
-        yield return new WaitForSecondsRealtime(durationSec);
-        Time.timeScale = 1f;
-    }
 }

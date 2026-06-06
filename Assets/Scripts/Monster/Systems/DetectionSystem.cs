@@ -27,12 +27,23 @@ public sealed class DetectionSystem : MonoBehaviour
 
     private readonly Collider2D[] _colliderBuffer = new Collider2D[16];
 
+    // LoS 레이캐스트용 — 트리거 콜라이더(보스존 감지 영역 등)는 시야를 막지 않도록 useTriggers=false 필터 사용
+    private readonly RaycastHit2D[] _losHitBuffer = new RaycastHit2D[1];
+    private ContactFilter2D _losFilter;
+
     public bool      HasTarget      => _runtime.DetectedPlayer != null;
     public Transform DetectedTarget => _runtime.DetectedPlayer;
 
     private void Awake()
     {
         _runtime = GetComponent<MonsterRuntimeData>();
+
+        // 시야 판정 필터: 장애물 레이어만, 트리거는 제외(트리거는 물리 벽이 아니라 영역 감지용이므로 시야를 가리면 안 됨)
+        _losFilter = new ContactFilter2D
+        {
+            useTriggers = false
+        };
+        _losFilter.SetLayerMask(_obstacleMask);
     }
 
     private void Update()
@@ -70,13 +81,13 @@ public sealed class DetectionSystem : MonoBehaviour
             return;
         }
 
-        // LoS 체크
+        // LoS 체크 — 트리거(보스존 감지 영역 등)는 시야를 막지 않도록 필터(useTriggers=false) 사용
         Vector2 direction = (playerHit.transform.position - transform.position);
         float distance = direction.magnitude;
-        RaycastHit2D losHit = Physics2D.Raycast(
-            transform.position, direction.normalized, distance, _obstacleMask);
+        int losCount = Physics2D.Raycast(
+            transform.position, direction.normalized, _losFilter, _losHitBuffer, distance);
 
-        if (losHit.collider != null)
+        if (losCount > 0)
         {
             HandleLineOfSightBlocked();
             return;

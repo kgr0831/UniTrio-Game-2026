@@ -83,6 +83,14 @@ public class GolemZone : MonoBehaviour
     private void Awake()
     {
         _zoneCollider = GetComponent<Collider2D>();
+
+        // 이 콜라이더는 '플레이어 진입 감지'용 트리거일 뿐, 물리 벽이나 시야 장애물이 아니다.
+        // Default 레이어에 있으면 몹들의 시야(LoS)·배회/도망 경로탐색이 사용하는 obstacleMask(=Default)에
+        // 이 거대한 트리거(반경 24)가 잡혀, 구역 안에서 생성된 몹/동물이 플레이어에 전혀 반응하지 못한다.
+        // 벽(GolemWallRing)과 동일하게 'Ignore Raycast'로 옮긴다.
+        // (충돌 매트릭스상 Ignore Raycast는 Player와 계속 충돌하므로 OnTriggerStay2D 진입 감지는 정상 동작)
+        int ignoreRaycast = LayerMask.NameToLayer("Ignore Raycast");
+        if (ignoreRaycast >= 0) gameObject.layer = ignoreRaycast;
     }
 
     private void Reset()

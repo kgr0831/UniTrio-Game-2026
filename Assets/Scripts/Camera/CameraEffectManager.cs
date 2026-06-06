@@ -101,6 +101,8 @@ public class CameraEffectManager : MonoBehaviour
     // 화면이 점점 색상으로 덮임
     public IEnumerator FadeOut(Color targetColor, float duration)
     {
+        if (fadeImage == null) { Debug.LogWarning("[CameraEffectManager] fadeImage가 할당되지 않아 FadeOut을 건너뜁니다."); yield break; }
+
         float elapsed = 0f;
         Color startColor = fadeImage.color;
         // 색상은 유지하되 알파만 0에서 시작하도록 설정
@@ -117,6 +119,8 @@ public class CameraEffectManager : MonoBehaviour
     // 화면이 다시 투명해짐
     public IEnumerator FadeIn(float duration)
     {
+        if (fadeImage == null) { Debug.LogWarning("[CameraEffectManager] fadeImage가 할당되지 않아 FadeIn을 건너뜁니다."); yield break; }
+
         float elapsed = 0f;
         Color startColor = fadeImage.color;
         Color targetColor = new Color(startColor.r, startColor.g, startColor.b, 0f);
@@ -429,7 +433,7 @@ public class CameraEffectManager : MonoBehaviour
         Time.fixedDeltaTime = 0.02f * Time.timeScale; 
 
         // 화면 즉시 화이트 아웃 (알파값 1)
-        fadeImage.color = new Color(1, 1, 1, 1);
+        if (fadeImage != null) fadeImage.color = new Color(1, 1, 1, 1);
 
         float elapsed = 0f;
         float startScale = slowAmount;
@@ -443,7 +447,7 @@ public class CameraEffectManager : MonoBehaviour
             float t = Mathf.Clamp01(elapsed / duration);
 
             // 화이트 아웃 서서히 해제 (1 -> 0)
-            fadeImage.color = new Color(1, 1, 1, 1f - t);
+            if (fadeImage != null) fadeImage.color = new Color(1, 1, 1, 1f - t);
 
             // 게임 속도 서서히 복구 (slowAmount -> 1.0)
             Time.timeScale = Mathf.Lerp(startScale, targetScale, t);
@@ -453,7 +457,7 @@ public class CameraEffectManager : MonoBehaviour
         }
 
         // 3. 최종 상태 확정
-        fadeImage.color = new Color(1, 1, 1, 0f);
+        if (fadeImage != null) fadeImage.color = new Color(1, 1, 1, 0f);
         Time.timeScale = 1.0f;
         Time.fixedDeltaTime = 0.02f;
     }
