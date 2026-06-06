@@ -165,15 +165,15 @@ MonoBehaviour:
   detectionRange: 20
   attackCooldown: 1.5
   playerTag: Player
-  indicator: {fileID: 0}
+  indicator: {fileID: 6130902742837685987, guid: 8373975954d7726449ecbada691cdef0, type: 3}
   circleSprite: {fileID: 21300000, guid: 46196d734a8e92d4aafe6beb4c178d08, type: 3}
   squareSprite: {fileID: 21300000, guid: 984ee8bd016d41446acd10a84872f035, type: 3}
   halfCircleSprite: {fileID: 21300000, guid: 638fc9e329dbe0d4b96afd6d53011257, type: 3}
   halfAndhalfCircleSprite: {fileID: 21300000, guid: 2922590ca02e8a24a9ceee558bc4b192, type: 3}
-  rockPrefeb: {fileID: 0}
-  slamImpactPrefab: {fileID: 0}
-  rushImpactPrefab: {fileID: 0}
-  groundCrackPrefab: {fileID: 0}
+  rockPrefeb: {fileID: 4211848645583518337, guid: db3a3820341b74c44853a85537d9d149, type: 3}
+  slamImpactPrefab: {fileID: 6183295925516227169, guid: 90d577d437c56c7418d3fdb299597c44, type: 3}
+  rushImpactPrefab: {fileID: 2816269824691112985, guid: 5b3358e47549bd84f97ddfb7faf360c2, type: 3}
+  groundCrackPrefab: {fileID: 2267308982708671441, guid: d9d425dc53790e04d832da03fb9fb991, type: 3}
   rushStreakTex: {fileID: 2800000, guid: e9ebef42be5d84f409621ca710de38be, type: 3}
   rushRingTex: {fileID: 2800000, guid: c11b46ba1c87bd14396788157adb2e7c, type: 3}
 --- !u!114 &2243543472266777788

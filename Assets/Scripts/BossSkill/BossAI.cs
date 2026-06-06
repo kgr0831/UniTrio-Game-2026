@@ -20,6 +20,19 @@ public class BossAI : MonoBehaviour
     public GameObject indicator;
     public Action OnAttackPoint;
 
+    // ── 골렘 구역(아레나) 경계 — 돌진이 벽 밖으로 나가지 않도록 제한 ──
+    [HideInInspector] public bool hasArenaBounds;
+    [HideInInspector] public Vector2 arenaCenter;
+    [HideInInspector] public float arenaRadius;
+    /// <summary>돌진 등 이동 스킬이 이 원(중심·반지름) 밖으로 나가지 않도록 경계를 설정한다.</summary>
+    public void SetArenaBounds(Vector2 center, float radius)
+    {
+        hasArenaBounds = true;
+        arenaCenter = center;
+        arenaRadius = radius;
+    }
+    public void ClearArenaBounds() => hasArenaBounds = false;
+
     [Header("Indicator Sprites")]
     public Sprite circleSprite;
     public Sprite squareSprite;

@@ -80,6 +80,14 @@ public sealed class MobSpawner : MonoBehaviour
         int slotIndex = _availableIndices.Dequeue();
         Vector3 spawnPos = GetGridPosition(slotIndex);
 
+        // 골렘 구역(원) 내부에는 몹을 생성하지 않는다. 자리 반환 후 잠시 뒤 재시도(구역이 사라지면 다시 채워짐).
+        if (GolemZone.IsInsideAnyArena(spawnPos))
+        {
+            _availableIndices.Enqueue(slotIndex);
+            StartCoroutine(RetrySpawnLater());
+            return;
+        }
+
         // SimpleObjectPool을 통한 스폰
         GameObject mobObj = SimpleObjectPool.Instance.Get(_targetData.MonsterPrefab, spawnPos, Quaternion.identity);
         mobObj.transform.SetParent(this.transform);
@@ -122,6 +130,13 @@ public sealed class MobSpawner : MonoBehaviour
             
             health.OnDied += onDiedHandler;
         }
+    }
+
+    // 골렘 구역 안이라 스폰을 미룬 슬롯을 일정 시간 뒤 다시 시도
+    private IEnumerator RetrySpawnLater()
+    {
+        yield return new WaitForSeconds(_respawnDelay);
+        SpawnOne();
     }
 
     private IEnumerator ReturnAndRespawnRoutine(GameObject mobObj, int slotIdx)

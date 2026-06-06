@@ -73,7 +73,19 @@
       "WebFetch(domain:pokemon.fandom.com)",
       "Bash(git commit -m 'feat: 골렘 공격 피격 처리 및 넉백 추가 *)",
       "Bash(grep -iE \"\\\\.\\(shader|png|mat\\)$\")",
-      "Bash(git commit -m 'feat: 보스 미니 데모 씬 + 플레이어→골렘 피격/사망 연출 *)"
+      "Bash(git commit -m 'feat: 보스 미니 데모 씬 + 플레이어→골렘 피격/사망 연출 *)",
+      "Bash(git fetch *)",
+      "Bash(git merge origin/feature/battleSkill --no-ff -m 'Merge feature/battleSkill into feature/BossDemo *)",
+      "Bash(git commit *)",
+      "Bash(git pull *)",
+      "Bash(git branch *)",
+      "Bash(grep -A2 \"time: 0$\" \"/c/Users/kimga/UniTrio-Game-2026/Assets/Resources/Animations/Bear/Bear_Walk_Left.anim\")",
+      "Bash(grep -A2 \"time: 0$\" \"/c/Users/kimga/UniTrio-Game-2026/Assets/Resources/Animations/Bear/Bear_Walk_Right.anim\")",
+      "Bash(cd \"/c/Users/kimga/UniTrio-Game-2026/Assets/Resources/Animations/Bear\")",
+      "Bash(echo -n '__TRACKED_VAR__ : ')",
+      "Bash(grep guid: __TRACKED_VAR__.anim.meta)",
+      "mcp__UnityMCP__manage_camera",
+      "mcp__UnityMCP__manage_physics"
     ]
   }
 }

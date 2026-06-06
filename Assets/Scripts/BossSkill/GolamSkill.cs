@@ -291,6 +291,7 @@ public class RushSkill : BaseSkillAction
     private Vector3 targetPosition;
     private Vector3 rushDir;
     private Quaternion rushRotation;
+    private float rushDistance; // 실제 돌진 거리(아레나 경계로 클램프될 수 있음)
     private float lengthScale;
     private float nearEdgeLocalY; // 스프라이트 피벗 기준 근접 끝단(min.y) 오프셋
     private float chargeTimer;
@@ -317,7 +318,12 @@ public class RushSkill : BaseSkillAction
         {
             rushDir = owner.transform.right;
         }
-        targetPosition = startPosition + rushDir * RushDistance;
+        // 골렘 구역 안이면 벽을 넘지 않도록 돌진 거리를 원 경계로 클램프
+        rushDistance = RushDistance;
+        if (bossAI != null && bossAI.hasArenaBounds)
+            rushDistance = ClampDistanceToArena(startPosition, rushDir, RushDistance,
+                                                bossAI.arenaCenter, bossAI.arenaRadius);
+        targetPosition = startPosition + rushDir * rushDistance;
 
         // 돌진 방향으로 좌우 반전 (수직에 가까우면 유지)
         if (bb.sr != null && Mathf.Abs(rushDir.x) > 0.01f)
@@ -405,7 +411,7 @@ public class RushSkill : BaseSkillAction
 
         // 돌진 진행도(이동 거리)에 맞춰 Attack03를 RushAnimLoops회 반복 재생
         float traveled = Vector3.Distance(startPosition, owner.transform.position);
-        float progress = Mathf.Clamp01(traveled / RushDistance);
+        float progress = Mathf.Clamp01(traveled / Mathf.Max(0.01f, rushDistance));
         float normTime = (progress * RushAnimLoops) % 1f;
         bb.anim.Play("Attack03", 0, normTime);
         bb.anim.speed = 0f;
@@ -433,6 +439,20 @@ public class RushSkill : BaseSkillAction
         }
     }
 
+    // start에서 dir 방향으로 maxDist만큼 갈 때, 중심 center·반지름 R 원을 벗어나지 않는 최대 거리를 반환.
+    // (start가 원 안에 있다고 가정. 레이-원 교차의 양의 근 = 원을 빠져나가는 지점)
+    private static float ClampDistanceToArena(Vector3 start, Vector3 dir, float maxDist, Vector2 center, float R)
+    {
+        Vector2 s = (Vector2)(Vector3)start - center;
+        Vector2 d = ((Vector2)(Vector3)dir).normalized;
+        float b = Vector2.Dot(s, d);
+        float c = Vector2.Dot(s, s) - R * R;
+        float disc = b * b - c;
+        if (disc < 0f) return maxDist;          // 교차 없음(이론상 원 안이면 발생 안 함)
+        float tExit = -b + Mathf.Sqrt(disc);    // 원을 빠져나가는 거리
+        return Mathf.Clamp(maxDist, 0f, Mathf.Max(0f, tExit));
+    }
+
     private void SpawnIndicators()
     {
         // 정적 인디케이터: 전체 길이, 주황 — 그대로 유지
@@ -444,7 +464,7 @@ public class RushSkill : BaseSkillAction
 
         // 스프라이트 단위높이/피벗 기준 근접 끝단 산출 (피벗이 끝단/중앙 어디든 골렘에 정렬)
         float unitHeight = staticSR.sprite.bounds.size.y;
-        lengthScale = unitHeight > 0.0001f ? RushDistance / unitHeight : 1f;
+        lengthScale = unitHeight > 0.0001f ? rushDistance / unitHeight : 1f;
         nearEdgeLocalY = staticSR.sprite.bounds.min.y;
 
         staticIndicator.transform.localScale = new Vector3(WidthScale, lengthScale, 1f);

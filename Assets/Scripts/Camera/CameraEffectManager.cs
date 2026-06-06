@@ -22,7 +22,32 @@ public class CameraEffectManager : MonoBehaviour
         public float orthoSize;
     }
     private CameraState originalState;
-    
+
+    [Header("Boss Intro/Outro Cinematic")]
+    [Tooltip("보스로 줌인했을 때의 카메라 거리(FollowOffset.z, 음수일수록 멀다)")]
+    [SerializeField] private float _bossZoomZ = -6f;
+    [Tooltip("플레이어로 빠르게 줌아웃했을 때의 카메라 거리")]
+    [SerializeField] private float _playerZoomZ = -8f;
+    [Tooltip("보스로 이동하며 줌인하는 시간(초)")]
+    [SerializeField] private float _introToBossDur = 1.2f;
+    [Tooltip("플레이어로 빠르게 줌아웃하는 시간(초)")]
+    [SerializeField] private float _introToPlayerDur = 0.5f;
+    [Tooltip("아레나 전체가 보이게 줌아웃하는 시간(초)")]
+    [SerializeField] private float _introToArenaDur = 1.5f;
+    [Tooltip("보스 사망 후 플레이어로 줌인 복귀하는 시간(초)")]
+    [SerializeField] private float _outroToPlayerDur = 1.0f;
+    [Tooltip("아레나 원이 화면에 들어올 때의 여유 배율(1.0=딱 맞음, 클수록 여백)")]
+    [SerializeField] private float _arenaFitMargin = 1.12f;
+    [Tooltip("각 연출 사이에 잠시 멈추는 시간(초). 보스 줌인 후 정지")]
+    [SerializeField] private float _holdBetweenPhases = 0.7f;
+    [Tooltip("진입 연출에서 아레나 전체로 줌아웃·고정 후 플레이어로 줌인하기까지의 유지 시간(초)")]
+    [SerializeField] private float _introArenaHold = 1.5f;
+    [Tooltip("골렘 사망 시 줌아웃·고정 후 플레이어로 복귀하기까지의 정지 시간(초)")]
+    [SerializeField] private float _deathHoldBeforeRestore = 1.5f;
+
+    private GameObject _arenaAnchor;     // 아레나 중앙 고정용 임시 앵커
+    private Coroutine _cinematicRoutine;
+
     void Start()
     {
         if (vcam != null)
@@ -215,7 +240,184 @@ public class CameraEffectManager : MonoBehaviour
         finalLens.OrthographicSize = originalState.orthoSize;
         vcam.Lens = finalLens;
     }
-    
+
+    // ══════════════════════════════════════════════════════════════════
+    //  보스 구역 진입/종료 시네마틱
+    //  진입: [시간정지+입력차단] 보스로 줌인 → 플레이어로 빠른 줌아웃 → 아레나 전체 줌아웃 후 고정 [복구]
+    //  종료: (벽 소멸 + 1초 후 외부에서 호출) 플레이어로 줌인하며 일반 추적 복귀
+    // ══════════════════════════════════════════════════════════════════
+
+    /// <summary>보스 구역 진입 연출 시작. 시간 정지(timeScale=0) + 입력 차단 후 카메라 팬, 아레나 전체가 보이게 고정한다.
+    /// onArenaReached: 아레나 전체로 줌아웃을 마친 시점(벽 솟음 등을 시작하기 좋은 타이밍)에 호출된다.</summary>
+    public void PlayBossIntro(Transform boss, Vector3 arenaCenter, float arenaRadius, PlayerStateMachine playerFSM,
+                              System.Action onArenaReached = null)
+    {
+        if (vcam == null || followComponent == null)
+        {
+            Debug.LogWarning("[CameraEffectManager] vcam/followComponent가 없어 보스 연출을 건너뜁니다.");
+            // 안전장치: 참조가 없어도 벽 솟음은 진행되도록 콜백만 실행하고 반환
+            onArenaReached?.Invoke();
+            return;
+        }
+        if (_cinematicRoutine != null) StopCoroutine(_cinematicRoutine);
+        _cinematicRoutine = StartCoroutine(BossIntroRoutine(boss, arenaCenter, arenaRadius, playerFSM, onArenaReached));
+    }
+
+    private IEnumerator BossIntroRoutine(Transform boss, Vector3 arenaCenter, float arenaRadius, PlayerStateMachine playerFSM,
+                                         System.Action onArenaReached)
+    {
+        // 입력 차단 + 시간 완전 정지 (카메라는 unscaled로 진행)
+        if (playerFSM != null) playerFSM.TransitionTo(playerFSM.Cutscene);
+        Time.timeScale = 0f;
+
+        // 아레나 중앙 고정용 앵커
+        if (_arenaAnchor == null) _arenaAnchor = new GameObject("BossArenaCamAnchor");
+        _arenaAnchor.transform.position = new Vector3(arenaCenter.x, arenaCenter.y, 0f);
+        float arenaZ = ComputeArenaFitZ(arenaRadius);
+
+        // 복귀할 플레이어 대상 + 원래(일반 추적) 카메라 값 확보
+        Transform playerT = (playerFSM != null) ? playerFSM.transform
+                                                : (GameObject.FindWithTag("Player") != null ? GameObject.FindWithTag("Player").transform : null);
+        Vector3 restoreOffset = (originalState.followTarget != null) ? originalState.followOffset : new Vector3(0f, 0f, -10f);
+        float   restoreOrtho  = (originalState.followTarget != null) ? originalState.orthoSize  : vcam.Lens.OrthographicSize;
+
+        // 1) 보스로 이동하며 줌인
+        if (boss != null)
+            yield return MoveFollowRoutine(boss, new Vector3(0f, 0f, _bossZoomZ), _introToBossDur, true);
+
+        // 연출 사이 잠깐 멈춤 (timeScale=0이므로 Realtime 대기)
+        if (_holdBetweenPhases > 0f) yield return new WaitForSecondsRealtime(_holdBetweenPhases);
+
+        // 2) 아레나 전체로 줌아웃 + 고정 (페이드 아웃)
+        yield return MoveFollowRoutine(_arenaAnchor.transform, new Vector3(0f, 0f, arenaZ), _introToArenaDur, true);
+
+        // 아레나가 다 보이는 지금 벽 솟음 시작 (실시간으로 솟아오름)
+        onArenaReached?.Invoke();
+
+        // 3) 고정된 채 유지 — 이 동안 바위 벽이 솟아오른다(원 구역 전체를 보여주는 비트)
+        if (_introArenaHold > 0f) yield return new WaitForSecondsRealtime(_introArenaHold);
+
+        // 4) 벽 생성 후 플레이어로 줌인 (페이드 인) — 연출의 마지막
+        if (playerT != null)
+            yield return MoveFollowRoutine(playerT, restoreOffset, _outroToPlayerDur, true, restoreOrtho);
+
+        // 5) 고정 해제 + 시간/입력 복구 → 카메라가 플레이어를 추적한 채 보스전 시작
+        if (playerT != null) { vcam.Follow = playerT; vcam.LookAt = playerT; }
+        Time.timeScale = 1f;
+        if (playerFSM != null) playerFSM.TransitionTo(playerFSM.Idle);
+        if (_arenaAnchor != null) { Destroy(_arenaAnchor); _arenaAnchor = null; }
+        _cinematicRoutine = null;
+    }
+
+    /// <summary>골렘 사망 시 호출. 아레나 전체로 (다시) 줌아웃·고정 → _deathHoldBeforeRestore초 후 플레이어로 줌인하며 추적 복귀.</summary>
+    public void PlayBossDeathSequence(Vector3 arenaCenter, float arenaRadius)
+    {
+        if (vcam == null || followComponent == null)
+        {
+            Debug.LogWarning("[CameraEffectManager] vcam/followComponent가 없어 사망 연출을 건너뜁니다.");
+            return;
+        }
+        if (_cinematicRoutine != null) StopCoroutine(_cinematicRoutine);
+        _cinematicRoutine = StartCoroutine(BossDeathRoutine(arenaCenter, arenaRadius));
+    }
+
+    private IEnumerator BossDeathRoutine(Vector3 arenaCenter, float arenaRadius)
+    {
+        Debug.Log("[CameraEffectManager] 사망 연출 시작 — 아레나 고정 유지");
+
+        // 복귀할 플레이어 대상 확보 — originalState가 비어 있어도 태그로 폴백(절대 고정이 안 풀리는 일이 없게)
+        Transform playerT = originalState.followTarget;
+        if (playerT == null)
+        {
+            var p = GameObject.FindWithTag("Player");
+            if (p != null) playerT = p.transform;
+        }
+        Vector3 restoreOffset = (originalState.followTarget != null) ? originalState.followOffset : new Vector3(0f, 0f, -10f);
+        float   restoreOrtho  = (originalState.followTarget != null) ? originalState.orthoSize  : vcam.Lens.OrthographicSize;
+
+        if (_arenaAnchor == null) _arenaAnchor = new GameObject("BossArenaCamAnchor");
+        _arenaAnchor.transform.position = new Vector3(arenaCenter.x, arenaCenter.y, 0f);
+
+        // 1) 아레나 전체로 줌아웃 + 고정 (페이드 아웃) — 플레이어 추적 상태에서 부드럽게 빠짐. HitStop 대비 unscaled
+        yield return MoveFollowRoutine(_arenaAnchor.transform, new Vector3(0f, 0f, ComputeArenaFitZ(arenaRadius)), _introToArenaDur, true);
+
+        // 2) 고정된 채로 1.5초 대기 (HitStop 등으로 timeScale이 바뀌어도 멈추지 않도록 실시간 대기)
+        yield return new WaitForSecondsRealtime(_deathHoldBeforeRestore);
+        Debug.Log("[CameraEffectManager] 1.5초 경과 → 플레이어로 페이드인 + 고정 해제");
+
+        // 플레이어로 줌인(페이드 인) — unscaled로 진행해 timeScale 영향 없음
+        if (playerT != null)
+            yield return MoveFollowRoutine(playerT, restoreOffset, _outroToPlayerDur, true, restoreOrtho);
+
+        // 고정 명시적 해제 — 이후 Cinemachine이 플레이어를 다시 따라가도록 보장
+        if (playerT != null)
+        {
+            vcam.Follow = playerT;
+            vcam.LookAt = playerT;
+        }
+        if (_arenaAnchor != null) { Destroy(_arenaAnchor); _arenaAnchor = null; }
+        _cinematicRoutine = null;
+        Debug.Log("[CameraEffectManager] 사망 연출 종료 — 플레이어 추적 복귀 완료");
+    }
+
+    /// <summary>Follow 타겟을 교체하고 FollowOffset을 goalOffset으로 보간한다(텔레포트 방지). unscaled=true면 timeScale=0에서도 진행.</summary>
+    private IEnumerator MoveFollowRoutine(Transform newTarget, Vector3 goalOffset, float duration, bool unscaled, float? goalOrtho = null)
+    {
+        if (newTarget == null) yield break;
+
+        // 타겟 교체 전, 현재 카메라가 새 타겟으로부터 떨어진 실제 거리로 오프셋을 맞춰 순간이동을 막는다.
+        Vector3 currentWorldPos = vcam.State.RawPosition;
+        Vector3 diff = currentWorldPos - newTarget.position;
+        followComponent.FollowOffset = new Vector3(diff.x, diff.y, followComponent.FollowOffset.z);
+        vcam.Follow = newTarget;
+
+        Vector3 startOffset = followComponent.FollowOffset;
+        float startOrtho = vcam.Lens.OrthographicSize;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += unscaled ? Time.unscaledDeltaTime : Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            // 부드러운 가속·감속(이징)으로 줌 인/아웃이 급격하지 않게 한다
+            float te = Mathf.SmoothStep(0f, 1f, t);
+
+            followComponent.FollowOffset = Vector3.Lerp(startOffset, goalOffset, te);
+            if (goalOrtho.HasValue)
+            {
+                var lens = vcam.Lens;
+                lens.OrthographicSize = Mathf.Lerp(startOrtho, goalOrtho.Value, te);
+                vcam.Lens = lens;
+            }
+
+            vcam.ForceCameraPosition(vcam.State.RawPosition, vcam.State.RawOrientation);
+            yield return null;
+        }
+
+        followComponent.FollowOffset = goalOffset;
+        if (goalOrtho.HasValue)
+        {
+            var lens = vcam.Lens;
+            lens.OrthographicSize = goalOrtho.Value;
+            vcam.Lens = lens;
+        }
+    }
+
+    /// <summary>반지름 arenaRadius인 원이 화면에 모두 들어오는 카메라 거리(FollowOffset.z, 음수)를 계산한다(퍼스펙티브).</summary>
+    private float ComputeArenaFitZ(float arenaRadius)
+    {
+        float fovV  = vcam.Lens.FieldOfView;                       // 수직 FOV(도)
+        float halfV = Mathf.Deg2Rad * fovV * 0.5f;
+        float aspect = (Screen.height > 0) ? (float)Screen.width / Screen.height : 16f / 9f;
+
+        float dForHeight = (arenaRadius * _arenaFitMargin) / Mathf.Tan(halfV);
+        float halfH = Mathf.Atan(Mathf.Tan(halfV) * aspect);
+        float dForWidth  = (arenaRadius * _arenaFitMargin) / Mathf.Tan(halfH);
+
+        float d = Mathf.Max(dForHeight, dForWidth);
+        return -d;
+    }
+
     // slowAmount: 얼마나 느리게 할 것인지 (0.1f는 10% 속도)
     // duration: 정상으로 돌아오는데 걸리는 시간 (현실 시간 기준)
     public IEnumerator StartSlowMotionWhiteOut(float slowAmount, float duration)
