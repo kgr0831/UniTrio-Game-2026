@@ -18,6 +18,9 @@ public sealed class NecromancerFireball : MonoBehaviour
 
     private Vector3    _spawnPos;
     private GameObject _owner;
+    private Animator   _animator;
+
+    private void Awake() => _animator = GetComponent<Animator>();
 
     /// <summary>발사 시 속도/데미지/사거리를 주입한다.</summary>
     public void SetStats(float speed, float damage, float maxDistance)
@@ -35,6 +38,13 @@ public sealed class NecromancerFireball : MonoBehaviour
         _spawnPos = transform.position;
         CancelInvoke(nameof(ReturnToPool));
         Invoke(nameof(ReturnToPool), _lifeTime);
+
+        // 풀에서 재사용될 때 비행 애니메이션을 처음부터 다시 재생(정지 상태로 꺼낸 경우 방지)
+        if (_animator != null)
+        {
+            _animator.Rebind();
+            _animator.Update(0f);
+        }
     }
 
     private void OnDisable() => CancelInvoke(nameof(ReturnToPool));

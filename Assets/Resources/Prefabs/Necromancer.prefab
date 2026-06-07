@@ -430,9 +430,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NecromancerMonster
   _spell2Radius: 6
-  _spell1Radius: 6.6666665
-  _spell1Cooldown: 2.5
-  _spell2Cooldown: 7
+  _spell1Radius: 9
+  _spell1Cooldown: 1
+  _spell2Cooldown: 20
   _fireballPrefab: {fileID: 7192631669123967883, guid: 7d4edc1dd6e91504e9cf8c93572144f3, type: 3}
   _fireballSpeed: 15
   _fireballMaxDistance: 10
@@ -444,7 +444,7 @@ MonoBehaviour:
   _summonSideOffset: 3
   _maxSummon: 2
   _summonDeathReturnDelay: 3.5
-  _fleeRadius: 3.5
+  _fleeRadius: 5
   _moveSpeed: 4
   _spriteFacesRight: 0
   _knockbackDistance: 0.5
