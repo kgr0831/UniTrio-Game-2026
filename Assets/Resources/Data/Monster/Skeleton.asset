@@ -16,11 +16,11 @@ MonoBehaviour:
   MonsterName: "\uC2A4\uCF08\uB808\uD1A4"
   Type: 1
   MaxHP: 300
-  ATK: 45
-  ATKMin: 40
-  ATKMax: 50
+  ATK: 20
+  ATKMin: 0
+  ATKMax: 0
   DEF: 30
-  Speed: 315
+  Speed: 600
   AttackSpeed: 0.8
   AttackDelay: 0.47
   AttackShape:
@@ -32,9 +32,9 @@ MonoBehaviour:
     CircleRadius: 0
   DetectionRadius: 6
   DropTable: []
-  FireResistance: 0
-  IceResistance: 0
-  EarthResistance: 0
+  FireResistance: 15
+  IceResistance: 35
+  EarthResistance: 35
   IdleSprite: {fileID: -944473635, guid: b67f8a4c06ed0a248834e6c9de7dd12c, type: 3}
   AnimController: {fileID: 9100000, guid: b56e5bdc0c03a5440b30424e160b8305, type: 2}
   MonsterPrefab: {fileID: 1164133402143040078, guid: ceb4c0a3af922a8469db729358cbb872, type: 3}

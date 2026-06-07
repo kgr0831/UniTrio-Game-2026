@@ -42,6 +42,11 @@ public sealed class SkeletonMonster : MonsterBase
     [Tooltip("플레이어가 이 거리 이상 멀어지면 추격을 포기한다.")]
     [SerializeField] private float _chaseGiveUpDistance = 12f;
 
+    [Tooltip("추격 이동속도 = 플레이어 이동속도 × 이 값.")]
+    [SerializeField] private float _speedFactorVsPlayer = 1.2f;
+    [Tooltip("플레이어 StatSystem을 못 찾을 때 사용할 기본 플레이어 이동속도(초당).")]
+    [SerializeField] private float _fallbackPlayerSpeed = 5f;
+
     [Header("Hit Reaction (Bear와 동일)")]
     [Tooltip("피격 시 밀려나는 거리.")]
     [SerializeField] private float _knockbackDistance = 0.5f;
@@ -82,6 +87,8 @@ public sealed class SkeletonMonster : MonsterBase
 
     private static readonly Collider2D[] _separationBuffer = new Collider2D[12];
     private const int EnemyLayerMask = 1 << 8; // "Enemy" 레이어
+
+    private StatSystem _targetStats;   // 추격 대상(플레이어)의 스탯 — 이동속도 추적용 캐시
 
     private float  _deathTimer;
     private Color  _baseColor = Color.white;
@@ -132,6 +139,7 @@ public sealed class SkeletonMonster : MonsterBase
         _attackLockTimer = 0f;
         _deathTimer      = 0f;
         _currentAnim     = null;
+        _targetStats     = null;
 
         if (_animator != null) _animator.speed = 1f;
         if (_renderer != null)
@@ -287,8 +295,7 @@ public sealed class SkeletonMonster : MonsterBase
             Vector2 sep = ComputeSeparation();
             if (sep.sqrMagnitude > 0.04f)
             {
-                if (_runtime.Data != null)
-                    _runtime.CurrentSpeed = _runtime.Data.Speed * 0.01f * 0.6f;
+                _runtime.CurrentSpeed = ChaseSpeed() * 0.6f; // 겹침 해소용 느린 이동
                 _navigator.MoveInDirection(sep.normalized);
                 PlayAnim(AnimWalk, "Walk");
             }
@@ -312,8 +319,7 @@ public sealed class SkeletonMonster : MonsterBase
         }
 
         _runtime.CurrentState = MonsterState.Chase;
-        if (_runtime.Data != null)
-            _runtime.CurrentSpeed = _runtime.Data.Speed * 0.01f;
+        _runtime.CurrentSpeed = ChaseSpeed(); // 플레이어 이속 × 1.2
 
         _runtime.AttackCooldownTimer = 0f; // 이동하면 공격 제한 해제 (Bear와 동일)
 
@@ -324,6 +330,19 @@ public sealed class SkeletonMonster : MonsterBase
         _navigator.MoveInDirection(desired.normalized);
         PlayAnim(AnimWalk, "Walk");
         UpdateFacing();
+    }
+
+    // 추격 속도 = 플레이어 이동속도 × _speedFactorVsPlayer (버프로 변하는 속도도 추종).
+    private float ChaseSpeed()
+    {
+        float playerSpeed = _fallbackPlayerSpeed;
+        Transform t = _detection.DetectedTarget;
+        if (t != null)
+        {
+            if (_targetStats == null) _targetStats = t.GetComponentInParent<StatSystem>();
+            if (_targetStats != null) playerSpeed = _targetStats.TotalMoveSpeed;
+        }
+        return playerSpeed * _speedFactorVsPlayer;
     }
 
     // 근처 다른 몹으로부터 밀어내는 분리 벡터(겹침/교착 방지). 가까울수록 강하게 작용.

@@ -1143,7 +1143,7 @@ SpriteRenderer:
   m_Size: {x: 4.16, y: 4.16}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
 --- !u!4 &1382941548
 Transform:
@@ -1197,6 +1197,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   moveSpeed: 5
+  SpeedMultiplier: 1
+  DashVelocity: {x: 0, y: 0}
 --- !u!50 &1382941551
 Rigidbody2D:
   serializedVersion: 5

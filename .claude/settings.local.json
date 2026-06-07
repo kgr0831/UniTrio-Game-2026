@@ -85,7 +85,8 @@
       "Bash(echo -n '__TRACKED_VAR__ : ')",
       "Bash(grep guid: __TRACKED_VAR__.anim.meta)",
       "mcp__UnityMCP__manage_camera",
-      "mcp__UnityMCP__manage_physics"
+      "mcp__UnityMCP__manage_physics",
+      "Bash(bash *)"
     ]
   }
 }
