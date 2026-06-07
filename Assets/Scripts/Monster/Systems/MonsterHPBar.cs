@@ -131,9 +131,27 @@ public sealed class MonsterHPBar : MonoBehaviour
 
     private void UpdateBar(float currentHp, float maxHp)
     {
-        if (_fillRenderer == null) return;
-
         float ratio = maxHp > 0f ? Mathf.Clamp01(currentHp / maxHp) : 0f;
+        ApplyRatio(ratio);
+
+        // 사망 시 HP 바 숨김
+        if (_barRoot != null)
+            _barRoot.gameObject.SetActive(currentHp > 0f);
+    }
+
+    /// <summary>
+    /// 실제 HP와 무관하게 바의 채움 비율을 직접 지정합니다(등장 연출 등에서 0→1 채우기용). 0~1.
+    /// </summary>
+    public void SetDisplayRatio(float ratio01)
+    {
+        ApplyRatio(Mathf.Clamp01(ratio01));
+        if (_barRoot != null)
+            _barRoot.gameObject.SetActive(true);
+    }
+
+    private void ApplyRatio(float ratio)
+    {
+        if (_fillRenderer == null) return;
 
         // 스케일로 길이 조절 (왼쪽 정렬 보정)
         float fillWidth = _barWidth * ratio;
@@ -157,9 +175,6 @@ public sealed class MonsterHPBar : MonoBehaviour
             barColor = Color.Lerp(COLOR_LOW, COLOR_MID, t);
         }
         _fillRenderer.color = barColor;
-
-        // 사망 시 HP 바 숨김
-        _barRoot.gameObject.SetActive(currentHp > 0f);
     }
 
     // ── 공유 텍스처 ─────────────────────────────────────────

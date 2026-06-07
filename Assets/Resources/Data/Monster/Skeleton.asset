@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3bf8b65d0a13404fa46a5c10c296a01, type: 3}
+  m_Name: Skeleton
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterData
+  MonsterId: 10007
+  MonsterName: "\uC2A4\uCF08\uB808\uD1A4"
+  Type: 1
+  MaxHP: 300
+  ATK: 45
+  ATKMin: 40
+  ATKMax: 50
+  DEF: 30
+  Speed: 315
+  AttackSpeed: 0.8
+  AttackDelay: 0.47
+  AttackShape:
+    ShapeType: 0
+    RectWidth: 3.6
+    RectHeight: 3.2
+    FanAngle: 0
+    FanRadius: 0
+    CircleRadius: 0
+  DetectionRadius: 6
+  DropTable: []
+  FireResistance: 0
+  IceResistance: 0
+  EarthResistance: 0
+  IdleSprite: {fileID: -944473635, guid: b67f8a4c06ed0a248834e6c9de7dd12c, type: 3}
+  AnimController: {fileID: 9100000, guid: b56e5bdc0c03a5440b30424e160b8305, type: 2}
+  MonsterPrefab: {fileID: 1164133402143040078, guid: ceb4c0a3af922a8469db729358cbb872, type: 3}

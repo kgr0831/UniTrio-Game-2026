@@ -24,6 +24,9 @@ public sealed class MobSpawner : MonoBehaviour
     [Tooltip("몹이 죽은 후 새롭게 스폰되기까지의 딜레이 (초)")]
     [SerializeField] private float _respawnDelay = 2f;
 
+    [Tooltip("사망 후 풀로 반환되기까지의 딜레이 (초). 사망 애니메이션/페이드아웃이 끝날 때까지 살려두려면 늘린다.")]
+    [SerializeField] private float _deathReturnDelay = 0.2f;
+
     [Tooltip("에디터 내 시작 시 자동 스폰 여부")]
     [SerializeField] private bool _spawnOnStart = true;
 
@@ -144,8 +147,8 @@ public sealed class MobSpawner : MonoBehaviour
         // 빈자리를 슬롯 큐에 반환
         _availableIndices.Enqueue(slotIdx);
 
-        // 0.2초 대기하여 아이템 드롭 등 여타 로직이 완료되도록 보장
-        yield return new WaitForSeconds(0.2f);
+        // 사망 애니메이션/페이드아웃 + 아이템 드롭 등 여타 로직이 완료되도록 대기
+        yield return new WaitForSeconds(_deathReturnDelay);
         SimpleObjectPool.Instance.Release(mobObj);
 
         // 재스폰 대기

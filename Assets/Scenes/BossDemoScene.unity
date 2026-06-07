@@ -6361,7 +6361,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &83243077
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6379,6 +6379,7 @@ MonoBehaviour:
   _gridSpacing: 30
   _initialSpawnInterval: 0.5
   _respawnDelay: 2
+  _deathReturnDelay: 0.2
   _spawnOnStart: 1
 --- !u!4 &83243078
 Transform:
@@ -14308,6 +14309,57 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7117687993785931358, guid: 4d24dfb705667a940bf0bc89b085923f, type: 3}
   m_PrefabInstance: {fileID: 335794635}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &341555138
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 341555140}
+  - component: {fileID: 341555139}
+  m_Layer: 0
+  m_Name: MobSpawner_Skeleton
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &341555139
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 341555138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a051cda2af1999b4ab7615b11403972c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MobSpawner
+  _targetData: {fileID: 11400000, guid: cc3be19afc8025f40ac2187673d375b6, type: 2}
+  _maxSpawnCount: 3
+  _gridSpacing: 4
+  _initialSpawnInterval: 0.5
+  _respawnDelay: 2
+  _deathReturnDelay: 3.5
+  _spawnOnStart: 1
+--- !u!4 &341555140
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 341555138}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &349702267
 GameObject:
   m_ObjectHideFlags: 0
@@ -15280,7 +15332,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &437777771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15298,6 +15350,7 @@ MonoBehaviour:
   _gridSpacing: 4
   _initialSpawnInterval: 0.5
   _respawnDelay: 3
+  _deathReturnDelay: 0.2
   _spawnOnStart: 1
 --- !u!4 &437777772
 Transform:
@@ -18517,11 +18570,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4523314837616905834, guid: 40719a23af95e7c42ab9a1acc4e1d18a, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3.9
+      value: -7.6
       objectReference: {fileID: 0}
     - target: {fileID: 4523314837616905834, guid: 40719a23af95e7c42ab9a1acc4e1d18a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 45.9
+      value: -56.5
       objectReference: {fileID: 0}
     - target: {fileID: 4523314837616905834, guid: 40719a23af95e7c42ab9a1acc4e1d18a, type: 3}
       propertyPath: m_LocalPosition.z
@@ -20204,7 +20257,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 421795173}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9999872
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -21817,6 +21870,7 @@ MonoBehaviour:
   _outroToPlayerDur: 1
   _arenaFitMargin: 1.12
   _holdBetweenPhases: 0.7
+  _introArenaHold: 1.5
   _deathHoldBeforeRestore: 1.5
 --- !u!4 &1123582059
 Transform:
@@ -21867,7 +21921,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.0000012161471}
+  m_AnchoredPosition: {x: 0, y: 0.00033699544}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1124094281
@@ -34531,3 +34585,4 @@ SceneRoots:
   - {fileID: 437777772}
   - {fileID: 771754401}
   - {fileID: 1123582059}
+  - {fileID: 341555140}
