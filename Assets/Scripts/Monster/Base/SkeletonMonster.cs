@@ -200,6 +200,16 @@ public sealed class SkeletonMonster : MonsterBase
         _revealTimer = _revealDuration;
     }
 
+    /// <summary>
+    /// 외부 소환(네크로맨서 Spell2 등)용: 플레이어 감지 여부와 무관하게
+    /// 숨김 단계를 건너뛰고 즉시 등장(Trigger) 연출부터 시작한다.
+    /// </summary>
+    public void SummonActivate()
+    {
+        if (_phase == Phase.Hidden)
+            EnterRevealing();
+    }
+
     // ── 2) Revealing: 등장 애니 1회 재생 ───────────────────────────
     private void TickRevealing()
     {
