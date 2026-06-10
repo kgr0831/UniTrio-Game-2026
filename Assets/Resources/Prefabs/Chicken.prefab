@@ -22,6 +22,11 @@ GameObject:
   - component: {fileID: 5411831879811119055}
   - component: {fileID: 3977125739249443631}
   - component: {fileID: 6737889495122765436}
+  - component: {fileID: 701520375942163401}
+  - component: {fileID: 1656028625825846294}
+  - component: {fileID: 1624973889837875899}
+  - component: {fileID: 6147039991380853261}
+  - component: {fileID: 3518195480219871745}
   m_Layer: 8
   m_Name: Chicken
   m_TagString: Entity
@@ -301,6 +306,9 @@ MonoBehaviour:
   _wanderRadius: 3
   _tileWanderRange: 4
   _idleChance: 0.4
+  _dynamicObstacleMask:
+    serializedVersion: 2
+    m_Bits: 0
   _eatAnimDuration: 1.17
   _minEatCount: 1
   _maxEatCount: 3
@@ -341,3 +349,73 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 942265c97ece6dd46801d4ff4ed38c51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterLootDropper
+--- !u!114 &701520375942163401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6864642755928304661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5009c7c5545f2e44e9d08c3445b64a7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DebuffReceiver
+--- !u!114 &1656028625825846294
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6864642755928304661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66107a05688daa241933f272ef7ef900, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterHPBar
+  _yOffset: 1
+  _barWidth: 1
+  _barHeight: 0.1
+--- !u!114 &1624973889837875899
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6864642755928304661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b04f842285c71b84fb4b37843e8c5c1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DebuffOverlayController
+--- !u!114 &6147039991380853261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6864642755928304661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8cfd518641d1f44c8f3e5215f991e3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DebuffIconDisplay
+  _iconSize: 0.2
+  _iconSpacing: 0.02
+--- !u!114 &3518195480219871745
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6864642755928304661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _minSquash: 0.35
+  _maxSquash: 0.8
+  _baseAlpha: 0.4
+  _fullShadowWeight: 0.6
+  _smoothSpeed: 2.5

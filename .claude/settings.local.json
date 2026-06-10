@@ -86,7 +86,18 @@
       "Bash(grep guid: __TRACKED_VAR__.anim.meta)",
       "mcp__UnityMCP__manage_camera",
       "mcp__UnityMCP__manage_physics",
-      "Bash(bash *)"
+      "Bash(bash *)",
+      "Bash(grep -l \"guid: $\\(grep guid Assets/Resources/Materials/SpriteLit2DMat.mat.meta)",
+      "Bash(awk '/--- !u!1 &/{id=$0} /m_TagString: MainCamera/{print id}' Assets/Scenes/BossDemoScene.unity)",
+      "Bash(awk *)",
+      "Bash(uuidgen)",
+      "PowerShell(1..5 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\(\"N\"\\) })",
+      "Bash(grep -n \"m_Name: Player$\" \"Assets/Resources/Prefabs/Player/Player.prefab\")",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; foreach \\($f in @\\(\"daynight_play_noon\",\"daynight_play_sunset\",\"daynight_play_midnight\"\\)\\) { $bmp = [System.Drawing.Bitmap]::FromFile\\(\"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Screenshots\\\\$f.png\"\\); $p1 = $bmp.GetPixel\\(60, 300\\); $p2 = $bmp.GetPixel\\(320, 60\\); Write-Output \\(\"{0}: ground1=\\({1},{2},{3}\\) ground2=\\({4},{5},{6}\\)\" -f $f, $p1.R, $p1.G, $p1.B, $p2.R, $p2.G, $p2.B\\); $bmp.Dispose\\(\\) })",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $bmp = [System.Drawing.Bitmap]::FromFile\\(\"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Screenshots\\\\daynight_v3_midnight.png\"\\); $p = $bmp.GetPixel\\(60, 300\\); $p2 = $bmp.GetPixel\\(550, 60\\); Write-Output \\(\"midnight v3: \\({0},{1},{2}\\) / \\({3},{4},{5}\\)  — noon was \\(140,166,118\\)\" -f $p.R,$p.G,$p.B,$p2.R,$p2.G,$p2.B\\); $bmp.Dispose\\(\\))",
+      "PowerShell([guid]::NewGuid\\(\\).ToString\\(\"N\"\\))",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $src = [System.Drawing.Bitmap]::FromFile\\(\"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Screenshots\\\\shadow_v2_midnight.png\"\\); $crop = New-Object System.Drawing.Bitmap 480, 360; $g = [System.Drawing.Graphics]::FromImage\\($crop\\); $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::NearestNeighbor; $g.DrawImage\\($src, \\(New-Object System.Drawing.Rectangle 0,0,480,360\\), \\(New-Object System.Drawing.Rectangle 200,120,240,180\\), [System.Drawing.GraphicsUnit]::Pixel\\); $crop.Save\\(\"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Screenshots\\\\shadow_v2_midnight_zoom.png\"\\); $g.Dispose\\(\\); $src.Dispose\\(\\); $crop.Dispose\\(\\); Write-Output \"saved\")",
+      "PowerShell(1..2 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\(\"N\"\\) })"
     ]
   }
 }

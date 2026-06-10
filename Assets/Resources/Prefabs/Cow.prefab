@@ -26,6 +26,7 @@ GameObject:
   - component: {fileID: 3275081582229729479}
   - component: {fileID: 3025669982588570594}
   - component: {fileID: 7551760447801000965}
+  - component: {fileID: 2793532885124275470}
   m_Layer: 8
   m_Name: Cow
   m_TagString: Entity
@@ -244,7 +245,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dd4c762e0bf9983458ff8fdd815af3d6, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterAnimatorController
   _use4Direction: 1
 --- !u!114 &2328045539576863626
@@ -287,6 +288,7 @@ MonoBehaviour:
     m_Bits: 1
   _avoidanceRayLength: 1.5
   _avoidanceAngle: 45
+  _deceleration: 8
 --- !u!114 &6940807242602123746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -304,8 +306,12 @@ MonoBehaviour:
   _wanderRadius: 3
   _tileWanderRange: 4
   _idleChance: 0.4
-  _minIdleTime: 1
-  _maxIdleTime: 3
+  _dynamicObstacleMask:
+    serializedVersion: 2
+    m_Bits: 0
+  _eatAnimDuration: 1.17
+  _minEatCount: 1
+  _maxEatCount: 3
 --- !u!114 &3169103988750891305
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -396,3 +402,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DebuffIconDisplay
   _iconSize: 0.25
   _iconSpacing: 0.02
+--- !u!114 &2793532885124275470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164133402143040078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _minSquash: 0.35
+  _maxSquash: 0.8
+  _baseAlpha: 0.4
+  _fullShadowWeight: 0.6
+  _smoothSpeed: 2.5

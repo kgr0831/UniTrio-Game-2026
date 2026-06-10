@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 6975109964286707551}
   - component: {fileID: 4051080489176903389}
   - component: {fileID: 5558311164276736586}
+  - component: {fileID: 1766353582602975782}
   m_Layer: 8
   m_Name: Golem
   m_TagString: Entity
@@ -162,10 +163,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossAI
   moveSpeed: 3.6
   attackRange: 15
+  slamRange: 7.5
+  rangedAttackRange: 13
   detectionRange: 20
   attackCooldown: 1.5
   playerTag: Player
   indicator: {fileID: 6130902742837685987, guid: 8373975954d7726449ecbada691cdef0, type: 3}
+  hasArenaBounds: 0
+  arenaCenter: {x: 0, y: 0}
+  arenaRadius: 0
   circleSprite: {fileID: 21300000, guid: 46196d734a8e92d4aafe6beb4c178d08, type: 3}
   squareSprite: {fileID: 21300000, guid: 984ee8bd016d41446acd10a84872f035, type: 3}
   halfCircleSprite: {fileID: 21300000, guid: 638fc9e329dbe0d4b96afd6d53011257, type: 3}
@@ -230,6 +236,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90b30cb9144688c41b5f62937930afa2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolemEntity
+  _chargeDuration: 1.2
+  _glowColor: {r: 0.3, g: 0.7, b: 1.4, a: 1}
+  _crackTexture: {fileID: 0}
+  _shatterShards: 7
+  _shatterDuration: 0.8
+  _shatterScatterScale: 0.55
+  _shatterGlowBoost: 2.5
 --- !u!61 &4051080489176903389
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -291,3 +304,20 @@ MonoBehaviour:
   _yOffset: 3
   _barWidth: 1.3
   _barHeight: 0.13
+--- !u!114 &1766353582602975782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8992042086741285878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _minSquash: 0.35
+  _maxSquash: 0.8
+  _baseAlpha: 0.4
+  _fullShadowWeight: 0.6
+  _smoothSpeed: 2.5

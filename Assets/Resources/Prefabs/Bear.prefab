@@ -105,6 +105,7 @@ GameObject:
   - component: {fileID: 3275081582229729479}
   - component: {fileID: 3025669982588570594}
   - component: {fileID: 7551760447801000965}
+  - component: {fileID: 4362728722950687842}
   m_Layer: 8
   m_Name: Bear
   m_TagString: Entity
@@ -499,6 +500,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DebuffIconDisplay
   _iconSize: 0.25
   _iconSpacing: 0.02
+--- !u!114 &4362728722950687842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164133402143040078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _minSquash: 0.35
+  _maxSquash: 0.8
+  _baseAlpha: 0.4
+  _fullShadowWeight: 0.6
+  _smoothSpeed: 2.5
 --- !u!1 &1485351160358401600
 GameObject:
   m_ObjectHideFlags: 0

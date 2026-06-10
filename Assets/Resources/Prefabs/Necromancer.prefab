@@ -102,6 +102,7 @@ GameObject:
   - component: {fileID: 3025669982588570594}
   - component: {fileID: 7551760447801000965}
   - component: {fileID: 4893717349736087594}
+  - component: {fileID: 2756856300575089853}
   m_Layer: 8
   m_Name: Necromancer
   m_TagString: Entity
@@ -449,3 +450,20 @@ MonoBehaviour:
   _spriteFacesRight: 0
   _knockbackDistance: 0.5
   _fadeDuration: 1
+--- !u!114 &2756856300575089853
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164133402143040078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _minSquash: 0.35
+  _maxSquash: 0.8
+  _baseAlpha: 0.4
+  _fullShadowWeight: 0.6
+  _smoothSpeed: 2.5
