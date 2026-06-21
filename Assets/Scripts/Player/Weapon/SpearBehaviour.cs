@@ -422,6 +422,10 @@ public class SpearBehaviour : WeaponBehaviourBase
 
     public override void BeginAttack(int comboStep)
     {
+        // 창 공격음 즉시 재생 (딜레이 방지를 위해 최상단에서 호출)
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySpearAttack();
+
         if (_bashTrail != null)
             _bashTrail.Clear();
 

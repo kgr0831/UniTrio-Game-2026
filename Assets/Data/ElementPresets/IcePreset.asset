@@ -19,7 +19,7 @@ MonoBehaviour:
   EffectIntensity: 1.5
   PixelResolution: 32
   NoiseScale: 4
-  VoronoiScale: 24
+  VoronoiScale: 16
   ScrollSpeed: 1.5
   EdgeThreshold: 0.2
   DitherScale: 4
