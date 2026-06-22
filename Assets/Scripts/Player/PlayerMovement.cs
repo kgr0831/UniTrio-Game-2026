@@ -10,6 +10,10 @@ public class PlayerMovement : MonoBehaviour
 {
     public float moveSpeed = 5f;
 
+    [Header("Footstep Audio")]
+    [Tooltip("이 거리(units)만큼 이동할 때마다 발걸음 사운드(Walk 1~5 순환)를 재생합니다.")]
+    [SerializeField] private float _footstepStride = 50f;
+
     /// <summary>외부(활 차징 등)에서 임시로 이동속도를 조절합니다. 정상 = 1.0f</summary>
     [HideInInspector] public float SpeedMultiplier = 1f;
 
@@ -60,6 +64,9 @@ public class PlayerMovement : MonoBehaviour
     private StatSystem  _statSystem; // optional – 없으면 moveSpeed 사용
     private Vector2     _recoilVelocity; // 반동/넉백용 내부 속도
     private PlayerWeaponController _weaponController;
+
+    private float       _distanceSinceStep; // 발걸음 사운드용 누적 이동 거리
+    private bool        _wasMoving;          // 직전 프레임 이동 여부 (정지→이동 시 첫 발걸음 즉시 재생)
 
     private static PhysicsMaterial2D _sharedNoPushMat;
 
@@ -157,6 +164,39 @@ public class PlayerMovement : MonoBehaviour
         }
 
         _rb.MovePosition(_rb.position + movement * Time.fixedDeltaTime);
+
+        UpdateFootsteps(movement);
+    }
+
+    /// <summary>
+    /// 이동 거리 기반 발걸음 사운드. 일반 이동(대시 제외)으로 일정 거리(_footstepStride)를
+    /// 누적할 때마다 AudioManager가 Walk 1~5를 순환 재생합니다.
+    /// </summary>
+    private void UpdateFootsteps(Vector2 movement)
+    {
+        // 대시 중이거나 이동 입력이 없으면 발걸음 누적 중단
+        bool moving = DashVelocity.sqrMagnitude <= 0.001f && MoveInput.sqrMagnitude > 0.001f;
+
+        if (!moving)
+        {
+            _distanceSinceStep = 0f;
+            _wasMoving = false;
+            return;
+        }
+
+        // 정지 → 이동 전환 시 첫 발걸음을 즉시 재생
+        if (!_wasMoving)
+            _distanceSinceStep = _footstepStride;
+
+        _wasMoving = true;
+        _distanceSinceStep += movement.magnitude * Time.fixedDeltaTime;
+
+        if (_distanceSinceStep >= _footstepStride)
+        {
+            _distanceSinceStep -= _footstepStride;
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayFootstep();
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other) // 테스트 코드

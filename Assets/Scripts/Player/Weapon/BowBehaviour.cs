@@ -254,6 +254,10 @@ public class BowBehaviour : WeaponBehaviourBase
             _weaponAnimator.Play("Attack", 0, 0f);
             _weaponAnimator.speed = 0f;
         }
+
+        // 활 당기기(차징) 소리 재생
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayBowCharge();
     }
 
     /// <summary>
@@ -355,6 +359,10 @@ public class BowBehaviour : WeaponBehaviourBase
                 _aimedShotBowAnimator.Play("AimedShotChargeStart", 0, 0f);
             }
         }
+
+        // 활 당기기(차징) 소리 재생
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayBowCharge();
 
         Debug.Log($"[BowBehaviour] 조준 사격 차징 시작! (차징 시간: {chargeTime:F1}s, 최대 계수: {damageMult:F1}x)");
     }
@@ -557,6 +565,10 @@ public class BowBehaviour : WeaponBehaviourBase
         // 관통 화살 발사 (AImArrow가 이미 생성된 경우 Launch(), 아니면 새로 생성)
         LaunchAimedShotArrow(chargeRatio);
 
+        // 활 발사음 재생
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayBowRelease();
+
         // 카메라 쉐이킹: 차징 비례 강도 (0.1 ~ 0.35)
         if (CameraShakeController.Instance != null)
         {
@@ -748,6 +760,10 @@ public class BowBehaviour : WeaponBehaviourBase
                 _weaponAnimator.Play("Attack", 0, 0f);
                 _weaponAnimator.speed = 0f; // 수동 제어
             }
+
+            // 활 당기기(차징) 소리 재생
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayBowCharge();
         }
 
         // 우클릭 유지 중
@@ -857,6 +873,10 @@ public class BowBehaviour : WeaponBehaviourBase
         // 차징 화살 발사
         FireArrow(ratio);
 
+        // 활 발사음 재생
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayBowRelease();
+
         // 발사 후 애니메이션이 현재 차징 지점에서 자연스럽게 나머지(발사 모션)를 재생하도록 속도만 복구
         if (_weaponAnimator != null)
         {
@@ -928,6 +948,10 @@ public class BowBehaviour : WeaponBehaviourBase
             _weaponAnimator.ResetTrigger("Attack");
             _weaponAnimator.SetTrigger("Attack");
         }
+
+        // 활 발사음 재생 (좌클릭 즉시 발사)
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayBowRelease();
     }
 
     public override bool PollFinished(float attackStartTime)

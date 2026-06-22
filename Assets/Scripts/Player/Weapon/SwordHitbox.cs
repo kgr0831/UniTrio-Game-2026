@@ -113,6 +113,10 @@ public class SwordHitbox : MonoBehaviour
 
         target.TakeDamage(damage, gameObject);
 
+        // 적 피격음 (타격 대상마다 1회)
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayHit();
+
         if (isTipCritical)
         {
             if (CameraShakeController.Instance != null) CameraShakeController.Instance.Shake(0.12f, 0.15f);

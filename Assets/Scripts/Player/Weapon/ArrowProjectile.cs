@@ -194,6 +194,10 @@ public class ArrowProjectile : MonoBehaviour
                 DebuffApplier.ApplyFromProjectile(collision);
 
                 HitEventManager.NotifyHit(_spawnPos, targetPosition, true);
+
+                // 피격 사운드 재생
+                if (AudioManager.Instance != null)
+                    AudioManager.Instance.PlayHit();
             }
             ReturnToPool();
         }

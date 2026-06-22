@@ -208,6 +208,10 @@ public class AimedShotArrow : MonoBehaviour
                 DebuffApplier.ApplyFromProjectile(collision);
 
                 HitEventManager.NotifyHit(_spawnPos, targetPosition, true);
+
+                // 피격 사운드 재생
+                if (AudioManager.Instance != null)
+                    AudioManager.Instance.PlayHit();
             }
             // 관통: 적 충돌 시 파괴하지 않음
         }
