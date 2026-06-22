@@ -1,5 +1,19 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-1196280961949993821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efde43e6767a9fe4799fee71f3bfbd13, type: 3}
+  m_Name: Grayscale Renderer Feature
+  m_EditorClassIdentifier: Assembly-CSharp::GrayscaleRendererFeature
+  m_Active: 1
+  Intensity: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28,7 +42,8 @@ MonoBehaviour:
   - {fileID: 7833122117494664109}
   - {fileID: 3550809197465266494}
   - {fileID: 7173730964300189013}
-  m_RendererFeatureMap: ad6b866f10d7b46c3e691bf026024731554d55d14d368e63
+  - {fileID: -1196280961949993821}
+  m_RendererFeatureMap: ad6b866f10d7b46c3e691bf026024731554d55d14d368e63a37468a3cdf465ef
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}

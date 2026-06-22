@@ -114,6 +114,9 @@ public class BossAI : MonoBehaviour
 
     void Update()
     {
+        // 회피 저스트 카운터 중에는 보스 AI 정지
+        if (MonsterFreezeManager.IsFrozen) return;
+
         if (blackboard.cooldownTimer > 0f)
             blackboard.cooldownTimer -= Time.deltaTime;
 

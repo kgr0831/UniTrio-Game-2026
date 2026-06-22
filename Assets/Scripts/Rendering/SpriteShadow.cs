@@ -18,11 +18,11 @@ public class SpriteShadow : MonoBehaviour
 {
     [Header("모양")]
     [Tooltip("스프라이트의 보이는 폭 대비 그림자 가로 크기 배수")]
-    [SerializeField, Range(0.1f, 2f)] private float _widthScale = 1.0f;
+    [SerializeField, Range(0.1f, 2f)] private float _widthScale = 0.6f;
     [Tooltip("그림자 세로/가로 비율 (1=완전한 원, 작을수록 납작한 타원)")]
-    [SerializeField, Range(0.1f, 1f)] private float _squash = 0.9f;
+    [SerializeField, Range(0.1f, 1f)] private float _squash = 0.55f;
     [Tooltip("그림자 최대 진하기(알파)")]
-    [SerializeField, Range(0f, 1f)] private float _alpha = 0.9f;
+    [SerializeField, Range(0f, 1f)] private float _alpha = 0.45f;
     [Tooltip("발 기준선에서의 세로 오프셋(월드 유닛). 음수면 발 아래로 내림")]
     [SerializeField] private float _yOffset = 0f;
     [Tooltip("그림자를 발에 붙이는 정도(세로 반지름 비율). 클수록 위로 올라가 발에 더 붙음")]
@@ -53,6 +53,7 @@ public class SpriteShadow : MonoBehaviour
     private float _displayWidth;   // 실제 적용 폭 (비-Idle 동안 커진 최대치 유지)
     private int   _idleStateHash;  // 첫 프레임(=Idle 가정) 애니 상태 해시
     private bool  _initialized;
+    private bool  _suppressed;     // 외부에서 그림자를 일시적으로 숨김 (예: 스켈레톤 등장 연출 동안)
 
     private void Awake()
     {
@@ -84,6 +85,14 @@ public class SpriteShadow : MonoBehaviour
 
     private void LateUpdate()
     {
+        // 외부에서 숨김 지정된 동안은 그림자를 만들지/그리지 않는다.
+        // 초기화(_anchor 캡처)도 미뤄지므로, 풀린 첫 프레임(예: 스켈레톤 Idle 시작)의 자세를 기준으로 잡는다.
+        if (_suppressed)
+        {
+            SetVisible(false);
+            return;
+        }
+
         var sprite = _source.sprite;
         if (sprite == null || !_source.enabled)
         {
@@ -131,7 +140,9 @@ public class SpriteShadow : MonoBehaviour
         _shadow.sortingOrder   = _source.sortingOrder - 1;
 
         // 원형 스프라이트는 지름 1유닛(중심 피벗)이므로 스케일 = 월드 크기.
-        // 가로는 플레이어 transform 중심(x=0)에, 세로는 발 높이에서 살짝 올려 발에 붙임.
+        // 가로는 트랜스폼 피벗(x=0=몸 중심)에 고정 — 무기·지팡이 같은 비대칭 돌출부가 포함된
+        // '불투명 중심'을 쓰면 그림자가 무기 쪽으로 쏠리고 flipX 때 좌우로 흔들리므로 사용하지 않는다.
+        // 세로는 발 높이에서 살짝 올려 발에 붙임.
         float w  = _displayWidth * _widthScale;
         float vr = w * _squash * 0.5f; // 세로 반지름
         _shadowTr.localPosition = new Vector3(0f, _anchorFeetY + _yOffset + vr * _footHug, 0f);
@@ -143,6 +154,17 @@ public class SpriteShadow : MonoBehaviour
     {
         if (_shadow != null && _shadow.enabled != visible)
             _shadow.enabled = visible;
+    }
+
+    /// <summary>
+    /// 외부에서 그림자 표시를 일시적으로 막거나 푼다.
+    /// 예: 스켈레톤이 매복(Hidden)·등장(Trigger) 연출 동안에는 숨겼다가 Idle이 시작되면 켠다.
+    /// 숨김을 풀면 다음 LateUpdate에서 현재 자세를 기준으로 그림자를 새로 생성한다.
+    /// </summary>
+    public void SetSuppressed(bool suppressed)
+    {
+        _suppressed = suppressed;
+        if (suppressed) SetVisible(false);
     }
 
     // ── 부드러운 원형 그림자 스프라이트 (런타임 1회 생성, 전 인스턴스 공유) ──

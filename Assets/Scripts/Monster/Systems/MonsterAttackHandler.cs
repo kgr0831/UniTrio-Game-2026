@@ -30,6 +30,12 @@ public sealed class MonsterAttackHandler : MonoBehaviour
     private Collider2D[] _hitResults = new Collider2D[10];
     private ContactFilter2D _hitboxFilter;
 
+    /// <summary>
+    /// 공격 시작(예고/와인드업)부터 타격 판정이 끝나기 전까지 true.
+    /// 회피 저스트 '예측 발동'(공격이 빗나가도 대시 시 발동)에서 참조한다.
+    /// </summary>
+    public bool IsAttackInProgress { get; private set; }
+
     // Animation Event 모드용: 공격 시작 시 조준 방향을 저장해두고 이벤트 프레임에 사용
     private Vector2 _pendingAimDirection;
     private bool    _attackArmed;
@@ -48,6 +54,7 @@ public sealed class MonsterAttackHandler : MonoBehaviour
     public void CancelAttack()
     {
         _attackArmed = false;
+        IsAttackInProgress = false;
         StopAllCoroutines();
     }
 
@@ -61,6 +68,7 @@ public sealed class MonsterAttackHandler : MonoBehaviour
 
         Vector2 aimDirection = (targetPosition - (Vector2)transform.position).normalized;
         _runtime.AttackCooldownTimer = 1f / _runtime.AttackSpeed;
+        IsAttackInProgress = true;
 
         // 애니메이션 및 인디케이터
         _animController?.PlayAttack();
@@ -86,6 +94,7 @@ public sealed class MonsterAttackHandler : MonoBehaviour
     {
         if (!_useAnimationEvent || !_attackArmed) return;
         _attackArmed = false;
+        IsAttackInProgress = false;
 
         if (_runtime.IsStaggered) return; // 경직 시 공격 취소
         PerformHitDetection(_pendingAimDirection);
@@ -95,6 +104,8 @@ public sealed class MonsterAttackHandler : MonoBehaviour
     {
         yield return new WaitForSeconds(_runtime.AttackDelay);
 
+        IsAttackInProgress = false;
+
         if (_runtime.IsStaggered) yield break; // 경직 시 공격 취소
 
         PerformHitDetection(aimDirection);
@@ -103,6 +114,9 @@ public sealed class MonsterAttackHandler : MonoBehaviour
     /// <summary>AttackShape(또는 히트박스 콜라이더) 기준으로 플레이어를 찾아 데미지 적용.</summary>
     private void PerformHitDetection(Vector2 aimDirection)
     {
+        // 회피 저스트 카운터 중에는 몬스터 공격 판정 무효
+        if (MonsterFreezeManager.IsFrozen) return;
+
         // ── 히트박스 콜라이더 모드: 조준 방향(플레이어 쪽)에 맞는 좌/우 박스를 사용 ──
         if (_useHitboxColliders && (_leftHitbox != null || _rightHitbox != null))
         {

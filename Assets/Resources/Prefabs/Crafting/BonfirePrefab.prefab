@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3203880654005999834}
   - component: {fileID: 5788052358023918284}
   - component: {fileID: 2391291124817649981}
+  - component: {fileID: 6310504018761957576}
   m_Layer: 10
   m_Name: BonfirePrefab
   m_TagString: Untagged
@@ -164,8 +165,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2722a0b32cfe43543985b67a3c725130, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BonfireInteractable
+--- !u!114 &6310504018761957576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5518204532647178626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2
 --- !u!1 &7741000000000000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -274,7 +293,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bc387c1971e74d2aa867a94d38cb3b85, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LightFlicker
   _baseIntensity: 2.2
   _intensityJitter: 0.25

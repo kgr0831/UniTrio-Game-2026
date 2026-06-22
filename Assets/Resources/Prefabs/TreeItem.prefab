@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5200759322354745871}
   - component: {fileID: 7199860582173210935}
   - component: {fileID: 4717612414670512163}
+  - component: {fileID: 5908455372108165211}
   m_Layer: 0
   m_Name: TreeItem
   m_TagString: Untagged
@@ -110,3 +111,21 @@ MonoBehaviour:
   _magneticRadius: 3
   _magneticAcceleration: 25
   _collectDistance: 0.4
+--- !u!114 &5908455372108165211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8940660355580203892}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2

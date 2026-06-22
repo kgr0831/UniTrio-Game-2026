@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 2970073154834465201}
   - component: {fileID: 6406990961470964298}
   - component: {fileID: 7364374970947197434}
+  - component: {fileID: 8245542202453649514}
   m_Layer: 0
   m_Name: TreeHits
   m_TagString: Tree
@@ -63,7 +64,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 47c22d2ff2004932a0a7bf664cf15bbc, type: 2}
+  - {fileID: 2100000, guid: e708459812ff4b93ac0e8ec0c388a411, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -209,3 +210,21 @@ MonoBehaviour:
   _minJumpForce: 3
   _maxJumpForce: 5
   _spreadAngle: 30
+--- !u!114 &8245542202453649514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4351201107849012885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2

@@ -13,6 +13,7 @@ using UnityEngine;
 public class PlayerEntity : CharacterBase, ISkillUser
 {
     private KarmaHandler _karma;
+    private JustDodgeController _justDodge;
 
     // ── 편의 프로퍼티 ─────────────────────────────────────────────
 
@@ -28,6 +29,25 @@ public class PlayerEntity : CharacterBase, ISkillUser
     {
         base.Awake();
         _karma = GetComponent<KarmaHandler>();
+
+        // 회피 저스트 컨트롤러 자동 보장 (씬/프리팹 수동 부착 없이도 동작)
+        _justDodge = GetComponent<JustDodgeController>();
+        if (_justDodge == null)
+            _justDodge = gameObject.AddComponent<JustDodgeController>();
+    }
+
+    // ── 회피 저스트 가로채기 ───────────────────────────────────────
+
+    /// <summary>
+    /// 대시 무적 윈도우 중 적 공격이 닿으면 회피 저스트를 발동하고 해당 피해를 무시합니다.
+    /// 그 외에는 기본 피격 처리(LivingEntity.TakeDamage)로 진행합니다.
+    /// </summary>
+    public override void TakeDamage(float damage, GameObject source = null)
+    {
+        if (IsAlive && source != null && _justDodge != null && _justDodge.TryConsumeDodge(source))
+            return;
+
+        base.TakeDamage(damage, source);
     }
 
     // ── 데미지 공식 ───────────────────────────────────────────────

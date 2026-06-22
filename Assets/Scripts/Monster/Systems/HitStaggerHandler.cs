@@ -52,6 +52,9 @@ public sealed class HitStaggerHandler : MonoBehaviour, IStaggerable
 
     private void Update()
     {
+        // 회피 저스트 카운터 중에는 스태거 타이머 정지 (애니 speed도 건드리지 않음 → 매니저가 원복 담당)
+        if (MonsterFreezeManager.IsFrozen) return;
+
         if (!_runtimeData.IsStaggered) return;
 
         _staggerTimer -= Time.deltaTime;

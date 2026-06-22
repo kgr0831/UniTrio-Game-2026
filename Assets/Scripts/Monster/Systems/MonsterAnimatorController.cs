@@ -27,6 +27,9 @@ public sealed class MonsterAnimatorController : MonoBehaviour
 
     private void Update()
     {
+        // 회피 저스트 카운터 중에는 애니 파라미터 갱신 정지 (speed=0은 MonsterFreezeManager가 처리)
+        if (MonsterFreezeManager.IsFrozen) return;
+
         if (_runtime == null || _runtime.Data == null) return;
 
         if (_animator.runtimeAnimatorController != _runtime.Data.AnimController)

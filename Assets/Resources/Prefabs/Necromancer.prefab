@@ -462,8 +462,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
-  _minSquash: 0.35
-  _maxSquash: 0.8
-  _baseAlpha: 0.4
-  _fullShadowWeight: 0.6
-  _smoothSpeed: 2.5
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2

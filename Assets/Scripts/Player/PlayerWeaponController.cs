@@ -22,6 +22,8 @@ public class PlayerWeaponController : MonoBehaviour
     [Header("Hand Position (손 위치 보정)")]
     [Tooltip("좌/우/하단을 향할 때 피봇을 아래로 내리는 양. 위를 향할 때는 0, 나머지 방향에서 이 값만큼 내려갑니다.")]
     [SerializeField] private float _handYOffset = 0.15f;
+    [Tooltip("플레이어 피봇이 발밑(0.5→0.125)으로 내려간 만큼 무기 피봇을 몸 중앙으로 올리는 기준 높이(월드 유닛).")]
+    [SerializeField] private float _bodyYOffset = 1.2f;
 
     /// <summary>현재 공격 애니메이션 재생 중인지 여부. FSM에서 대시 진입 조건으로 사용합니다.</summary>
     public bool IsAttacking => _activeBehaviour != null && _activeBehaviour.IsAttacking;
@@ -30,6 +32,21 @@ public class PlayerWeaponController : MonoBehaviour
     private float  _camToWorldZ;
     private float  _cursorDx; // UpdateCursorDirection에서 캐싱 → HandleAttackInput에서 콤보 flip에 재사용
     private float  _cursorDistance; // 커서까지의 거리 (무기 동적 생성용)
+
+    // 조준 오버라이드: 활성화되면 마우스 대신 지정 방향으로 조준한다(회피 저스트 카운터 등).
+    private bool    _aimOverrideActive;
+    private Vector2 _aimOverrideDir = Vector2.right;
+
+    /// <summary>마우스 대신 지정 방향으로 무기를 조준하도록 강제합니다. (false로 해제)</summary>
+    public void SetAimOverride(bool active, Vector2 dir)
+    {
+        _aimOverrideActive = active;
+        if (dir.sqrMagnitude > 0.0001f) _aimOverrideDir = dir.normalized;
+    }
+
+    /// <summary>조준 오버라이드 활성 여부. 무기 투사체가 마우스 대신 이 방향으로 발사할 때 참조.</summary>
+    public bool    AimOverrideActive => _aimOverrideActive;
+    public Vector2 AimOverrideDir    => _aimOverrideDir;
     // ── 콤보 엔진 ─────────────────────────────────────────
     // _comboStep : 다음 번에 실행될 공격의 타수(step).
     // BeginAttack 호출 후 즉시 증가하므로, UpdateCursorDirection이
@@ -286,21 +303,32 @@ public class PlayerWeaponController : MonoBehaviour
     {
         if (_mainCamera == null) return;
 
-        Vector3 mouseScreenPos = Input.mousePosition;
-        mouseScreenPos.z       = _camToWorldZ;
-        Vector3 mouseWorld     = _mainCamera.ScreenToWorldPoint(mouseScreenPos);
-
-        float dx = mouseWorld.x - transform.position.x;
-        float dy = mouseWorld.y - transform.position.y;
-
-        float sqrMag = dx * dx + dy * dy;
-        _cursorDistance = Mathf.Sqrt(sqrMag);
-
-        if (sqrMag > 0.0001f)
+        float dx, dy;
+        if (_aimOverrideActive)
         {
-            float inv = 1f / _cursorDistance;
-            dx *= inv;
-            dy *= inv;
+            // 회피 저스트 카운터 등: 마우스 대신 지정 방향으로 조준
+            dx = _aimOverrideDir.x;
+            dy = _aimOverrideDir.y;
+            _cursorDistance = 5f;
+        }
+        else
+        {
+            Vector3 mouseScreenPos = Input.mousePosition;
+            mouseScreenPos.z       = _camToWorldZ;
+            Vector3 mouseWorld     = _mainCamera.ScreenToWorldPoint(mouseScreenPos);
+
+            dx = mouseWorld.x - transform.position.x;
+            dy = mouseWorld.y - transform.position.y;
+
+            float sqrMag = dx * dx + dy * dy;
+            _cursorDistance = Mathf.Sqrt(sqrMag);
+
+            if (sqrMag > 0.0001f)
+            {
+                float inv = 1f / _cursorDistance;
+                dx *= inv;
+                dy *= inv;
+            }
         }
 
         // 공격 시작 시 콤보 flip 즉시 적용을 위해 정규화된 커서 X 방향을 캐싱합니다.
@@ -334,8 +362,9 @@ public class PlayerWeaponController : MonoBehaviour
         float zDepth = goBehind ? 1f : -1f;
         float depthNudge = goBehind ? 0.001f : -0.001f;
 
-        // 손 위치 보정: 마법으로 조종하므로 손 위치를 따라 위아래로 움직일 필요 없이 일정 높이 유지
-        float handY = 0f;
+        // 손 위치 보정: 마법으로 조종하므로 손 위치를 따라 위아래로 움직일 필요 없이 일정 높이 유지.
+        // 플레이어 피봇이 발밑(0.125)으로 내려가 트랜스폼 원점이 발에 있으므로, 무기 피봇을 몸 중앙으로 올린다.
+        float handY = _bodyYOffset;
         _weaponPivot.localPosition = new Vector3(0f, handY + depthNudge, zDepth);
     }
 
@@ -503,7 +532,7 @@ public class PlayerWeaponController : MonoBehaviour
     /// LockRotationDuringAttack 무기는 이후 UpdateCursorDirection이 early return하므로
     /// 이 시점에 미리 설정해야 공격 애니메이션 전체에서 올바른 방향이 유지됩니다.
     /// </summary>
-    private void ApplyAttackStartScale(int comboStep)
+    public void ApplyAttackStartScale(int comboStep)
     {
         if (_activeBehaviour == null || !_activeBehaviour.LockRotationDuringAttack) return;
 

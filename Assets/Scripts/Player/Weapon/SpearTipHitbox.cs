@@ -104,11 +104,11 @@ public class SpearTipHitbox : MonoBehaviour
         float atk = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
         float damage = DamageCalculator.CalcOutgoingDamage(atk, _baseDamage);
 
-        // 강타(Bash) 배율 적용
+        // 강타(Bash) 배율 + 차징/카운터(ChargeDamageMultiplier) 배율 적용
         if (_weaponBehaviour != null)
         {
-            float bashMult = _weaponBehaviour.CurrentSwingBashMultiplier;
-            damage *= bashMult;
+            damage *= _weaponBehaviour.CurrentSwingBashMultiplier;
+            damage *= _weaponBehaviour.ChargeDamageMultiplier;
         }
 
         // 크리티컬 배율 적용

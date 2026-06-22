@@ -73,6 +73,7 @@ public sealed class SkeletonMonster : MonsterBase
     private SpriteRenderer       _renderer;
     private MonsterHPBar         _hpBar;
     private Collider2D[]         _colliders;
+    private SpriteShadow         _shadow;
 
     private Phase  _phase;
     private float  _attackLockTimer;
@@ -110,6 +111,7 @@ public sealed class SkeletonMonster : MonsterBase
         _renderer  = GetComponent<SpriteRenderer>();
         _hpBar     = GetComponent<MonsterHPBar>();
         _colliders = GetComponentsInChildren<Collider2D>(true);
+        _shadow    = GetComponent<SpriteShadow>();
 
         CacheClipDurations();
     }
@@ -151,6 +153,7 @@ public sealed class SkeletonMonster : MonsterBase
 
         SetVisible(false);            // 숨김: 렌더러/HP바 off
         SetCollidersEnabled(false);   // 콜라이더 off (Walk=Active 진입 전까지 무적 + 무충돌)
+        if (_shadow != null) _shadow.SetSuppressed(true); // Idle 시작 전(매복·등장)까지 그림자 숨김
         ForceAnim(AnimIdle, "Idle");  // 보이지 않지만 기본 자세로 대기
     }
 
@@ -164,6 +167,9 @@ public sealed class SkeletonMonster : MonsterBase
 
     protected override void Update()
     {
+        // 회피 저스트 카운터 중에는 모든 행동 정지
+        if (MonsterFreezeManager.IsFrozen) return;
+
         switch (_phase)
         {
             case Phase.Hidden:    TickHidden();    break;
@@ -232,6 +238,7 @@ public sealed class SkeletonMonster : MonsterBase
             _phase     = Phase.IdleDelay;
             _idleTimer = _idleDelayAfterReveal;
             PlayAnim(AnimIdle, "Idle");
+            if (_shadow != null) _shadow.SetSuppressed(false); // Idle 시작 → 이때부터 그림자 생성
         }
     }
 

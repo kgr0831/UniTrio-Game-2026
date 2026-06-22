@@ -97,7 +97,9 @@
       "PowerShell(Add-Type -AssemblyName System.Drawing; $bmp = [System.Drawing.Bitmap]::FromFile\\(\"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Screenshots\\\\daynight_v3_midnight.png\"\\); $p = $bmp.GetPixel\\(60, 300\\); $p2 = $bmp.GetPixel\\(550, 60\\); Write-Output \\(\"midnight v3: \\({0},{1},{2}\\) / \\({3},{4},{5}\\)  — noon was \\(140,166,118\\)\" -f $p.R,$p.G,$p.B,$p2.R,$p2.G,$p2.B\\); $bmp.Dispose\\(\\))",
       "PowerShell([guid]::NewGuid\\(\\).ToString\\(\"N\"\\))",
       "PowerShell(Add-Type -AssemblyName System.Drawing; $src = [System.Drawing.Bitmap]::FromFile\\(\"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Screenshots\\\\shadow_v2_midnight.png\"\\); $crop = New-Object System.Drawing.Bitmap 480, 360; $g = [System.Drawing.Graphics]::FromImage\\($crop\\); $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::NearestNeighbor; $g.DrawImage\\($src, \\(New-Object System.Drawing.Rectangle 0,0,480,360\\), \\(New-Object System.Drawing.Rectangle 200,120,240,180\\), [System.Drawing.GraphicsUnit]::Pixel\\); $crop.Save\\(\"C:\\\\Users\\\\kimga\\\\UniTrio-Game-2026\\\\Assets\\\\Screenshots\\\\shadow_v2_midnight_zoom.png\"\\); $g.Dispose\\(\\); $src.Dispose\\(\\); $crop.Dispose\\(\\); Write-Output \"saved\")",
-      "PowerShell(1..2 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\(\"N\"\\) })"
+      "PowerShell(1..2 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\(\"N\"\\) })",
+      "PowerShell($g1=[guid]::NewGuid\\(\\).ToString\\(\"N\"\\); $g2=[guid]::NewGuid\\(\\).ToString\\(\"N\"\\); Write-Output \"SHADER_GUID=$g1\"; Write-Output \"MAT_GUID=$g2\")",
+      "Bash(git rev-list *)"
     ]
   }
 }

@@ -315,6 +315,9 @@ public class WandBehaviour : WeaponBehaviourBase
 
     private Vector2 GetCurrentCursorDirection()
     {
+        // 조준 오버라이드(카운터)면 마우스 무시하고 그 방향으로 발사
+        if (TryGetAimOverride(out Vector2 ovDir)) return ovDir;
+
         if (_cam == null) _cam = Camera.main;
         if (_cam == null) return Vector2.right;
 

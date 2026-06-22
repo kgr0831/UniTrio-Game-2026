@@ -43,6 +43,13 @@ public sealed class MonsterNavigator : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // 회피 저스트 카운터 중에는 이동 완전 정지
+        if (MonsterFreezeManager.IsFrozen)
+        {
+            _rb.linearVelocity = Vector2.zero;
+            return;
+        }
+
         // 스태거 중에는 이동 완전 차단 (AI가 MoveToward 등을 호출해도 무시)
         if (_runtime.IsStaggered)
         {

@@ -989,9 +989,13 @@ public class BowBehaviour : WeaponBehaviourBase
         float statAtk     = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
         float damage      = DamageCalculator.CalcOutgoingDamage(statAtk, weaponDmg) * _skillDamageMult;
 
-        // 커서 방향 지향 회전값 계산
+        // 발사 방향 회전값 계산. 조준 오버라이드(카운터)면 마우스 무시하고 그 방향으로.
         Quaternion arrowRot = _arrowPos.rotation;
-        if (_mainCamera != null)
+        if (TryGetAimOverride(out Vector2 ovDir))
+        {
+            arrowRot = Quaternion.Euler(0, 0, Mathf.Atan2(ovDir.y, ovDir.x) * Mathf.Rad2Deg);
+        }
+        else if (_mainCamera != null)
         {
             Vector3 mouseScreenPos = Input.mousePosition;
             mouseScreenPos.z = Mathf.Abs(_mainCamera.transform.position.z - _arrowPos.position.z);

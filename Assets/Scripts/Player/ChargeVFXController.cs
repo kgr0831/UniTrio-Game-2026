@@ -15,6 +15,8 @@ public class ChargeVFXController : MonoBehaviour
     [SerializeField] private string _sortingLayer = "Default";
     [Tooltip("소팅 오더 (플레이어 위에 렌더링)")]
     [SerializeField] private int _sortingOrder = 10;
+    [Tooltip("플레이어 피봇이 발밑(0.5→0.125)으로 내려간 만큼, 차징 VFX를 몸 중앙에 맞추기 위한 로컬 Y 오프셋")]
+    [SerializeField] private float _bodyYOffset = 1.2f;
 
     // 런타임 생성 오브젝트
     private GameObject _quadObj;
@@ -50,7 +52,7 @@ public class ChargeVFXController : MonoBehaviour
     {
         _quadObj = new GameObject("ChargeGatherVFX");
         _quadObj.transform.SetParent(transform, false);
-        _quadObj.transform.localPosition = Vector3.zero;
+        _quadObj.transform.localPosition = new Vector3(0f, _bodyYOffset, 0f);
         _quadObj.transform.localRotation = Quaternion.identity;
         _quadObj.transform.localScale = new Vector3(_vfxScale, _vfxScale, 1f);
 

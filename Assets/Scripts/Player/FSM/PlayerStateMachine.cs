@@ -27,6 +27,7 @@ public class PlayerStateMachine : MonoBehaviour
     public WalkState     Walk     { get; private set; }
     public HitState      Hit      { get; private set; }
     public DashState     DashSt   { get; private set; }
+    public JustDodgeState JustDodge { get; private set; }
     public DeathState    Death    { get; private set; }
     public CutsceneState Cutscene { get; private set; }
 
@@ -54,6 +55,7 @@ public class PlayerStateMachine : MonoBehaviour
         Walk     = new WalkState(this);
         Hit      = new HitState(this);
         DashSt   = new DashState(this);
+        JustDodge = new JustDodgeState(this);
         Death    = new DeathState(this);
         Cutscene = new CutsceneState(this);
     }
@@ -94,7 +96,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     private void HandleHit()
     {
-        if (IsInState<DeathState>() || IsInState<DashState>()) return;
+        if (IsInState<DeathState>() || IsInState<DashState>() || IsInState<JustDodgeState>()) return;
         TransitionTo(Hit);
     }
 

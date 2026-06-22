@@ -22,6 +22,11 @@ public class DashHandler : MonoBehaviour
     [Tooltip("대시 쿨다운 (초)")]
     [SerializeField] private float   _cooldown     = 1f;
 
+    [Header("Just Dodge (회피 저스트)")]
+    [Tooltip("대시 시작 후 이 시간(초) 동안 적 공격이 닿으면 회피 저스트가 발동합니다.\n" +
+             "대시 무적시간(_dashDuration)보다 길게 잡으면 대시 직후 약간의 유예 동안에도 인정됩니다(널널하게).")]
+    [SerializeField] private float   _justDodgeWindow = 0.15f;
+
     [Header("Upgrade (스킬트리 연동 전 임시 제어)")]
     [Tooltip("true = 업그레이드 대시 (무적·충돌무시·잔상 VFX)\nfalse = 기본 대시 (이동만)")]
     [SerializeField] private bool _isUpgraded = false;
@@ -35,9 +40,18 @@ public class DashHandler : MonoBehaviour
     /// <summary>쿨다운이 끝나 대시 가능한 상태이면 true.</summary>
     public bool CanDash   => _cooldownTimer <= 0f;
 
+    /// <summary>
+    /// 회피 저스트 인정 윈도우 안에 있으면 true.
+    /// 대시 시작 시 _justDodgeWindow 초로 설정되어 매 프레임 감소합니다.
+    /// 윈도우를 대시 무적시간(_dashDuration)보다 길게 잡으면 대시 직후 유예 동안에도 인정됩니다.
+    /// </summary>
+    public bool IsInJustDodgeWindow => _justDodgeTimer > 0f;
+
     private Rigidbody2D _rb;
     private float       _dashTimer;
+    private float       _justDodgeTimer;
     private float       _cooldownTimer;
+    private UnityEngine.Vector2 _lastDashDir = UnityEngine.Vector2.right;
     private bool        _dashInputBuffered;
     private ChargeSystem _chargeSystem;
 
@@ -55,6 +69,9 @@ public class DashHandler : MonoBehaviour
 
         if (_cooldownTimer > 0f)
             _cooldownTimer -= Time.deltaTime;
+
+        if (_justDodgeTimer > 0f)
+            _justDodgeTimer -= Time.deltaTime;
     }
 
     private void FixedUpdate()
@@ -93,9 +110,22 @@ public class DashHandler : MonoBehaviour
         if (direction.sqrMagnitude < 0.001f)
             direction = UnityEngine.Vector2.right;
 
-        _dashTimer     = _dashDuration;
-        _cooldownTimer = _cooldown;
+        _lastDashDir    = direction.normalized;
+        _dashTimer      = _dashDuration;
+        _justDodgeTimer = _justDodgeWindow;
+        _cooldownTimer  = _cooldown;
 
-        _rb.linearVelocity = direction.normalized * _dashForce;
+        _rb.linearVelocity = _lastDashDir * _dashForce;
+    }
+
+    /// <summary>
+    /// 현재(또는 방금 끝난) 대시를 지정 배율만큼 더 길게 이어갑니다.
+    /// 회피 저스트 성공 시 대시를 3배 길게 만드는 데 사용합니다.
+    /// </summary>
+    public void ExtendDash(float multiplier)
+    {
+        _dashTimer = _dashDuration * Mathf.Max(1f, multiplier);
+        if (_rb != null)
+            _rb.linearVelocity = _lastDashDir * _dashForce;
     }
 }

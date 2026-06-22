@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 8511699399505612182}
   - component: {fileID: 8996254884305600456}
   - component: {fileID: 2625809817338017208}
+  - component: {fileID: 6033741095322749948}
   m_Layer: 8
   m_Name: zombie (4)
   m_TagString: Entity
@@ -198,6 +199,24 @@ MonoBehaviour:
   _flashDuration: 0.15
   _currentHealth: 0
   _isAlive: 0
+--- !u!114 &6033741095322749948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2190974171081812933}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2
 --- !u!1 &2493164859930765300
 GameObject:
   m_ObjectHideFlags: 0
@@ -212,6 +231,7 @@ GameObject:
   - component: {fileID: 4599716795799946434}
   - component: {fileID: 1457599491713165888}
   - component: {fileID: 5533655445253621952}
+  - component: {fileID: 8681024241556367861}
   m_Layer: 8
   m_Name: zombie (2)
   m_TagString: Entity
@@ -396,6 +416,24 @@ MonoBehaviour:
   _flashDuration: 0.15
   _currentHealth: 0
   _isAlive: 0
+--- !u!114 &8681024241556367861
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2493164859930765300}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2
 --- !u!1 &3435561291254344631
 GameObject:
   m_ObjectHideFlags: 0
@@ -410,6 +448,7 @@ GameObject:
   - component: {fileID: 5042814309693732283}
   - component: {fileID: 9035608601612686078}
   - component: {fileID: 2022848565295334617}
+  - component: {fileID: 4353319180374388332}
   m_Layer: 8
   m_Name: zombie (1)
   m_TagString: Entity
@@ -594,6 +633,24 @@ MonoBehaviour:
   _flashDuration: 0.15
   _currentHealth: 0
   _isAlive: 0
+--- !u!114 &4353319180374388332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3435561291254344631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2
 --- !u!1 &4008959096482823201
 GameObject:
   m_ObjectHideFlags: 0
@@ -608,6 +665,7 @@ GameObject:
   - component: {fileID: 693179457648463566}
   - component: {fileID: 1489960880234554031}
   - component: {fileID: 4585173651678133344}
+  - component: {fileID: 6661746936682756461}
   m_Layer: 8
   m_Name: zombie
   m_TagString: Entity
@@ -792,6 +850,24 @@ MonoBehaviour:
   _flashDuration: 0.15
   _currentHealth: 0
   _isAlive: 0
+--- !u!114 &6661746936682756461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4008959096482823201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2
 --- !u!1 &6069374295819798382
 GameObject:
   m_ObjectHideFlags: 0
@@ -806,6 +882,7 @@ GameObject:
   - component: {fileID: 7672456442464967966}
   - component: {fileID: 7701761401887635025}
   - component: {fileID: 4809918010880399193}
+  - component: {fileID: 5133114234104459217}
   m_Layer: 8
   m_Name: zombie (3)
   m_TagString: Entity
@@ -990,6 +1067,24 @@ MonoBehaviour:
   _flashDuration: 0.15
   _currentHealth: 0
   _isAlive: 0
+--- !u!114 &5133114234104459217
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6069374295819798382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2
 --- !u!1 &6248295866039026909
 GameObject:
   m_ObjectHideFlags: 0
@@ -1004,6 +1099,7 @@ GameObject:
   - component: {fileID: 8786079236681096072}
   - component: {fileID: 5721529179751370587}
   - component: {fileID: 1268927468290423023}
+  - component: {fileID: 1713963625603238640}
   m_Layer: 8
   m_Name: zombie
   m_TagString: Entity
@@ -1188,6 +1284,24 @@ MonoBehaviour:
   _flashDuration: 0.15
   _currentHealth: 0
   _isAlive: 0
+--- !u!114 &1713963625603238640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6248295866039026909}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2
 --- !u!1 &7464555105971457318
 GameObject:
   m_ObjectHideFlags: 0
@@ -1241,6 +1355,7 @@ GameObject:
   - component: {fileID: 2566486178488809785}
   - component: {fileID: 2199447146863829089}
   - component: {fileID: 1784606439516908612}
+  - component: {fileID: 3860199262773655480}
   m_Layer: 8
   m_Name: zombie
   m_TagString: Entity
@@ -1447,3 +1562,21 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &3860199262773655480
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7651519052673556857}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
+  _yOffset: 0
+  _footHug: 0.3
+  _activeScale: 1.2

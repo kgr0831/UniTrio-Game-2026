@@ -48,6 +48,9 @@ public abstract class MonsterBase : MonoBehaviour, IDamageable
 
     protected virtual void Update()
     {
+        // 회피 저스트 카운터 중에는 모든 몬스터 행동 정지
+        if (MonsterFreezeManager.IsFrozen) return;
+
         // 체력이 없거나 사망 상태라면 BT 정지
         if (!_health.IsAlive || _runtime.CurrentState == MonsterState.Death) return;
 

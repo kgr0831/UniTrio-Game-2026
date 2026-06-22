@@ -51,6 +51,9 @@ public sealed class NecromancerFireball : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // 회피 저스트 카운터 중에는 투사체 정지
+        if (MonsterFreezeManager.IsFrozen) return;
+
         // 생성 시 플레이어 방향으로 회전돼 있으므로 로컬 +X로 직진
         transform.Translate(Vector3.right * (_speed * Time.fixedDeltaTime), Space.Self);
 

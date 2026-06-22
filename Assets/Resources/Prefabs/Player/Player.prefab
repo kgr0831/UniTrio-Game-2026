@@ -514,7 +514,7 @@ Transform:
   m_GameObject: {fileID: 3462043197688276117}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.024999991, y: 2.2, z: 0}
+  m_LocalPosition: {x: 0.024999991, y: 3.4, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -626,7 +626,7 @@ Transform:
   m_GameObject: {fileID: 3476307061200893711}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.119, y: -0.178, z: 0}
+  m_LocalPosition: {x: 0.119, y: 1.0220001, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -950,7 +950,7 @@ Transform:
   m_GameObject: {fileID: 5058874269455978912}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 1.2, z: 0}
   m_LocalScale: {x: 11.71875, y: 11.71875, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1615,6 +1615,7 @@ MonoBehaviour:
   - {fileID: 1321798618344644162}
   - {fileID: 3414513390060974718}
   _handYOffset: 0.15
+  _bodyYOffset: 1.2
 --- !u!114 &7685771378868690100
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1786,6 +1787,7 @@ MonoBehaviour:
   _dashForce: 14
   _dashDuration: 0.18
   _cooldown: 1
+  _justDodgeWindow: 0.15
   _isUpgraded: 0
 --- !u!114 &4463476247798924237
 MonoBehaviour:
@@ -1999,8 +2001,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 854a5480114042f4869509be492e4dda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpriteShadow
-  _widthScale: 1
-  _squash: 0.9
-  _alpha: 0.9
+  _widthScale: 0.6
+  _squash: 0.55
+  _alpha: 0.45
   _yOffset: 0
-  _smoothSpeed: 2.5
+  _footHug: 0.3
+  _activeScale: 1.2

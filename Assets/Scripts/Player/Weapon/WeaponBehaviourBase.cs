@@ -106,6 +106,18 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
     /// 창 스택 등 글로벌 요인에 의한 애니메이션 속도 증가량을 반환합니다.
     /// 파생 클래스에서 기본 배율에 이 값을 더해 사용합니다.
     /// </summary>
+    /// <summary>
+    /// 조준 오버라이드(회피 저스트 카운터 등)가 활성이면 그 방향(정규화)을 반환합니다.
+    /// 원거리 무기가 마우스 대신 이 방향으로 발사할 때 사용합니다.
+    /// </summary>
+    protected bool TryGetAimOverride(out Vector2 dir)
+    {
+        var ctrl = GetComponentInParent<PlayerWeaponController>();
+        if (ctrl != null && ctrl.AimOverrideActive) { dir = ctrl.AimOverrideDir; return true; }
+        dir = Vector2.right;
+        return false;
+    }
+
     public float GetAnimationSpeedBonus()
     {
         var controller = GetComponentInParent<PlayerWeaponController>();

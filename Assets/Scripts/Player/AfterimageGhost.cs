@@ -25,12 +25,13 @@ public class AfterimageGhost : MonoBehaviour
     }
 
     public void Setup(Sprite sprite, Vector3 worldPos, Vector3 worldScale,
-                      Color baseColor, int sortingLayerID, int sortingOrder)
+                      Color baseColor, int sortingLayerID, int sortingOrder, bool flipX = false)
     {
         transform.position   = worldPos;
         transform.localScale = worldScale;
 
         _sr.sprite         = sprite;
+        _sr.flipX          = flipX;
         _sr.sortingLayerID = sortingLayerID;
         _sr.sortingOrder   = sortingOrder - 1;
 

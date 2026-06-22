@@ -150,6 +150,9 @@ public sealed class NecromancerMonster : MonsterBase
 
     protected override void Update()
     {
+        // 회피 저스트 카운터 중에는 모든 행동 정지
+        if (MonsterFreezeManager.IsFrozen) return;
+
         if (_dead) { TickDead(); return; }
         if (_health == null || !_health.IsAlive) return;
         if (_runtime.IsStaggered) return;

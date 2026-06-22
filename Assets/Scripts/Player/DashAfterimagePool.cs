@@ -73,6 +73,7 @@ public class DashAfterimagePool : MonoBehaviour
             transform.lossyScale,
             Color.white,
             _playerSr.sortingLayerID,
-            _playerSr.sortingOrder);
+            _playerSr.sortingOrder,
+            _playerSr.flipX);
     }
 }

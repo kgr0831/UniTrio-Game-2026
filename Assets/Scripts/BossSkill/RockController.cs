@@ -28,6 +28,9 @@ public class RockController : MonoBehaviour
 
     void Update()
     {
+        // 회피 저스트 카운터 중에는 투척 바위 정지
+        if (MonsterFreezeManager.IsFrozen) return;
+
         Vector3 direction = moveRotation * Vector3.up;
         direction.z = 0;
         transform.position += direction.normalized * speed * Time.deltaTime;
