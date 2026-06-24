@@ -1,0 +1,171 @@
+using UnityEngine;
+
+/// <summary>
+/// 모든 무기 행동의 추상 기반 클래스.
+/// 검, 창 등 각 무기는 이 클래스를 상속해 고유 공격 로직과 애니메이션을 구현합니다.
+/// PlayerWeaponController는 이 인터페이스만 알고 있으면 됩니다.
+/// </summary>
+public abstract class WeaponBehaviourBase : MonoBehaviour
+{
+    /// <summary>이 무기의 종류 (검, 창, 활, 지팡이 등).</summary>
+    public abstract WeaponType WeaponType { get; }
+
+    /// <summary>현재 공격 애니메이션이 재생 중인지 여부.</summary>
+    public bool IsAttacking { get; protected set; }
+
+    /// <summary>수동으로 트레일(궤적)에 하위 프레임 정점을 추가합니다.</summary>
+    public virtual void AddTrailPosition(Vector3 rendererWorldPos, Quaternion rendererRot) {}
+
+    /// <summary>현재 진행 중인 콤보 스텝 (1-based). 피봇 Y-scale 결정에 사용됨.</summary>
+    public int CurrentComboStep { get; protected set; } = 1;
+
+    /// <summary>콤보 연결 허용 시간 (초). 무기마다 다를 수 있음.</summary>
+    public abstract float ComboWindow { get; }
+
+    /// <summary>최대 콤보 타수 (예: 검 2타, 창 2타 등).</summary>
+    public abstract int MaxComboSteps { get; }
+
+    /// <summary>
+    /// 2타 공격 시 무기 날 방향을 뒤집기 위해 SpriteRenderer.flipY를 반전할지 여부.
+    /// </summary>
+    public virtual bool FlipComboDirection => false;
+
+    /// <summary>
+    /// 무기가 플레이어를 중심으로 공전(Orbit)하는 거리 반경입니다.
+    /// 기본값 0f이면 플레이어 중심점(피봇 원위치)에서 제자리 회전하며, 값을 올리면 마우스 방향으로 밀려나 공전합니다.
+    /// </summary>
+    public virtual float OrbitRadius => 0f;
+
+    /// <summary>
+    /// 무기가 위/왼쪽을 향할 때 플레이어 뒤(Z+1)로 숨겨질지 여부.
+    /// 공전(Orbit) 시에는 뒤로 숨는 것보다 항상 앞에 보이는 것이 자연스러울 수 있습니다.
+    /// </summary>
+    public virtual bool UseGoBehind => true;
+
+    /// <summary>
+    /// 공격 애니메이션 도중 마우스 방향에 따른 회전을 잠글지 여부.
+    /// 검/창처럼 공격을 시작한 방향으로 끝까지 때려야 하는 무기는 true,
+    /// 활처럼 당기고 있는 도중에도 타겟을 따라 조준을 계속 바꿔야 한다면 false.
+    /// </summary>
+    public virtual bool LockRotationDuringAttack => true;
+    
+    /// <summary>
+    /// 무기 스프라이트 기울기 보정을 위한 피봇 회전 오프셋 (도).
+    /// 스프라이트가 기울어진 각도만큼 더해주면 커서 방향과 시각적으로 정렬됩니다.
+    /// 예: 창 스프라이트가 45° 기울어진 경우 45f를 반환.
+    /// </summary>
+    public virtual float PivotRotationOffset => 0f;
+
+    /// <summary>
+    /// 무기 자체적으로 위치/회전을 제어하여 FloatingWeaponMotion의 기본 위치/회전/크기 제어를 비활성화할지 여부.
+    /// 활의 오프셋 소환이나 지팡이의 즉시 발사 모드 등에서 true를 반환해야 합니다.
+    /// </summary>
+    public virtual bool DisableFloatingMotion => false;
+
+    /// <summary>
+    /// 투사체 발사 원점(머즐)의 월드 좌표. 원거리 무기는 실제 발사 지점을 반환하도록 오버라이드합니다.
+    /// 회피 카운터 등에서 머즐→타겟으로 정확히 조준해 경로 오프셋을 보정할 때 사용합니다.
+    /// </summary>
+    public virtual Vector3 MuzzleWorldPosition => transform.position;
+
+    /// <summary>현재 공격 중인 스윙에 적용될 강타(Bash) 배율입니다. (히트박스에서 읽음)</summary>
+    public float CurrentSwingBashMultiplier { get; protected set; } = 1f;
+
+    /// <summary>강타 시각 효과(블룸, 스프라이트 교체 등)를 활성화/비활성화 합니다.</summary>
+    public virtual void SetBashEffectActive(bool active) { }
+
+    // 현재 애니메이션 속도 보너스 (차징 등에 의한 가속/감속 포함)
+    protected float _animationSpeedBonus = 0f;
+
+    /// <summary>차징 스킬 등에서 일시적으로 스케일(크기/범위)을 증폭시킬 때 사용합니다.</summary>
+    public float ChargeSizeMultiplier { get; set; } = 1f;
+
+    /// <summary>차징 스킬 등에서 일시적으로 데미지를 증폭시킬 때 사용합니다.</summary>
+    public float ChargeDamageMultiplier { get; set; } = 1f;
+
+    /// <summary>차징 스킬 등에서 일시적으로 공격 속도를 증폭시킬 때 사용합니다.</summary>
+    public float ChargeSpeedMultiplier { get; set; } = 1f;
+
+    public void AddAnimationSpeedBonus(float amount) { _animationSpeedBonus += amount; }
+    public void ResetAnimationSpeedBonus() { _animationSpeedBonus = 0f; }
+
+    /// <summary>장착된 WeaponData의 Icon 스프라이트를 무기 비주얼에 반영합니다.</summary>
+    public virtual void SetWeaponSprite(Sprite sprite) { }
+
+    public bool IsFlipped { get; protected set; }
+    public bool IsAimingLeft { get; protected set; }
+
+    /// <summary>무기가 좌측을 향할 때 시각적으로 뒤집히도록(SpriteRenderer.flipY 등) 처리합니다.</summary>
+    public virtual void SetFlipY(bool flip, bool isAimingLeft) 
+    { 
+        IsFlipped = flip;
+        IsAimingLeft = isAimingLeft;
+    }
+
+    /// <summary>
+    /// 공격 애니메이션이 끝난 후 다음 공격이 가능할 때까지의 쿨다운(대기 시간)입니다.
+    /// 기본적으로 0.3초를 반환하며, 파생 클래스에서 오버라이드하여 조절할 수 있습니다.
+    /// </summary>
+    public virtual float GetPostAttackCooldown() => 0.3f;
+
+    /// <summary>
+    /// 창 스택 등 글로벌 요인에 의한 애니메이션 속도 증가량을 반환합니다.
+    /// 파생 클래스에서 기본 배율에 이 값을 더해 사용합니다.
+    /// </summary>
+    /// <summary>
+    /// 조준 오버라이드(회피 저스트 카운터 등)가 활성이면 그 방향(정규화)을 반환합니다.
+    /// 원거리 무기가 마우스 대신 이 방향으로 발사할 때 사용합니다.
+    /// </summary>
+    protected bool TryGetAimOverride(out Vector2 dir)
+    {
+        var ctrl = GetComponentInParent<PlayerWeaponController>();
+        if (ctrl != null && ctrl.AimOverrideActive) { dir = ctrl.AimOverrideDir; return true; }
+        dir = Vector2.right;
+        return false;
+    }
+
+    public float GetAnimationSpeedBonus()
+    {
+        var controller = GetComponentInParent<PlayerWeaponController>();
+        float spearBonus = (controller != null) ? (controller.SpearStacks * 0.1f) : 0f;
+        return spearBonus + _animationSpeedBonus + (ChargeSpeedMultiplier - 1f);
+    }
+
+    /// <summary>
+    /// FloatingWeaponMotion 등에서 이 무기의 실제 재생 배속을 알아낼 때 사용합니다.
+    /// 파생 클래스에서 (현재속도 / 기준속도) 비율을 반환해야 합니다.
+    /// </summary>
+    public virtual float GetCurrentAttackSpeedMultiplier() => 1f;
+
+    /// <summary>공격 시작. comboStep에 이번에 실행할 타수(1, 2, ...)를 넘깁니다.</summary>
+    public abstract void BeginAttack(int comboStep);
+
+    /// <summary>
+    /// 매 프레임 공격 종료 여부를 폴링.
+    /// true를 반환하면 컨트롤러가 공격이 끝났다고 판단합니다.
+    /// 히트박스 활성화 타이밍 등 프레임 단위 처리도 이 메서드 안에서 수행합니다.
+    /// </summary>
+    public abstract bool PollFinished(float attackStartTime);
+
+    /// <summary>무기 교체 또는 오브젝트 비활성화 시 내부 상태를 깔끔하게 정리합니다.</summary>
+    public abstract void OnDeactivated();
+
+    /// <summary>
+    /// 차징 스킬에서 무기 휘두르는 모션(이펙트 제외, 순수 모션)만 재생하고 싶을 때 호출합니다.
+    /// 기본적으로 하위의 Animator에서 "Attack" 트리거를 발동합니다.
+    /// 파생 클래스에서 필요 시 오버라이드하여 추가 연출을 적용할 수 있습니다.
+    /// </summary>
+    public virtual void PlayChargeAnimation(float speedMultiplier = 1f)
+    {
+        Animator[] animators = GetComponentsInChildren<Animator>();
+        foreach (var anim in animators)
+        {
+            // VFXAnimator 등은 피하기 위해 주로 0번째나 이름 등으로 필터링할 수도 있으나,
+            // 기본 동작으로는 모든 Animator의 속도를 맞추고 Attack 트리거를 켭니다.
+            if (anim.gameObject.name.Contains("VFX")) continue;
+
+            anim.speed = speedMultiplier;
+            anim.SetTrigger("Attack");
+        }
+    }
+}

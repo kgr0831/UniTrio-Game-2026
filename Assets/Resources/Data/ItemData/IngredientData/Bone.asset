@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: befcd026f7b281e48bb0c2f8d31d1661, type: 3}
+  m_Name: Bone
+  m_EditorClassIdentifier: Assembly-CSharp::IngredientData
+  Id: 1005
+  Name: "\uBF08"
+  Description: "\uC774 \uC0BC\uB9BC\uC758 \uB3D9\uBB3C\uC740 \uD3C9\uBC94\uD55C \uB3D9\uBB3C\uBCF4\uB2E4
+    \uAC15\uD558\uB2E4. \uADF8\uB7F0 \uB3D9\uBB3C\uC5D0\uAC8C\uC11C \uB098\uC628
+    \uBF08\uB294 \uD3C9\uBC94\uD55C \uBF08\uBCF4\uB2E4 \uB354\uC6B1 \uB2E8\uB2E8\uD558\uB2E4."
+  Type: 0
+  Icon: {fileID: -984005320, guid: ae01861b401907c4f803fea4c08d0a55, type: 3}
+  DropPrefab: {fileID: 8398858273174102962, guid: d758691769d1a164099734406ebaf8ed, type: 3}
+  IngredientList: []

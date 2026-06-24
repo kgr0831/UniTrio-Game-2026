@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5485e27ddf0af34a92115da79b31875, type: 3}
+  m_Name: AimedShotSkill
+  m_EditorClassIdentifier: Assembly-CSharp::AimedShotSkillData
+  Id: 0
+  Name: "\uC870\uC900 \uC0AC\uACA9 (Aimed Shot)"
+  Description: "\uC9D1\uC911\uD558\uC5EC \uC801\uC758 \uC57D\uC810\uC744 \uAFF0\uB6AB\uB294
+    \uAC15\uB825\uD55C \uD654\uC0B4\uC744 \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
+  Type: 8
+  Icon: {fileID: 21300000, guid: 451013349947a9247adba43102d42ec7, type: 3}
+  IngredientList: []
+  SkillPrefab: {fileID: 0}
+  ManaCost: 40
+  Cooldown: 8
+  RequiredWeapon: 3
+  BaseChargeTime: 3
+  DamageCoefficient: 2.5

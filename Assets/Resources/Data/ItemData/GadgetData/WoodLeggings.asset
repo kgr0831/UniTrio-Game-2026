@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da9374b12929f3d4599b6cf415ae267e, type: 3}
+  m_Name: WoodLeggings
+  m_EditorClassIdentifier: Assembly-CSharp::GadgetData
+  Id: 8003
+  Name: "\uB098\uBB34 \uAC01\uBC18"
+  Description: "\uB098\uBB34\uB85C \uB9CC\uB4E4\uB4E0 \uAC04\uB2E8\uD55C \uAC01\uBC18"
+  Type: 7
+  Icon: {fileID: -375211788, guid: 688b6ef3333fdde419a14ea6e04fa513, type: 3}
+  DropPrefab: {fileID: 1090004806173101068, guid: 3eecb672e93131b4cbf2dcd18803f207, type: 3}
+  GadgetType: 2
+  AtkBonus: 0
+  MagicAtkBonus: 0
+  DefBonus: 5
+  SpeedBonus: 0
+  ManaBonus: 0
+  MaxHPBonus: 0
+  AtkSpeedBonus: 0

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14671b4f5337bed41a3c05dbed445512, type: 3}
+  m_Name: AnimalMeat
+  m_EditorClassIdentifier: Assembly-CSharp::ConsumableData
+  Id: 4002
+  Name: "\uB3D9\uBB3C \uACE0\uAE30"
+  Description: "\uB0A0\uACE0\uAE30\uB2E4. \uADF8\uB2E4\uC9C0 \uBA39\uACE0\uC2F6\uC9C0\uB294
+    \uC54A\uB2E4."
+  Type: 3
+  Icon: {fileID: 5826249372024913565, guid: 987c030b5c44f504cb71735eff365b04, type: 3}
+  DropPrefab: {fileID: 6539199546161806724, guid: 3f5774b4a424d1245a329152529c7cdc, type: 3}
+  HealAmount: 25
+  CookMethod: 1
+  CookingTime: 2
+  CookedResult: {fileID: 11400000, guid: 1c3fa9ea3c9542d4f81164c9f9161c6f, type: 2}

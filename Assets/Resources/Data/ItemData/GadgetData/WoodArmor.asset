@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da9374b12929f3d4599b6cf415ae267e, type: 3}
+  m_Name: WoodArmor
+  m_EditorClassIdentifier: Assembly-CSharp::GadgetData
+  Id: 8002
+  Name: "\uB098\uBB34 \uAC11\uC637"
+  Description: "\uB098\uBB34\uB85C \uB9CC\uB4E0 \uAC11\uC637. \uC740\uADFC \uB2E8\uB2E8\uD558\uB2E4"
+  Type: 7
+  Icon: {fileID: 2109596881, guid: 688b6ef3333fdde419a14ea6e04fa513, type: 3}
+  DropPrefab: {fileID: 1090004806173101068, guid: 4877ab17a8038e1478e4a69add5d142d, type: 3}
+  GadgetType: 1
+  AtkBonus: 0
+  MagicAtkBonus: 0
+  DefBonus: 5
+  SpeedBonus: 0
+  ManaBonus: 0
+  MaxHPBonus: 0
+  AtkSpeedBonus: 0
