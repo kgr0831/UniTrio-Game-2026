@@ -101,7 +101,27 @@
       "PowerShell($g1=[guid]::NewGuid\\(\\).ToString\\(\"N\"\\); $g2=[guid]::NewGuid\\(\\).ToString\\(\"N\"\\); Write-Output \"SHADER_GUID=$g1\"; Write-Output \"MAT_GUID=$g2\")",
       "Bash(git rev-list *)",
       "mcp__coplay-mcp__list_game_objects_in_hierarchy",
-      "PowerShell(git *)"
+      "PowerShell(git *)",
+      "PowerShell(\"=== AudioManager: PlayDash / Instance ���� Ȯ�� ===\")",
+      "PowerShell(\"`n=== merge state ===\")",
+      "PowerShell(\"=== ���� üũ�ƿ��� �귣ġ ===\")",
+      "PowerShell(\"`n=== ���� �귣ġ���� ����Ű�� Ŀ�� ===\")",
+      "Bash(command -v pdftotext)",
+      "Bash(command -v python)",
+      "Bash(command -v python3)",
+      "Bash(command -v py)",
+      "Bash(pdftotext -layout \"튜토리얼 스토리보드 \\(1\\).pdf\" -)",
+      "Read(//c/Users/kimga/UniTrio-Game-2026/Assets/Scenes/**)",
+      "Bash(ls -la --time-style=long-iso *.unity)",
+      "Bash(grep -aB30 \"m_Name: Root$\" BossDemoScene.unity)",
+      "Read(//c/Users/kimga/UniTrio-Game-2026/**)",
+      "Bash(rg --no-ignore --files-with-matches \"SkillGaugeUI\" -g '*.cs')",
+      "Bash(rg --no-ignore --files-with-matches \"class ElementalGaugeUI\" -g '*.cs')",
+      "Bash(find Assets -iname \"*gauge*.cs\")",
+      "Bash(find Assets -iname \"*skillgauge*\")",
+      "Bash(rg --no-ignore --files -g 'InteractionPromptUI.cs')",
+      "Bash(grep -aioE \"m_text: .{0,40}\" GameScene.unity)",
+      "Bash(grep -aoE \"m_text: .{0,60}\" GameScene.unity)"
     ]
   }
 }

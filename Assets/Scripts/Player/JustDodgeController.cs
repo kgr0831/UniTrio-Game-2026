@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using Unity.Cinemachine;
 
 /// <summary>
@@ -24,15 +25,15 @@ public class JustDodgeController : MonoBehaviour
 
     [Header("Phase 1 — 슬로우모션 / 흑백 / F 대기")]
     [Tooltip("슬로우모션 timeScale (낮을수록 느림)")]
-    [SerializeField] private float _slowTimeScale   = 0.15f;
+    [SerializeField] private float _slowTimeScale   = 0.08f;
     [Tooltip("F 입력 대기 시간 = 슬로우모션 길이 (실시간 초). 인벤토리가 열려 있으면 이 타이머는 멈춥니다.")]
     [SerializeField] private float _fInputWindow     = 1.5f;
     [Tooltip("흑백이 플레이어 중앙에서 화면 전체로 퍼지는 시간 (실시간 초). 이 시간 동안 슬로우도 함께 걸림")]
-    [SerializeField] private float _grayscaleRampIn  = 0.35f;
+    [SerializeField] private float _grayscaleRampIn  = 0.85f;
     [Tooltip("종료 시 흑백·시간배속이 원복되는 시간 (실시간 초)")]
     [SerializeField] private float _grayscaleRampOut = 0.25f;
     [Tooltip("흑백이 퍼지는 최대 반경(스크린 UV 기준). 화면 전체를 덮으려면 1.4 이상")]
-    [SerializeField] private float _grayscaleMaxRadius = 1.6f;
+    [SerializeField] private float _grayscaleMaxRadius = 1.1f;
 
     [Header("Phase 2 — 돌진 / 카운터")]
     [Tooltip("적 기준 뒤쪽으로 잡을 목표 거리 (유닛). 적 스프라이트와 겹치지 않게 충분히 크게.")]
@@ -45,6 +46,8 @@ public class JustDodgeController : MonoBehaviour
     [SerializeField] private float _counterHold         = 0.45f;
     [Tooltip("회피 저스트 성공 시 대시를 평소보다 몇 배 길게 이어갈지")]
     [SerializeField] private float _dashLengthMultiplier = 3f;
+    [Tooltip("회피 카운터 성공 시 원소 게이지를 추가 충전하는 양 (평소 근접타격≈30 대비 크게)")]
+    [SerializeField] private float _counterGaugeGain = 150f;
 
     [Header("VFX")]
     [SerializeField] private Color _sparkleColor    = new Color(0.65f, 0.97f, 1f, 1f);
@@ -64,12 +67,14 @@ public class JustDodgeController : MonoBehaviour
     [Header("Focus (적 강조 / 카메라)")]
     [Tooltip("발동 적의 붉은 아웃라인 색")]
     [SerializeField] private Color _outlineColor = new Color(1f, 0.12f, 0.12f, 1f);
-    [Tooltip("아웃라인(실루엣) 확대 배율 — 적 스프라이트 대비")]
-    [SerializeField] private float _outlineScale = 1.12f;
+    [Tooltip("아웃라인(외곽선) 스케일 — 1.0이면 적 실루엣 가장자리에 딱 맞음")]
+    [SerializeField] private float _outlineScale = 1.0f;
+    [Tooltip("흑백 중에도 적 주변을 컬러로 유지하는 반경(스크린 UV). 0이면 비활성(적은 회색, 외곽선만 컬러).")]
+    [SerializeField] private float _focusColorRadius = 0f;
     [Tooltip("카메라를 적 쪽으로 살짝 팬하는 양(유닛)")]
-    [SerializeField] private float _camPanAmount = 1.5f;
+    [SerializeField] private float _camPanAmount = 2.2f;
     [Tooltip("카메라 줌인 배율(FollowOffset.z에 곱함, <1=줌인). 약하게=0.85~0.9")]
-    [SerializeField] private float _camZoomFactor = 0.88f;
+    [SerializeField] private float _camZoomFactor = 0.95f;
 
     // ── 참조 ──────────────────────────────────────────────────────
     private DashHandler           _dash;
@@ -93,6 +98,10 @@ public class JustDodgeController : MonoBehaviour
     private Vector3           _camFocusOffset;
     private bool              _camActive;
     private JustDodgeOutline  _outline;
+    private SpriteRenderer    _enemyBodySr;   // 포커스(컬러 유지) 중심 추적용 적 몸 렌더러
+    private Vector2           _dashStartPos;  // 대시 윈도우 진입 시점 위치 (막판 회피 판정용)
+    private bool              _wasInDodgeWindow;
+    private Camera            _outlineOverlayCam; // 빨간 외곽선을 흑백 위에 그리는 오버레이 카메라
 
     // 상태
     private bool _active;             // 시퀀스 진행 중
@@ -121,9 +130,14 @@ public class JustDodgeController : MonoBehaviour
         if (_triggeredThisDash && !_active && (_dash == null || !_dash.IsDashing))
             _triggeredThisDash = false;
 
-        // ★ 예측 발동: 대시 윈도우 중 근처에 '공격 중'인 적이 있으면, 그 공격이 빗나가도 발동.
-        //   (일찍 대시해 적 공격이 헛나가는 경우에도 회피 저스트가 터지게 한다)
-        if (!_active && !_triggeredThisDash && _dash != null && _dash.IsInJustDodgeWindow)
+        // 대시 윈도우 진입 순간의 플레이어 위치 기록 (대시로 멀어진 뒤에도 '적과 가까웠는지' 판정)
+        bool inWindow = _dash != null && _dash.IsInJustDodgeWindow;
+        if (inWindow && !_wasInDodgeWindow) _dashStartPos = transform.position;
+        _wasInDodgeWindow = inWindow;
+
+        // ★ 예측 발동: 대시 윈도우 중, (대시 시작 위치 기준) 근처에서 '방금 타격한' 적이 있으면 발동.
+        //   → 적의 타격(스트라이크) 순간과 대시가 겹쳐야 하므로 막판 회피에 보상된다(너무 이른 회피는 X).
+        if (!_active && !_triggeredThisDash && inWindow)
         {
             GameObject attacker = FindNearbyAttackingEnemy();
             if (attacker != null)
@@ -136,10 +150,10 @@ public class JustDodgeController : MonoBehaviour
         var handlers = Object.FindObjectsByType<MonsterAttackHandler>(FindObjectsSortMode.None);
         GameObject best = null;
         float bestSqr = _predictRange * _predictRange;
-        Vector2 p = transform.position;
+        Vector2 p = _dashStartPos;
         foreach (var h in handlers)
         {
-            if (h == null || !h.IsAttackInProgress) continue;
+            if (h == null || !h.JustStruckRecently) continue;
             float d = ((Vector2)h.transform.position - p).sqrMagnitude;
             if (d <= bestSqr) { bestSqr = d; best = h.gameObject; }
         }
@@ -182,6 +196,7 @@ public class JustDodgeController : MonoBehaviour
 
             // 피한 지점 반짝임 + 플레이어 글로우 + 발동 펀치(카메라 흔들림) + F 프롬프트
             JustDodgeVFX.SpawnSparkle(transform.position, _sparkleColor, _sparkleScale, _sparkleDuration);
+            AudioManager.Instance?.PlayJustDodgeSlowdown();
             SetGlow(true);
             CameraShakeController.Instance?.Shake(_activationShake, 0.25f);
             _ui?.ShowPrompt();
@@ -203,6 +218,7 @@ public class JustDodgeController : MonoBehaviour
 
                     // 흑백이 플레이어 중앙에서 퍼지고, 그에 맞춰 timeScale도 1→slow로 느려짐
                     SetGrayscaleRadial(1f, PlayerViewport(), Mathf.Lerp(0f, _grayscaleMaxRadius, gk));
+                    SetGrayscaleFocus(); // 적 주변은 컬러 유지 → 빨간 아웃라인이 회색에 안 묻힘
                     SetTimeScale(Mathf.Lerp(1f, _slowTimeScale, gk));
                     PulseGlow(elapsed);
 
@@ -235,6 +251,7 @@ public class JustDodgeController : MonoBehaviour
             // 안전망: 어떤 경로(예외 포함)로 끝나도 깨끗하게 복원
             SetTimeScale(1f);
             SetGrayscale(0f);
+            ClearGrayscaleFocus();
             MonsterFreezeManager.Unfreeze();
             if (_afterimage != null) _afterimage.StopSpawning();
             SetGlow(false);
@@ -254,6 +271,7 @@ public class JustDodgeController : MonoBehaviour
         SetTimeScale(1f);
         MonsterFreezeManager.Freeze();
         SetGrayscaleFull(1f);
+        ClearGrayscaleFocus(); // 돌진 중 카메라 이동으로 컬러 섬이 어긋나므로 카운터엔 미적용
 
         // 타겟 유효성 / 위치
         IDamageable target = (attacker != null) ? attacker.GetComponentInParent<IDamageable>() : null;
@@ -326,6 +344,14 @@ public class JustDodgeController : MonoBehaviour
         // 근접(검/창) vs 원거리(활/지팡이) 분기
         bool melee = (beh != null) && (beh.WeaponType == WeaponType.Sword || beh.WeaponType == WeaponType.Spear);
 
+        // 원거리(투사체) 카운터: 머즐→적으로 정확히 재조준 (몸높이 오프셋으로 경로가 빗나가는 것 보정)
+        if (!melee && beh != null && targetAlive && _weaponCtrl != null)
+        {
+            Vector3 toTgt = attackerPos - beh.MuzzleWorldPosition; toTgt.z = 0f;
+            if (toTgt.sqrMagnitude > 0.0001f)
+                _weaponCtrl.SetAimOverride(true, ((Vector2)toTgt).normalized);
+        }
+
         if (beh != null)
         {
             savedMult = beh.ChargeDamageMultiplier;
@@ -340,7 +366,13 @@ public class JustDodgeController : MonoBehaviour
         {
             float atk = (_entity != null) ? _entity.TotalAtk : 0f;
             target.TakeDamage(DamageCalculator.CalcOutgoingDamage(atk, 0f, _counterMultiplier), gameObject);
+            // 직접 데미지는 무기 히트박스를 거치지 않아 피격음이 빠지므로 여기서 재생
+            AudioManager.Instance?.PlayHit();
         }
+
+        // 회피 카운터 성공 보너스: 원소 게이지를 평소보다 크게 충전
+        if (targetAlive)
+            ElementalWeaponSystem.Instance?.AddGauge(_counterGaugeGain);
 
         // 타격감: 강한 카메라 흔들림 + 화면 섬광 + 적 스프라이트 강한 점멸
         CameraShakeController.Instance?.Shake(_counterShake, 0.3f);
@@ -419,6 +451,31 @@ public class JustDodgeController : MonoBehaviour
         return new Vector2(vp.x, vp.y);
     }
 
+    /// <summary>흑백 중에도 적 주변을 컬러로 유지(빨간 아웃라인이 회색에 묻히지 않게). 매 프레임 적 위치를 추적.</summary>
+    private void SetGrayscaleFocus()
+    {
+        var f = GrayscaleRendererFeature.Instance;
+        if (f == null) return;
+        if (_enemyBodySr != null && _focusColorRadius > 0f)
+        {
+            if (_cam == null) _cam = Camera.main;
+            if (_cam != null)
+            {
+                Vector3 vp = _cam.WorldToViewportPoint(_enemyBodySr.bounds.center);
+                f.FocusCenter = new Vector2(vp.x, vp.y);
+                f.FocusRadius = _focusColorRadius;
+                return;
+            }
+        }
+        f.FocusRadius = 0f;
+    }
+
+    private void ClearGrayscaleFocus()
+    {
+        var f = GrayscaleRendererFeature.Instance;
+        if (f != null) f.FocusRadius = 0f;
+    }
+
     private void SetGlow(bool on)
     {
         if (on && _glow == null) CreateGlow();
@@ -459,13 +516,51 @@ public class JustDodgeController : MonoBehaviour
 
     // ── 적 강조 / 카메라 포커스 ────────────────────────────────────
 
+    /// <summary>붉은 외곽선을 흑백 화면 위에 컬러로 그리기 위한 오버레이 카메라를 준비한다.
+    /// 베이스 카메라는 JustDodgeFX 레이어를 제외하고, 이 오버레이 카메라가 그 레이어만 흑백 없이 렌더한다.</summary>
+    private void EnsureOutlineOverlayCamera()
+    {
+        int fxLayer = LayerMask.NameToLayer("JustDodgeFX");
+        if (fxLayer < 0) return;
+        int fxMask = 1 << fxLayer;
+
+        if (_cam == null) _cam = Camera.main;
+        if (_cam == null) return;
+
+        // 베이스 카메라는 FX 레이어를 그리지 않음 (흑백 패스에 외곽선이 안 섞이게)
+        _cam.cullingMask &= ~fxMask;
+
+        if (_outlineOverlayCam != null) return;
+
+        var go = new GameObject("JustDodgeOutlineOverlayCam");
+        go.transform.SetParent(_cam.transform, false);
+        _outlineOverlayCam = go.AddComponent<Camera>();
+        _outlineOverlayCam.CopyFrom(_cam);
+        _outlineOverlayCam.cullingMask = fxMask;   // FX 레이어만
+        _outlineOverlayCam.clearFlags  = CameraClearFlags.Nothing;
+        _outlineOverlayCam.depth       = _cam.depth + 1;
+
+        var data = _outlineOverlayCam.GetUniversalAdditionalCameraData();
+        data.renderType = CameraRenderType.Overlay;
+
+        var baseData = _cam.GetUniversalAdditionalCameraData();
+        if (!baseData.cameraStack.Contains(_outlineOverlayCam))
+            baseData.cameraStack.Add(_outlineOverlayCam);
+    }
+
     private void BeginFocus(GameObject attacker)
     {
+        EnsureOutlineOverlayCamera();
+
         // 적 붉은 아웃라인
         if (attacker != null)
         {
             var esr = attacker.GetComponentInChildren<SpriteRenderer>();
-            if (esr != null) _outline = JustDodgeOutline.Create(esr, _outlineColor, _outlineScale);
+            if (esr != null)
+            {
+                _enemyBodySr = esr;
+                _outline = JustDodgeOutline.Create(esr, _outlineColor, _outlineScale);
+            }
         }
 
         // 카메라 포커스 준비 (Cinemachine FollowOffset 기반)

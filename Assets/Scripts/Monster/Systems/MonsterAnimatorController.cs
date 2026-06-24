@@ -80,11 +80,15 @@ public sealed class MonsterAnimatorController : MonoBehaviour
         }
     }
 
+    private int _facingX = 1; // 2방향 좌우 향함 (히스테리시스로만 변경)
     private void ApplyDirection2()
     {
         Vector2 dir = _runtime.CurrentDirection;
-        if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y) * 0.5f && Mathf.Abs(dir.x) > 0.1f)
-            _animator.SetFloat(_hashDirX, dir.x > 0f ? 1f : -1f);
+        // 히스테리시스: 현재 향한 방향과 '확실히' 반대로 움직일 때만 좌우를 뒤집는다(정바로 위/아래·미세 흔들림에 떨지 않음).
+        const float flipThreshold = 0.35f; // 정규화 dir 기준
+        if (_facingX >= 0 && dir.x < -flipThreshold)      _facingX = -1;
+        else if (_facingX < 0 && dir.x >  flipThreshold)  _facingX =  1;
+        _animator.SetFloat(_hashDirX, _facingX);
     }
 
     public void PlayAttack()

@@ -145,17 +145,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MagicProjectile
   _speed: 12
   _lifeTime: 3
+  _maxDistance: 10
   _damage: 15
   _hitVfxPrefabs: []
   _explosionVfxPrefab: {fileID: 7404956689840607511, guid: 3d836cfdeda0679468e8a9e91f027b41, type: 3}
   _damageTextPrefab: {fileID: 1862679126408685501, guid: 95d233be8196c274fa3787f1224378e8, type: 3}
-  _spinSpeed: 0
   _glowRenderer: {fileID: 1702163004974280389}
   _glowColor: {r: 0.2, g: 0.5, b: 1, a: 1}
-  _glowIntensity: 5
+  _glowIntensity: 2.5
   _pulseCyclesPerSec: 2
   _light: {fileID: 5363460307009185812}
-  _lightIntensity: 2
+  _lightIntensity: 0
 --- !u!108 &5363460307009185812
 Light:
   m_ObjectHideFlags: 0

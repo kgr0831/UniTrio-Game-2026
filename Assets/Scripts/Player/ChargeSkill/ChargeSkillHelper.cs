@@ -186,6 +186,10 @@ public static class ChargeSkillHelper
 
         SpriteRenderer sr = arrowObj.AddComponent<SpriteRenderer>();
 
+        // 타격 피드백(이펙트/데미지 텍스트)을 기본 화살에서 가져와 동일하게 재현합니다.
+        GameObject[] hitVfxPrefabs    = null;
+        GameObject   damageTextPrefab = null;
+
         if (ctx.WeaponBehaviour != null && ctx.WeaponBehaviour.WeaponType == WeaponType.Bow)
         {
             // 리플렉션 없이 강제 캐스팅이 위험하면 PlayerWeaponController 등에서 가져올 수도 있으나,
@@ -201,6 +205,18 @@ public static class ChargeSkillHelper
                     {
                         sr.sprite = prefabSr.sprite;
                         sr.sharedMaterial = prefabSr.sharedMaterial;
+                    }
+                }
+
+                // 타격 이펙트/데미지 텍스트는 기본 화살 프리팹(ArrowProjectile)에서 가져옵니다.
+                GameObject vfxSource = bow.NormalArrowPrefab != null ? bow.NormalArrowPrefab : prefab;
+                if (vfxSource != null)
+                {
+                    ArrowProjectile ap = vfxSource.GetComponentInChildren<ArrowProjectile>();
+                    if (ap != null)
+                    {
+                        hitVfxPrefabs    = ap.HitVfxPrefabs;
+                        damageTextPrefab = ap.DamageTextPrefab;
                     }
                 }
             }
@@ -236,5 +252,6 @@ public static class ChargeSkillHelper
         piercing.SetStats(speed, damage);
         piercing.SetScale(sizeMult);
         piercing.SetElementColor(elementColor);
+        piercing.SetHitFeedback(hitVfxPrefabs, damageTextPrefab);
     }
 }

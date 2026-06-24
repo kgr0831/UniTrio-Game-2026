@@ -203,7 +203,7 @@ MonoBehaviour:
   _glowColor: {r: 0.3, g: 0.6, b: 1, a: 1}
   _maxGlowIntensity: 8
   _light: {fileID: 4993084190674476898}
-  _maxLightIntensity: 5
+  _maxLightIntensity: 0
 --- !u!108 &4993084190674476898
 Light:
   m_ObjectHideFlags: 0
@@ -211,11 +211,11 @@ Light:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7404956689840607511}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 12
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 1
+  m_Intensity: 0
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208

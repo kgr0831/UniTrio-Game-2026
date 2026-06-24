@@ -14,6 +14,18 @@ public sealed class HostileMonster : MonsterBase
     private WanderSystem         _wander;
     private MonsterAttackHandler _attacker;
 
+    // 접근 방향(좌/우) 히스테리시스: -1=플레이어 왼쪽, +1=오른쪽. 정바로 아래/위에선 기존 쪽 유지.
+    private int _approachSide = 0;
+
+    /// <summary>이 몬스터의 공격 사거리 (SO 데이터 기준).</summary>
+    private float GetAttackRange()
+    {
+        if (_runtime != null && _runtime.Data != null
+            && _runtime.Data.AttackShape.ShapeType == AttackShapeType.Circle)
+            return _runtime.Data.AttackShape.CircleRadius;
+        return 1.5f;
+    }
+
     protected override void Awake()
     {
         base.Awake();
@@ -31,13 +43,7 @@ public sealed class HostileMonster : MonsterBase
             if (!_detection.HasTarget) return false;
             float dist = Vector2.Distance(transform.position, _detection.DetectedTarget.position);
             
-            // 이 몬스터의 공격 사거리를 SO 데이터에서 확인
-            // 간단하게 DetectionRadius보다 작은 임의의 사거리 또는 공격 모양 기준값 (예: 원형이면 CircleRadius)
-            float attackRange = 1.5f; 
-            if (_runtime.Data.AttackShape.ShapeType == AttackShapeType.Circle)
-                attackRange = _runtime.Data.AttackShape.CircleRadius;
-
-            return dist <= attackRange && _runtime.AttackCooldownTimer <= 0f;
+            return dist <= GetAttackRange() && _runtime.AttackCooldownTimer <= 0f;
         });
 
         var attackAction = new BTAction(() =>
@@ -56,7 +62,18 @@ public sealed class HostileMonster : MonsterBase
         var chaseAction = new BTAction(() =>
         {
             _runtime.CurrentState = MonsterState.Chase;
-            _navigator.MoveToward(_detection.DetectedTarget.position);
+
+            Vector2 playerPos = _detection.DetectedTarget.position;
+            float dx = transform.position.x - playerPos.x;
+            const float sideMargin = 0.4f; // 이 안쪽(정바로 아래/위)에선 기존 접근 쪽 유지 → 떨림 방지
+            if (dx < -sideMargin)      _approachSide = -1; // 곰이 플레이어 왼쪽
+            else if (dx > sideMargin)  _approachSide =  1; // 오른쪽
+            if (_approachSide == 0)    _approachSide = (dx <= 0f) ? -1 : 1;
+
+            // 플레이어의 좌/우 옆(같은 Y)으로 접근 → 아래로 파고들지 않고 좌우 공격 자세를 잡는다.
+            float standoff = GetAttackRange() * 0.9f;
+            Vector2 approach = new Vector2(playerPos.x + _approachSide * standoff, playerPos.y);
+            _navigator.MoveToward(approach);
             return BTStatus.Running; // 쫓는 중
         });
 

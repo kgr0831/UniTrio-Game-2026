@@ -50,6 +50,10 @@ public class JustDodgeUI : MonoBehaviour
             _prompt.transform.localScale    = Vector3.one;
             _prompt.transform.localPosition = new Vector3(PromptOffset.x, PromptOffset.y, 0f);
 
+            // 회피 카운터 프롬프트를 인벤토리보다 뒤로 배치 (인벤토리가 앞에 보이도록)
+            var invPanel = _canvas.transform.Find("InventoryPanel");
+            if (invPanel != null) _prompt.transform.SetSiblingIndex(invPanel.GetSiblingIndex());
+
             var graphics = _prompt.GetComponentsInChildren<Graphic>(true);
             _promptOrigColors = new Color[graphics.Length];
             for (int i = 0; i < graphics.Length; i++) _promptOrigColors[i] = graphics[i].color;

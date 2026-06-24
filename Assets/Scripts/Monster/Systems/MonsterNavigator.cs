@@ -156,28 +156,30 @@ public sealed class MonsterNavigator : MonoBehaviour
         _isDecelerating = false;
     }
 
+    // 점점 큰 각도로 좌/우를 번갈아 시도할 회피 각도들
+    private static readonly float[] _avoidanceTrials = { 0f, 45f, -45f, 70f, -70f, 110f, -110f };
+
     private Vector2 ApplyAvoidance(Vector2 desiredDir)
     {
-        Vector2 origin = (Vector2)transform.position + (desiredDir * 0.1f);
+        RaycastHit2D firstHit = default;
 
-        if (!Physics2D.Raycast(origin, desiredDir,
-                               _avoidanceRayLength, _obstacleMask))
+        for (int i = 0; i < _avoidanceTrials.Length; i++)
         {
-            return desiredDir;
+            float a = (i == 0) ? 0f : _avoidanceTrials[i];
+            Vector2 d = (i == 0) ? desiredDir
+                                 : (Vector2)(Quaternion.Euler(0, 0, a) * desiredDir);
+            Vector2 origin = (Vector2)transform.position + d * 0.1f;
+            var hit = Physics2D.Raycast(origin, d, _avoidanceRayLength, _obstacleMask);
+            if (!hit) return d;          // 뚫린 방향을 찾으면 그 방향으로
+            if (i == 0) firstHit = hit;  // 정면 충돌 정보는 미끄러짐용으로 보관
         }
 
-        Vector2 leftDir = Quaternion.Euler(0, 0, _avoidanceAngle) * desiredDir;
-        if (!Physics2D.Raycast(transform.position, leftDir,
-                               _avoidanceRayLength, _obstacleMask))
+        // 전 방향이 막힘: 정지(끼임) 대신 장애물 표면을 따라 미끄러진다.
+        if (firstHit.collider != null)
         {
-            return leftDir;
-        }
-
-        Vector2 rightDir = Quaternion.Euler(0, 0, -_avoidanceAngle) * desiredDir;
-        if (!Physics2D.Raycast(transform.position, rightDir,
-                               _avoidanceRayLength, _obstacleMask))
-        {
-            return rightDir;
+            Vector2 slide = Vector2.Perpendicular(firstHit.normal).normalized;
+            if (Vector2.Dot(slide, desiredDir) < 0f) slide = -slide; // 가려던 방향에 가까운 쪽으로
+            return slide;
         }
 
         return Vector2.zero;

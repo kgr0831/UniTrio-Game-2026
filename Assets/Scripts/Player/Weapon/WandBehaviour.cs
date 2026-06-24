@@ -77,6 +77,7 @@ public class WandBehaviour : WeaponBehaviourBase
     public override int   MaxComboSteps            => 1;
     public override float PivotRotationOffset      => 0f;
     public override bool  DisableFloatingMotion    => _isInstantCastMode;
+    public override Vector3 MuzzleWorldPosition     => _muzzlePoint != null ? _muzzlePoint.position : transform.position;
 
     // ── 내부 상태 ──────────────────────────────────────────────────
     private bool    _hasFired;
@@ -292,8 +293,9 @@ public class WandBehaviour : WeaponBehaviourBase
             _playerEntity.Stats.ConsumeMana(manaCost);
         }
 
-        Vector2 fireDir  = GetCurrentCursorDirection();
         Vector3 spawnPos = _muzzlePoint != null ? _muzzlePoint.position : transform.position;
+        // 발사 원점(머즐)에서 커서로 방향을 계산해야 투사체가 커서를 정확히 통과합니다.
+        Vector2 fireDir  = GetCurrentCursorDirection(spawnPos);
 
         // 최적화: 풀링 시스템에서 투사체를 가져옵니다.
         float statAtk = _playerEntity != null ? _playerEntity.TotalAtk : 0f;
@@ -313,7 +315,7 @@ public class WandBehaviour : WeaponBehaviourBase
         }
     }
 
-    private Vector2 GetCurrentCursorDirection()
+    private Vector2 GetCurrentCursorDirection(Vector3 origin)
     {
         // 조준 오버라이드(카운터)면 마우스 무시하고 그 방향으로 발사
         if (TryGetAimOverride(out Vector2 ovDir)) return ovDir;
@@ -321,12 +323,13 @@ public class WandBehaviour : WeaponBehaviourBase
         if (_cam == null) _cam = Camera.main;
         if (_cam == null) return Vector2.right;
 
-        float   camZ      = Mathf.Abs(_cam.transform.position.z - transform.position.z);
+        // 발사 원점(머즐)의 z 평면에서 커서 월드 좌표를 구하고, 원점→커서 방향으로 발사합니다.
+        float   camZ      = Mathf.Abs(_cam.transform.position.z - origin.z);
         Vector3 screenPos = Input.mousePosition;
         screenPos.z       = camZ;
         Vector3 worldPos  = _cam.ScreenToWorldPoint(screenPos);
 
-        Vector2 dir = (Vector2)worldPos - (Vector2)transform.position;
+        Vector2 dir = (Vector2)worldPos - (Vector2)origin;
         return dir.sqrMagnitude > 0.001f ? dir.normalized : Vector2.right;
     }
 

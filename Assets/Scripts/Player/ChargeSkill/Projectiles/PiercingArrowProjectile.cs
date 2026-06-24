@@ -23,10 +23,21 @@ public class PiercingArrowProjectile : MonoBehaviour
     private Color _elementColor;
     private bool _hasElementColor;
 
+    // 타격 피드백 (기본 화살 ArrowProjectile과 동일하게 ChargeSkillHelper가 주입)
+    private GameObject[] _hitVfxPrefabs;
+    private GameObject   _damageTextPrefab;
+
     public void SetStats(float speed, float damage)
     {
         _speed  = speed;
         _damage = damage;
+    }
+
+    /// <summary>기본 화살과 동일한 타격 이펙트/데미지 텍스트 프리팹을 주입합니다.</summary>
+    public void SetHitFeedback(GameObject[] hitVfxPrefabs, GameObject damageTextPrefab)
+    {
+        _hitVfxPrefabs    = hitVfxPrefabs;
+        _damageTextPrefab = damageTextPrefab;
     }
 
     public void SetElementColor(Color hdrColor)
@@ -138,6 +149,10 @@ public class PiercingArrowProjectile : MonoBehaviour
 
             target.TakeDamage(_damage, gameObject);
             DebuffApplier.ApplyFromProjectile(collision);
+            SpawnHitVfx(collision.ClosestPoint(transform.position));
+            SpawnDamageText(collision.bounds.center);
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayHit();
             HitEventManager.NotifyHit(_spawnPos, collision.bounds.center, _hitTargets.Count <= 1);
         }
         else if (collision.CompareTag("Wall"))
@@ -145,6 +160,29 @@ public class PiercingArrowProjectile : MonoBehaviour
             DestroySelf();
         }
         // 적은 관통 (소멸 안 함)
+    }
+
+    // ── 타격 피드백 (ArrowProjectile과 동일 로직) ─────────────────
+    private void SpawnHitVfx(Vector3 hitPoint)
+    {
+        if (_hitVfxPrefabs == null || _hitVfxPrefabs.Length == 0) return;
+
+        Vector2 dir    = (Vector2)(hitPoint - transform.position);
+        float   angleZ = dir.sqrMagnitude > 0.0001f
+                         ? Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg
+                         : 0f;
+
+        GameObject prefab = _hitVfxPrefabs[Random.Range(0, _hitVfxPrefabs.Length)];
+        SimpleObjectPool.Instance.Get(prefab, hitPoint, Quaternion.Euler(0f, 0f, angleZ));
+    }
+
+    private void SpawnDamageText(Vector3 enemyCenter)
+    {
+        if (_damageTextPrefab == null) return;
+        Vector3    spawnPos = enemyCenter + Vector3.up * 0.5f;
+        GameObject textObj  = SimpleObjectPool.Instance.Get(_damageTextPrefab, spawnPos, Quaternion.identity);
+        DamageText dmgText  = textObj.GetComponent<DamageText>();
+        if (dmgText != null) dmgText.Setup(Mathf.RoundToInt(_damage));
     }
 
     private void DestroySelf()

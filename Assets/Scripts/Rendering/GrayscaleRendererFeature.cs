@@ -22,6 +22,11 @@ public class GrayscaleRendererFeature : ScriptableRendererFeature
     public float   Radius   = 10f;                     // UV 기준 반경. 크게 잡으면 화면 전체 흑백
     public float   Softness = 0.06f;
 
+    [Header("포커스 (컬러 유지 영역 — 적 강조)")]
+    public Vector2 FocusCenter   = new Vector2(0.5f, 0.5f); // 컬러로 남길 중심(스크린 UV)
+    public float   FocusRadius   = 0f;                       // 0이면 비활성
+    public float   FocusSoftness = 0.04f;
+
     private GrayscalePass _pass;
     private Material       _material;
 
@@ -44,7 +49,9 @@ public class GrayscaleRendererFeature : ScriptableRendererFeature
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
         if (Intensity <= 0.001f) return;
-        _pass.Setup(Intensity, Center, Radius, Softness);
+        // 오버레이 카메라(붉은 아웃라인 전용)는 흑백을 적용하지 않는다 → 아웃라인이 컬러로 남는다.
+        if (renderingData.cameraData.renderType == CameraRenderType.Overlay) return;
+        _pass.Setup(Intensity, Center, Radius, Softness, FocusCenter, FocusRadius, FocusSoftness);
         renderer.EnqueuePass(_pass);
     }
 
@@ -59,6 +66,9 @@ public class GrayscaleRendererFeature : ScriptableRendererFeature
         private static readonly int _radiusId    = Shader.PropertyToID("_Radius");
         private static readonly int _softnessId  = Shader.PropertyToID("_Softness");
         private static readonly int _aspectId    = Shader.PropertyToID("_Aspect");
+        private static readonly int _focusCenterId   = Shader.PropertyToID("_FocusCenter");
+        private static readonly int _focusRadiusId   = Shader.PropertyToID("_FocusRadius");
+        private static readonly int _focusSoftnessId = Shader.PropertyToID("_FocusSoftness");
 
         public GrayscalePass(Material mat)
         {
@@ -66,12 +76,16 @@ public class GrayscaleRendererFeature : ScriptableRendererFeature
             profilingSampler = new ProfilingSampler("Grayscale");
         }
 
-        public void Setup(float intensity, Vector2 center, float radius, float softness)
+        public void Setup(float intensity, Vector2 center, float radius, float softness,
+                          Vector2 focusCenter, float focusRadius, float focusSoftness)
         {
             _mat.SetFloat(_intensityId, intensity);
             _mat.SetVector(_centerId, new Vector4(center.x, center.y, 0f, 0f));
             _mat.SetFloat(_radiusId, radius);
             _mat.SetFloat(_softnessId, softness);
+            _mat.SetVector(_focusCenterId, new Vector4(focusCenter.x, focusCenter.y, 0f, 0f));
+            _mat.SetFloat(_focusRadiusId, focusRadius);
+            _mat.SetFloat(_focusSoftnessId, focusSoftness);
             float aspect = (Screen.height > 0) ? (float)Screen.width / Screen.height : 1.7777f;
             _mat.SetFloat(_aspectId, aspect);
         }

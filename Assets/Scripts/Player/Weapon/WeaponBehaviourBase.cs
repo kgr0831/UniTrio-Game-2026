@@ -62,6 +62,12 @@ public abstract class WeaponBehaviourBase : MonoBehaviour
     /// </summary>
     public virtual bool DisableFloatingMotion => false;
 
+    /// <summary>
+    /// 투사체 발사 원점(머즐)의 월드 좌표. 원거리 무기는 실제 발사 지점을 반환하도록 오버라이드합니다.
+    /// 회피 카운터 등에서 머즐→타겟으로 정확히 조준해 경로 오프셋을 보정할 때 사용합니다.
+    /// </summary>
+    public virtual Vector3 MuzzleWorldPosition => transform.position;
+
     /// <summary>현재 공격 중인 스윙에 적용될 강타(Bash) 배율입니다. (히트박스에서 읽음)</summary>
     public float CurrentSwingBashMultiplier { get; protected set; } = 1f;
 

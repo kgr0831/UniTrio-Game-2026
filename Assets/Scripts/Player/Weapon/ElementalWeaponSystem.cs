@@ -703,4 +703,13 @@ public class ElementalWeaponSystem : MonoBehaviour
         ResetDecayTimer();
         NotifyGaugesChanged();
     }
+
+    /// <summary>게이지를 amount만큼 직접 증가시킵니다(거리/페널티 무시). 회피 카운터 성공 보너스 등에 사용.</summary>
+    public void AddGauge(float amount)
+    {
+        if (amount <= 0f) return;
+        _unifiedGauge = Mathf.Min(GAUGE_MAX, _unifiedGauge + amount);
+        ResetDecayTimer();
+        NotifyGaugesChanged();
+    }
 }

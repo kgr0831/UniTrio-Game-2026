@@ -29,6 +29,7 @@ public class AudioManager : MonoBehaviour
     [Range(0f, 1f)] [SerializeField] private float _hitVolume          = 1f;
     [Range(0f, 1f)] [SerializeField] private float _dashVolume         = 1f;
     [Range(0f, 1f)] [SerializeField] private float _footstepVolume     = 0.6f;
+    [Range(0f, 1f)] [SerializeField] private float _justDodgeVolume    = 1f;
 
     [Header("Attack Sound Offset")]
     [Tooltip("창 공격 사운드 파일의 앞부분 무음 구간을 건너뛸 시간(초).")]
@@ -56,6 +57,9 @@ public class AudioManager : MonoBehaviour
 
     // 대시
     private AudioClip _dash;
+
+    // 회피 저스트 발동(슬로우다운)
+    private AudioClip _justDodgeSlowdown;
 
     // 걷기 (Footstep_Grass_a~f 순환)
     private AudioClip[] _footsteps;
@@ -107,6 +111,7 @@ public class AudioManager : MonoBehaviour
         _bowRelease   = Resources.Load<AudioClip>("Sound/Bow/Slash_Attack_Light_3");
         _hit1         = Resources.Load<AudioClip>("Sound/Hit/Hit_1");
         _dash         = Resources.Load<AudioClip>("Sound/Dash/Dalsh_1");
+        _justDodgeSlowdown = Resources.Load<AudioClip>("Sound/JustDodge/JustDodge_Slowdown");
 
         _footsteps = new AudioClip[]
         {
@@ -166,6 +171,12 @@ public class AudioManager : MonoBehaviour
     public void PlayDash()
     {
         Play(_dash, _dashVolume);
+    }
+
+    /// <summary>회피 저스트 발동 시 슬로우다운 효과음.</summary>
+    public void PlayJustDodgeSlowdown()
+    {
+        Play(_justDodgeSlowdown, _justDodgeVolume);
     }
 
     /// <summary>발걸음음. 호출할 때마다 Footstep_Grass a→b→c→d→e→f→a… 순으로 순환 재생합니다.</summary>

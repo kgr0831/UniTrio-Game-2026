@@ -28,6 +28,9 @@ Shader "Hidden/ScreenGrayscale"
             float  _Radius;     // 흑백 영역 반경 (UV 기준). 크게 잡으면 화면 전체.
             float  _Softness;   // 경계 부드러움
             float  _Aspect;     // 화면 종횡비(width/height) — 원형 보정용
+            float2 _FocusCenter;   // 컬러 유지(포커스) 중심 (스크린 UV). 강조할 적 위치.
+            float  _FocusRadius;   // 컬러 유지 반경 (UV). 0이면 비활성.
+            float  _FocusSoftness; // 포커스 경계 부드러움
 
             half4 Frag(Varyings input) : SV_Target
             {
@@ -42,6 +45,17 @@ Shader "Hidden/ScreenGrayscale"
                 // 반경 안쪽이면 1, 바깥이면 0 (플레이어 중앙에서 퍼져나가는 효과)
                 float reveal = 1.0 - smoothstep(_Radius - _Softness, _Radius + _Softness, dist);
                 half  amount = _Intensity * reveal;
+
+                // 포커스(적 강조): 이 영역 안은 흑백을 적용하지 않아 컬러(빨간 아웃라인 포함)가 유지된다.
+                float focus = 0.0;
+                if (_FocusRadius > 0.0001)
+                {
+                    float2 fd = input.texcoord - _FocusCenter;
+                    fd.x *= _Aspect;
+                    float fdist = length(fd);
+                    focus = 1.0 - smoothstep(_FocusRadius - _FocusSoftness, _FocusRadius + _FocusSoftness, fdist);
+                }
+                amount *= (1.0 - focus);
 
                 // 리니어 색공간 기준 휘도(Rec.709)로 채도 제거
                 half  luma = dot(col.rgb, half3(0.2126h, 0.7152h, 0.0722h));

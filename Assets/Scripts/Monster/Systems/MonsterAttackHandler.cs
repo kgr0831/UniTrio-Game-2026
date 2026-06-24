@@ -36,6 +36,12 @@ public sealed class MonsterAttackHandler : MonoBehaviour
     /// </summary>
     public bool IsAttackInProgress { get; private set; }
 
+    [Tooltip("타격(스트라이크) 직후 이 시간(초) 동안 '방금 침'으로 간주 — 회피 저스트 막판 발동 판정용")]
+    [SerializeField] private float _justDodgeGrace = 0.22f;
+    private float _lastStrikeTime = -999f;
+    /// <summary>방금 타격을 시도한 직후 짧은 시간 동안 true. 회피 저스트(막판) 예측 발동에서 참조한다.</summary>
+    public bool JustStruckRecently => Time.time - _lastStrikeTime <= _justDodgeGrace;
+
     // Animation Event 모드용: 공격 시작 시 조준 방향을 저장해두고 이벤트 프레임에 사용
     private Vector2 _pendingAimDirection;
     private bool    _attackArmed;
@@ -97,6 +103,7 @@ public sealed class MonsterAttackHandler : MonoBehaviour
         IsAttackInProgress = false;
 
         if (_runtime.IsStaggered) return; // 경직 시 공격 취소
+        _lastStrikeTime = Time.time;       // 회피 저스트 막판 발동 판정용
         PerformHitDetection(_pendingAimDirection);
     }
 
@@ -108,6 +115,7 @@ public sealed class MonsterAttackHandler : MonoBehaviour
 
         if (_runtime.IsStaggered) yield break; // 경직 시 공격 취소
 
+        _lastStrikeTime = Time.time;       // 회피 저스트 막판 발동 판정용
         PerformHitDetection(aimDirection);
     }
 

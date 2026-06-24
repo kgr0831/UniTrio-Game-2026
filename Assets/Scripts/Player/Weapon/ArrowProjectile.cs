@@ -25,6 +25,11 @@ public class ArrowProjectile : MonoBehaviour
     [Header("Damage Text (Optional)")]
     [SerializeField] private GameObject _damageTextPrefab;
 
+    /// <summary>차징 스킬 투사체(PiercingArrowProjectile)가 동일한 타격 이펙트를 재사용할 때 참조합니다.</summary>
+    public GameObject[] HitVfxPrefabs    => _hitVfxPrefabs;
+    /// <summary>차징 스킬 투사체가 동일한 데미지 텍스트 프리팹을 재사용할 때 참조합니다.</summary>
+    public GameObject   DamageTextPrefab => _damageTextPrefab;
+
     private SpriteRenderer _spriteRenderer;
     private ParticleSystem _trailParticle;
     private Color          _elementColor;
