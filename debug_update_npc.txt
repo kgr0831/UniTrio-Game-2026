@@ -1,0 +1,4 @@
+Scaled BoxCollider2D on NPC_장인
+Scaled BoxCollider2D on NPC_상인
+Scaled BoxCollider2D on NPC_정령술사
+Scaled BoxCollider2D on Edrin_NPC

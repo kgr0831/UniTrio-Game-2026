@@ -20,7 +20,7 @@ public class SpearTipHitbox : MonoBehaviour
     [SerializeField] private float _tipDamageMultiplier = 1.5f;
 
     [Header("Target Tags")]
-    [SerializeField] private string[] _targetTags = new string[] { "Enemy", "Tree" };
+    [SerializeField] private string[] _targetTags = new string[] { "Enemy", "Gatherable" };
 
     [Header("Damage Text")]
     [SerializeField] private GameObject _damageTextPrefab;

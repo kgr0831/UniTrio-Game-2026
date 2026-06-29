@@ -99,6 +99,9 @@ public abstract class BaseSkillAction
     /// </summary>
     protected void DamagePlayer(float damage, Vector2 knockback)
     {
+        // 골렘 근접 공격 시 주변 채집물(나무/돌)을 한 방에 파괴
+        BreakNearbyGatherables();
+
         if (bb.playerTarget == null) return;
 
         var target = bb.playerTarget.GetComponentInParent<IDamageable>();
@@ -110,6 +113,27 @@ public abstract class BaseSkillAction
         {
             var move = bb.playerTarget.GetComponentInParent<PlayerMovement>();
             if (move != null) move.ApplyRecoil(knockback);
+        }
+    }
+
+    // 골렘 공격 시 주변 채집물을 한 방에 파괴 (owner=골렘, BossAI 보유 → GatherableNode가 즉시 파괴)
+    private const float GatherableBreakRadius = 5f;
+    private static int _gatherableMask = -1;
+    private static readonly Collider2D[] _gatherBuf = new Collider2D[16];
+
+    protected void BreakNearbyGatherables()
+    {
+        if (owner == null) return;
+        if (_gatherableMask == -1) _gatherableMask = LayerMask.GetMask("Gatherable");
+        if (_gatherableMask == 0) return;
+
+        int n = Physics2D.OverlapCircleNonAlloc(owner.transform.position, GatherableBreakRadius, _gatherBuf, _gatherableMask);
+        for (int i = 0; i < n; i++)
+        {
+            if (_gatherBuf[i] == null) continue;
+            var g = _gatherBuf[i].GetComponentInParent<IDamageable>();
+            if (g != null && g.IsAlive)
+                g.TakeDamage(9999f, owner);
         }
     }
 }

@@ -121,7 +121,14 @@
       "Bash(find Assets -iname \"*skillgauge*\")",
       "Bash(rg --no-ignore --files -g 'InteractionPromptUI.cs')",
       "Bash(grep -aioE \"m_text: .{0,40}\" GameScene.unity)",
-      "Bash(grep -aoE \"m_text: .{0,60}\" GameScene.unity)"
+      "Bash(grep -aoE \"m_text: .{0,60}\" GameScene.unity)",
+      "Bash(mkdir -p Docs)",
+      "Bash(cp \"C:/Users/kimga/OneDrive/Desktop/대사_목록.ods\" \"Docs/대사_목록.ods\")",
+      "Bash(cp \"C:/Users/kimga/OneDrive/Desktop/튜토리얼 스토리보드 \\(1\\).pdf\" \"Docs/튜토리얼_스토리보드.pdf\")",
+      "Bash(git check-ignore *)",
+      "Bash(PYTHONIOENCODING=utf-8 python -c ' *)",
+      "Bash(grep -iv \"//\")",
+      "Bash(not exist *)"
     ]
   }
 }

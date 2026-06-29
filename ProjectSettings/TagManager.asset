@@ -10,6 +10,7 @@ TagManager:
   - Tree
   - Animal
   - Entity
+  - Gatherable
   layers:
   - Default
   - TransparentFX
@@ -23,7 +24,7 @@ TagManager:
   - Player
   - Interactable
   - JustDodgeFX
-  - 
+  - Gatherable
   - 
   - 
   - 

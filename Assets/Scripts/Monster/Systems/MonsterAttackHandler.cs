@@ -125,6 +125,9 @@ public sealed class MonsterAttackHandler : MonoBehaviour
         // 회피 저스트 카운터 중에는 몬스터 공격 판정 무효
         if (MonsterFreezeManager.IsFrozen) return;
 
+        // 채집물(나무/돌)도 몬스터 공격에 반응시킴 (모든 몹 공통)
+        BreakGatherablesInRange(aimDirection);
+
         // ── 히트박스 콜라이더 모드: 조준 방향(플레이어 쪽)에 맞는 좌/우 박스를 사용 ──
         if (_useHitboxColliders && (_leftHitbox != null || _rightHitbox != null))
         {
@@ -194,5 +197,30 @@ public sealed class MonsterAttackHandler : MonoBehaviour
         var health = targetObj.GetComponentInParent<HealthSystem>();
         if (health != null)
             health.ApplyDamage(dmg);
+    }
+
+    // 채집물(Gatherable 레이어)을 공격 범위에서 찾아 타격 (1타 = 내구 1 감소)
+    private static int _gatherableMask = -1;
+
+    private void BreakGatherablesInRange(Vector2 aimDirection)
+    {
+        if (_gatherableMask == -1) _gatherableMask = LayerMask.GetMask("Gatherable");
+        if (_gatherableMask == 0 || _runtime == null || _runtime.Data == null) return;
+
+        var shape = _runtime.Data.AttackShape;
+        float reach = shape.ShapeType == AttackShapeType.Circle ? shape.CircleRadius
+                    : shape.ShapeType == AttackShapeType.Fan ? shape.FanRadius
+                    : Mathf.Max(shape.RectWidth, shape.RectHeight);
+        if (reach <= 0f) reach = 1.5f;
+
+        Vector2 center = (Vector2)transform.position + aimDirection * (reach * 0.5f);
+        int n = Physics2D.OverlapCircleNonAlloc(center, reach, _hitResults, _gatherableMask);
+        for (int i = 0; i < n; i++)
+        {
+            if (_hitResults[i] == null) continue;
+            var g = _hitResults[i].GetComponentInParent<IDamageable>();
+            if (g != null && g.IsAlive)
+                g.TakeDamage(_runtime.RollAttackDamage(), gameObject);
+        }
     }
 }

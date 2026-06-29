@@ -72,8 +72,13 @@ public class ExplosionEffect : MonoBehaviour
         }
 
         // ContactFilter2D로 레이어 마스크를 필터링 (OverlapCircleNonAlloc 대체)
+        // 적 레이어 + 채집물(Gatherable) 레이어를 함께 대상으로 삼아 폭발이 나무/돌도 파괴
         _contactFilter = new ContactFilter2D();
-        _contactFilter.SetLayerMask(_enemyLayer);
+        int gatherableLayer = LayerMask.NameToLayer("Gatherable");
+        LayerMask aoeMask = _enemyLayer;
+        if (gatherableLayer >= 0)
+            aoeMask |= (1 << gatherableLayer);
+        _contactFilter.SetLayerMask(aoeMask);
         _contactFilter.useTriggers = true;
     }
 

@@ -1,0 +1,3 @@
+Assets/Resources/Prefabs/Gimics/Tree.prefab
+Assets/Resources/Prefabs/TreeHits.prefab
+Assets/Resources/Prefabs/TreeItem.prefab

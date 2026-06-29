@@ -1,0 +1,28 @@
+Canvas: Canvas, renderMode: WorldSpace, enabled: True
+  - Image (active: False)
+  - SkillGauge (active: True)
+Canvas: DeathScreenCanvas, renderMode: ScreenSpaceOverlay, enabled: True
+  CanvasGroup alpha: 1
+  - BlackPanel (active: False)
+  - DeadText (active: False)
+  - ResurrectButton (active: False)
+  - KarmaNotifyText (active: False)
+Canvas: Canvas, renderMode: ScreenSpaceOverlay, enabled: True
+  - PrimaryWeaponSlot (active: False)
+  - SecondaryWeaponSlot (active: False)
+  - MinimapUI (active: True)
+  - characterIcon (active: True)
+  - MapFrame (active: True)
+  - DragIcon (active: True)
+  - QuickSlotPanel (active: True)
+  - UIGauge (active: True)
+  - InventoryPanel (active: True)
+  - BoxPanel (active: True)
+  - QuickSlotManager (active: True)
+  - SkillTreePanel (active: True)
+  - RecipeUIPanel (active: True)
+  - BonfirePanel (active: True)
+  - InteractionUI (active: False)
+  - DialogueSystem (active: True)
+  - QuestTracker (active: False)
+  - KeybindingPanelSystem (active: True)

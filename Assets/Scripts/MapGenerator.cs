@@ -215,8 +215,13 @@ public class MapGenerator : MonoBehaviour
                     float scaleX = setting.tileSize.x / spriteSize.x;
                     float scaleY = setting.tileSize.y / spriteSize.y;
                     
-                    // 비율 유지를 원한다면 Mathf.Min(scaleX, scaleY)를 사용하세요.
-                    visual.transform.localScale = new Vector3(scaleX, scaleY, 1);
+                    // 비율 유지: 작은 스케일로 균일 적용 (비균일 스케일에 의한 왜곡 방지)
+                    // 채집물 등 per-prefab 스폰 배율 적용 (돌 2배, 나무 4배 등)
+                    float spawnMult = 1f;
+                    var gatherableNode = visual.GetComponent<GatherableNode>();
+                    if (gatherableNode != null) spawnMult = gatherableNode.SpawnScaleMultiplier;
+                    float uniformScale = Mathf.Min(scaleX, scaleY) * spawnMult;
+                    visual.transform.localScale = new Vector3(uniformScale, uniformScale, 1);
                     
                     // 자유 배치이므로 로컬 위치는 중앙(0,0,0)으로 초기화
                     visual.transform.localPosition = Vector3.zero;

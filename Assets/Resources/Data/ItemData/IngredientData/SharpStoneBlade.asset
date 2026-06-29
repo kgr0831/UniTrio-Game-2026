@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: befcd026f7b281e48bb0c2f8d31d1661, type: 3}
+  m_Name: SharpStoneBlade
+  m_EditorClassIdentifier: Assembly-CSharp::IngredientData
+  Id: 1008
+  Name: "\uB0A0\uCE74\uB85C\uC6B4 \uB3CC \uB0A0"
+  Description: "\uB3CC\uC744 \uAC08\uC544 \uB9CC\uB4E0 \uB0A0\uCE74\uB85C\uC6B4 \uB0A0."
+  Type: 0
+  Icon: {fileID: -1417723018, guid: ae01861b401907c4f803fea4c08d0a55, type: 3}
+  DropPrefab: {fileID: 0}
+  FuelCategory: 0

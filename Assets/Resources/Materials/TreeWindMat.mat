@@ -38,7 +38,7 @@ Material:
     - _LightSteps: 8
     - _PixelGridSize: 0.03125
     - _WindSpeed: 3
-    - _WindStrength: 0.1
+    - _WindStrength: 0.03
     - _WindTurbulence: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}

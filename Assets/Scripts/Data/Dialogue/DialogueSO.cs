@@ -2,8 +2,21 @@ using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
+/// 플레이어 선택지 데이터. NextDialogueId가 비어 있으면 대화 종료.
+/// </summary>
+[System.Serializable]
+public class DialogueChoice
+{
+    [Tooltip("선택지 버튼에 표시할 텍스트")]
+    public string Text;
+
+    [Tooltip("이 선택지를 고르면 이어서 재생할 대화 ID (비우면 대화 종료)")]
+    public string NextDialogueId;
+}
+
+/// <summary>
 /// 개별 대화 문장 데이터.
-/// 각 문장마다 화자(CharacterSO)와 텍스트 내용을 지정합니다.
+/// Choices 배열이 비어있으면 일반 진행, 값이 있으면 선택지 UI를 표시합니다.
 /// </summary>
 [System.Serializable]
 public struct DialogueLine
@@ -14,17 +27,19 @@ public struct DialogueLine
     [TextArea(2, 5)]
     [Tooltip("대화 텍스트 내용")]
     public string Text;
+
+    [Tooltip("선택지 목록 (비어있으면 일반 진행)")]
+    public DialogueChoice[] Choices;
 }
 
 /// <summary>
 /// 대화 이벤트 데이터 컨테이너 (ScriptableObject).
-/// 대화에 참여하는 인물 목록, 문장 리스트, 시작/종료 이벤트를 관리합니다.
 /// </summary>
 [CreateAssetMenu(fileName = "NewDialogue", menuName = "Data/Dialogue/Dialogue")]
 public class DialogueSO : ScriptableObject
 {
     [Header("Participants")]
-    [Tooltip("이 대화에 참여하는 인물들")]
+    [Tooltip("이 대화에 참여하는 인물들 (인덱스 0=좌측, 1=우측 초상화)")]
     public CharacterSO[] Participants;
 
     [Header("Dialogue Lines")]
@@ -38,9 +53,5 @@ public class DialogueSO : ScriptableObject
     [Tooltip("대화 종료 시 호출되는 이벤트")]
     public UnityEvent OnDialogueEnd;
 
-    /// <summary>
-    /// 총 문장 개수 (읽기 전용 프로퍼티).
-    /// 에디터 표시 및 런타임 범위 체크에 활용됩니다.
-    /// </summary>
     public int LineCount => Lines != null ? Lines.Length : 0;
 }

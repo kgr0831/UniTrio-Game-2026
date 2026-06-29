@@ -1,0 +1,8 @@
+Volume: IntroBlurVolume, active: True, global: True, weight: 0, priority: 100
+Volume: ResurrectionFXVolume, active: True, global: True, weight: 1, priority: 10
+  - ChromaticAberration (active: True)
+  - Vignette (active: True)
+  - ColorAdjustments (active: True)
+  - FilmGrain (active: True)
+Volume: Global Volume, active: True, global: True, weight: 1, priority: 0
+  - Bloom (active: True)

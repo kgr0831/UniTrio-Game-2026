@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8b29719f1c9868499db785a77f82376, type: 3}
+  m_Name: TutorialDialogueDatabase
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueDatabase
+  _entries:
+  - Id: TUT_001
+    Dialogue: {fileID: 11400000, guid: 00dc6b9958ca8cd48bc72ddfa0a9258d, type: 2}
+  - Id: TUT_006
+    Dialogue: {fileID: 11400000, guid: 4183f76188e44c74c9b18df70598e275, type: 2}
+  - Id: TUT_007
+    Dialogue: {fileID: 11400000, guid: 0b92426477927a446ad8e6336a9f58d4, type: 2}
+  - Id: TUT_008
+    Dialogue: {fileID: 11400000, guid: 0f9a8061e52da5b4580953b4ebc78683, type: 2}
+  - Id: EDR_QUEST_001
+    Dialogue: {fileID: 11400000, guid: 05ba6a3091428974d9a0bc2abf3fec17, type: 2}

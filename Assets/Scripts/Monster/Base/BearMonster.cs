@@ -219,6 +219,9 @@ public sealed class BearMonster : MonsterBase
     // ══════════════════════════════════════════════════════════════════
     public override void TakeDamage(float damage, GameObject source = null)
     {
+        // 튜토리얼 곰: 차징 스킬에 처음 맞기 전까지 무적 (TutorialBearGuard 부착 시에만 동작)
+        if (TryGetComponent<TutorialBearGuard>(out var tutGuard) && tutGuard.ShouldBlock(source)) return;
+
         bool wasAlive = IsAlive;
         base.TakeDamage(damage, source); // 데미지 적용 → HealthSystem.OnHit → HitStaggerHandler 경직
 

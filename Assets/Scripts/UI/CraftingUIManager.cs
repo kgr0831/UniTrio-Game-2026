@@ -23,6 +23,7 @@ public class CraftingUIManager : MonoBehaviour
     private List<RecipeUI> _activeUIs = new List<RecipeUI>();
 
     public event System.Action<CraftingRecipeSO> OnItemCrafted;
+    public event System.Action OnPanelOpened;
 
     private void Awake()
     {
@@ -34,6 +35,7 @@ public class CraftingUIManager : MonoBehaviour
         // UI가 열릴 때마다 목록을 갱신
         RefreshUI();
         Core.ItemEvents.OnInventoryChanged += OnInventoryChanged;
+        OnPanelOpened?.Invoke();
     }
 
     private void OnDisable()
@@ -156,5 +158,20 @@ public class CraftingUIManager : MonoBehaviour
 
         // 5. 인벤토리 상태가 변했으므로 UI 상태 갱신
         ValidateAllRecipes();
+
+        // 6. 제작 완료 이벤트 호출
+        OnItemCrafted?.Invoke(recipe);
+    }
+
+    /// <summary>결과 아이템이 resultItem인 레시피 UI 슬롯의 RectTransform을 반환합니다. 패널이 닫혀 있으면 null.</summary>
+    public RectTransform GetRecipeSlotRectByResult(ItemData resultItem)
+    {
+        if (resultItem == null || _recipes == null) return null;
+        for (int i = 0; i < _activeUIs.Count && i < _recipes.Length; i++)
+        {
+            if (_recipes[i] != null && _recipes[i].ResultItem == resultItem)
+                return _activeUIs[i] != null ? _activeUIs[i].GetComponent<RectTransform>() : null;
+        }
+        return null;
     }
 }

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27b51db780604ee43a0022a3bbe7c290, type: 3}
+  m_Name: DIA_MERCHANT_GREET
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueSO
+  Participants:
+  - {fileID: 11400000, guid: 4b0a32e900fb6f64eaac631796f7bd9e, type: 2}
+  Lines:
+  - Speaker: {fileID: 11400000, guid: 4b0a32e900fb6f64eaac631796f7bd9e, type: 2}
+    Text: "\uC5B4\uC11C\uC624\uC138\uC694! \uC5F4\uC1E0\uB97C \uCC3E\uC544\uC8FC\uC2DC\uBA74
+      \uBCF4\uC2A4 \uCD94\uC801\uAE30\uB97C \uD314\uACA0\uC2B5\uB2C8\uB2E4."
+  OnDialogueStart:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDialogueEnd:
+    m_PersistentCalls:
+      m_Calls: []

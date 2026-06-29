@@ -156,8 +156,8 @@ public class MagicProjectile : MonoBehaviour
     {
         if (_exploded) return;
 
-        // 적, 벽, 또는 장애물에 충돌 시 폭발
-        if (collision.CompareTag("Entity") || collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
+        // 적, 채집물, 벽, 또는 장애물에 충돌 시 폭발
+        if (collision.CompareTag("Entity") || collision.CompareTag("Gatherable") || collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
         {
             Explode(collision);
         }

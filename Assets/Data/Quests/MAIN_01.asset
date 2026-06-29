@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c549dde0f95afa46bce5d96bde880f0, type: 3}
+  m_Name: MAIN_01
+  m_EditorClassIdentifier: Assembly-CSharp::QuestSO
+  QuestId: MAIN_01
+  QuestName: "\uB9C8\uC744 \uCC3E\uAE30"
+  Category: 1
+  Description: "\uB9C8\uC744\uC744 \uCC3E\uC73C\uC138\uC694."
+  GiverNpcName: 
+  StartDialogueId: 
+  CompleteDialogueId: 
+  PrerequisiteQuestIds:
+  - TUT_02
+  AutoStart: 1
+  Objectives:
+  - Type: 2
+    Description: "\uB9C8\uC744 \uBC1C\uACAC"
+    RequiredAmount: 1
+    TargetId: Village
+  Reward:
+    Gold: 0
+    Items:
+    - Item: {fileID: 11400000, guid: 62ef8cdfb7ba4a1448a6cf887d5dd661, type: 2}
+      Count: 1
+    UnlockQuestIds:
+    - MAIN_02
+    - MAIN_03
+  SortOrder: 30
+  Notes: 

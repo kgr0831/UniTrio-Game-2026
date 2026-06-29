@@ -157,8 +157,9 @@ public sealed class SkeletonMonster : MonsterBase
         ForceAnim(AnimIdle, "Idle");  // 보이지 않지만 기본 자세로 대기
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         if (_health != null) _health.OnDied -= HandleDeath;
     }
 

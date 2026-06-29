@@ -206,6 +206,19 @@ public class ArrowProjectile : MonoBehaviour
             }
             ReturnToPool();
         }
+        else if (collision.CompareTag("Gatherable"))
+        {
+            IDamageable g = collision.GetComponentInParent<IDamageable>();
+            if (g != null && g.IsAlive)
+            {
+                Vector3 hitPoint = collision.ClosestPoint(transform.position);
+                g.TakeDamage(_damage, gameObject);
+                SpawnHitVfx(hitPoint);
+                if (AudioManager.Instance != null)
+                    AudioManager.Instance.PlayHit();
+            }
+            ReturnToPool();
+        }
         else if (collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
         {
             ReturnToPool();

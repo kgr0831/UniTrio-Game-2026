@@ -1,0 +1,2 @@
+Main Camera Ortho: False, size: 2, fov: 90
+VCAM Ortho: False, size: 2, fov: 90

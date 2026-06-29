@@ -189,6 +189,12 @@ public class AudioManager : MonoBehaviour
         Play(clip, _footstepVolume);
     }
 
+    /// <summary>범용 효과음 재생. 외부 컴포넌트(채집 사망음 등)가 클립을 직접 넘겨 재생합니다.</summary>
+    public void PlaySFX(AudioClip clip, float volume = 1f)
+    {
+        Play(clip, volume);
+    }
+
     private void Play(AudioClip clip, float volume)
     {
         if (clip == null || _source == null) return;

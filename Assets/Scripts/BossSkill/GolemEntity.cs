@@ -45,6 +45,9 @@ public class GolemEntity : CharacterBase
         if (_dying) return;
         _dying = true;
 
+        // QuestManager에 골렘 처치 보고
+        QuestEventBridge.ReportMonsterKill("Golem");
+
         // AI/물리 정지, 추가 피격 방지
         var ai = GetComponent<BossAI>();
         if (ai != null)

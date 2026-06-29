@@ -78,7 +78,7 @@ public class ChainProjectile : MonoBehaviour
     {
         if (_hit) return;
 
-        if (collision.CompareTag("Entity"))
+        if (collision.CompareTag("Entity") || collision.CompareTag("Gatherable"))
         {
             IDamageable target = collision.GetComponentInParent<IDamageable>();
             if (target == null || !target.IsAlive) return;

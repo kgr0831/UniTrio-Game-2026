@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da9374b12929f3d4599b6cf415ae267e, type: 3}
+  m_Name: BossTracker_Item
+  m_EditorClassIdentifier: Assembly-CSharp::GadgetData
+  Id: 1003
+  Name: "\uBCF4\uC2A4 \uCD94\uC801\uAE30"
+  Description: "\uCD94\uC801\uAE30"
+  Type: 7
+  Icon: {fileID: 0}
+  DropPrefab: {fileID: 0}
+  GadgetType: 0
+  AtkBonus: 0
+  MagicAtkBonus: 0
+  DefBonus: 0
+  SpeedBonus: 0
+  ManaBonus: 0
+  MaxHPBonus: 0
+  AtkSpeedBonus: 0

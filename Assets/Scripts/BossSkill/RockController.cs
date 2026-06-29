@@ -49,6 +49,14 @@ public class RockController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        // 골렘 돌은 경로상의 채집물을 한 방에 부수고 계속 날아간다 (source=보스 → GatherableNode 즉시 파괴)
+        if (other.CompareTag("Gatherable"))
+        {
+            IDamageable gatherable = other.GetComponentInParent<IDamageable>();
+            if (gatherable != null && gatherable.IsAlive) gatherable.TakeDamage(damage, source);
+            return;
+        }
+
         if (other.CompareTag("Player"))
         {
             IDamageable target = other.GetComponentInParent<IDamageable>();

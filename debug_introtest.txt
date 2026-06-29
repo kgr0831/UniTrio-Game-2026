@@ -1,0 +1,4 @@
+Current vcam Ortho Size: 5
+Set vcam Ortho Size to: 2
+Main Camera Ortho Size: 5
+IntroBlurVolume Profile Components:

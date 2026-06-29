@@ -1,0 +1,2 @@
+VCam: CinemachineCamera, Priority: Unity.Cinemachine.PrioritySettings, isActiveAndEnabled: True, OrthoSize: 2
+Active VCam: CinemachineCamera

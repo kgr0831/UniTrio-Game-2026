@@ -136,7 +136,7 @@ public class PiercingArrowProjectile : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.CompareTag("Entity"))
+        if (collision.CompareTag("Entity") || collision.CompareTag("Gatherable"))
         {
             IDamageable target = collision.GetComponentInParent<IDamageable>();
             if (target == null || !target.IsAlive) return;

@@ -1,4 +1,3 @@
-
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -181,8 +180,11 @@ public class TutorialManager : MonoBehaviour
         Current = Step.Intro;
 
         // --- 플레이어 입력 및 UI 완전 차단 ---
-        var fsm = FindPlayer().GetComponent<PlayerStateMachine>();
-        var interactor = FindPlayer().GetComponentInChildren<PlayerInteractionDetector>();
+        var player = FindPlayer();
+        if (player == null) yield break;
+
+        var fsm = player.GetComponent<PlayerStateMachine>();
+        var interactor = player.GetComponentInChildren<PlayerInteractionDetector>();
 
         if (fsm != null) fsm.TransitionTo(fsm.Cutscene);
         if (interactor != null) interactor.enabled = false;
@@ -263,8 +265,20 @@ public class TutorialManager : MonoBehaviour
         ShowMessage("NPC에게 다가가 대화하세요.");
         ShowMessage("WASD로 이동하고 F/스페이스로 상호작용할 수 있습니다.");
 
+        // 마법사 머리 위에 화살표 표시
+        if (_mageNpc != null && TutorialFocusUI.Instance != null)
+        {
+            TutorialFocusUI.Instance.ShowWorldTarget(_mageNpc, "마법사와 대화하세요 (F)");
+        }
+
         // F키를 눌러 대화가 시작될 때까지 대기
-        while (!_dialoguePlayer.IsPlaying) yield return null;
+        while (_dialoguePlayer == null || !_dialoguePlayer.IsPlaying) yield return null;
+
+        // 대화 시작되었으므로 화살표 숨김
+        if (TutorialFocusUI.Instance != null)
+        {
+            TutorialFocusUI.Instance.Hide();
+        }
 
         // 대화가 끝날 때까지 대기
         yield return WaitDialogueEnd();
@@ -315,18 +329,30 @@ public class TutorialManager : MonoBehaviour
 
         FocusNearestGatherable(_woodItem, "나무를 캐세요");
         SubscribeInventory();
+
+        // 채집 노드가 파괴되는 이벤트를 구독하여 포커스를 실시간 갱신
+        GatherableNode.OnAnyNodeDestroyed += OnNodeDestroyed;
     }
 
     private void FocusNearestGatherable(ItemData item, string hint)
     {
         if (item == null || _gatherablesRoot == null) return;
-        var playerPos = FindPlayer()?.position ?? Vector3.zero;
+        var playerTransform = FindPlayer();
+        var playerPos = playerTransform != null ? playerTransform.position : Vector3.zero;
 
         Transform best = null;
         float bestDist = float.PositiveInfinity;
         foreach (Transform c in _gatherablesRoot)
         {
             if (!c.gameObject.activeInHierarchy) continue;
+            
+            // GatherableNode 컴포넌트가 살아있는지 검증
+            var node = c.GetComponent<GatherableNode>();
+            if (node != null && !node.IsAlive) continue;
+
+            // 드롭 아이템이 매칭되는지 필터링
+            if (node != null && node.LootItem != item) continue;
+
             float d = Vector3.Distance(c.position, playerPos);
             if (d < bestDist)
             {
@@ -339,6 +365,36 @@ public class TutorialManager : MonoBehaviour
         {
             if (TutorialFocusUI.Instance != null)
                 TutorialFocusUI.Instance.ShowWorldTarget(best, hint != null ? hint : "이걸 공격하세요!");
+        }
+        else
+        {
+            if (TutorialFocusUI.Instance != null)
+                TutorialFocusUI.Instance.Hide();
+        }
+    }
+
+    private void OnNodeDestroyed(GatherableNode node)
+    {
+        if (Current != Step.GatherMaterials) return;
+        StartCoroutine(UpdateFocusAfterNodeDestroyed(node));
+    }
+
+    private IEnumerator UpdateFocusAfterNodeDestroyed(GatherableNode destroyedNode)
+    {
+        // 아이템이 떨어지고 먹을 시간을 고려하여 약간의 프레임 대기 후 포커스 재설정
+        yield return new WaitForSeconds(0.5f);
+        if (Current != Step.GatherMaterials) yield break;
+
+        int currentWood = Mathf.Max(0, Count(_woodItem) - _baseWood);
+        int currentStone = Mathf.Max(0, Count(_stoneItem) - _baseStone);
+
+        if (currentWood < _woodNeeded)
+        {
+            FocusNearestGatherable(_woodItem, "나무를 캐세요");
+        }
+        else if (currentStone < _stoneNeeded)
+        {
+            FocusNearestGatherable(_stoneItem, "돌을 캐세요");
         }
     }
 
@@ -374,6 +430,16 @@ public class TutorialManager : MonoBehaviour
         _inventorySubscribed = false;
     }
 
+    private void SubscribeCrafting()
+    {
+        if (_craftingSubscribed) return;
+        if (_craftingManager != null)
+        {
+            _craftingManager.OnItemCrafted += OnItemCrafted;
+            _craftingSubscribed = true;
+        }
+    }
+
     private void UnsubscribeCrafting()
     {
         if (!_craftingSubscribed) return;
@@ -384,6 +450,24 @@ public class TutorialManager : MonoBehaviour
 
     private void OnItemCrafted(CraftingRecipeSO recipe)
     {
+        if (Current != Step.CraftSword || recipe == null) return;
+
+        if (recipe.ResultItem == _sturdyStick || recipe.ResultItem == _sharpStoneBlade)
+        {
+            if (!_intermediatesDone &&
+                Count(_sturdyStick) - _baseStick >= 1 &&
+                Count(_sharpStoneBlade) - _baseBlade >= 1)
+            {
+                OnIntermediatesCrafted();
+            }
+        }
+        else if (recipe.ResultItem == _stoneSword)
+        {
+            if (Count(_stoneSword) - _baseSword >= 1)
+            {
+                OnSwordCrafted();
+            }
+        }
     }
 
     private void UnsubscribeHotbar()
@@ -400,10 +484,36 @@ public class TutorialManager : MonoBehaviour
 
         if (Current == Step.GatherMaterials)
         {
-            // 증분을 역산하지 않고 최종 보유량으로 트리거 (지급 아이템 baseline은 시작 시 고정)
-            if (Count(_woodItem) - _baseWood >= _woodNeeded &&
-                Count(_stoneItem) - _baseStone >= _stoneNeeded)
+            int currentWood = Mathf.Max(0, Count(_woodItem) - _baseWood);
+            int currentStone = Mathf.Max(0, Count(_stoneItem) - _baseStone);
+
+            if (currentWood != _gatheredWoodCount)
+            {
+                int diff = currentWood - _gatheredWoodCount;
+                if (diff > 0) AddGatheredCount(_woodItem, diff);
+            }
+            if (currentStone != _gatheredStoneCount)
+            {
+                int diff = currentStone - _gatheredStoneCount;
+                if (diff > 0) AddGatheredCount(_stoneItem, diff);
+            }
+
+            if (currentWood >= _woodNeeded && currentStone >= _stoneNeeded)
+            {
                 OnMaterialsGathered();
+            }
+            else
+            {
+                // 포커스 업데이트
+                if (currentWood < _woodNeeded)
+                {
+                    FocusNearestGatherable(_woodItem, "나무를 캐세요");
+                }
+                else if (currentStone < _stoneNeeded)
+                {
+                    FocusNearestGatherable(_stoneItem, "돌을 캐세요");
+                }
+            }
         }
         else if (Current == Step.CraftSword)
         {
@@ -420,9 +530,11 @@ public class TutorialManager : MonoBehaviour
     private void OnMaterialsGathered()
     {
         Current = Step.CraftSword;
+        GatherableNode.OnAnyNodeDestroyed -= OnNodeDestroyed;
         if (TutorialFocusUI.Instance != null) TutorialFocusUI.Instance.Hide();
         PlayDialogue("TUT_006");      // "튼튼한 막대와 날카로운 돌 날을 만들어 보죠"
         ShowMessage("I키를 눌러 인벤토리를 여세요.");
+        SubscribeCrafting();
     }
 
     private void OnIntermediatesCrafted()
@@ -433,7 +545,8 @@ public class TutorialManager : MonoBehaviour
 
     private void OnSwordCrafted()
     {
-        if (_questTracker != null) _questTracker.Show("튜토리얼 2", "무기 장착하기");
+        UnsubscribeCrafting();
+        UnsubscribeInventory();
         Current = Step.EquipHotbar;
         if (_questTracker != null) _questTracker.Show("튜토리얼 2", "핫바에 무기 장착");
         ShowMessage("돌검이 완성됐어요! 인벤토리에서 돌검을 꺼내 핫바 1번 슬롯에 넣으세요.");
@@ -527,13 +640,23 @@ public class TutorialManager : MonoBehaviour
         }
 
         // 차징 적중 전 무적
-        bearObj.AddComponent<TutorialBearGuard>();
+        var guard = bearObj.AddComponent<TutorialBearGuard>();
+        if (guard != null)
+        {
+            guard.OnFirstChargeHit += OnBearGuardBroken;
+        }
 
         Current = Step.FightBear;
         PlayDialogue("TUT_BEAR_001");
         if (_questTracker != null) _questTracker.Show("튜토리얼 3", "곰 격파");
         ShowMessage("곰이 나타났습니다. 적에게 공격을 성공하면 속성 게이지가 쌓입니다.");
         SubscribeGauge();
+    }
+
+    private void OnBearGuardBroken()
+    {
+        ShowMessage("곰의 방어막이 파괴되었습니다! 일반 공격으로도 데미지를 줄 수 있습니다!");
+        PlayDialogue("TUT_BEAR_002");
     }
 
     private void SubscribeGauge()
@@ -609,6 +732,7 @@ public class TutorialManager : MonoBehaviour
 
     private void OnDisable()
     {
+        GatherableNode.OnAnyNodeDestroyed -= OnNodeDestroyed;
         UnsubscribeInventory();
         UnsubscribeCrafting();
         UnsubscribeHotbar();

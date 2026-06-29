@@ -241,6 +241,27 @@ public sealed class InventoryManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 문자열 형태의 타겟 ID(아이템 Name 또는 Id)로 아이템 개수를 반환합니다.
+    /// </summary>
+    public int GetItemCountByTargetId(string targetId)
+    {
+        if (string.IsNullOrEmpty(targetId)) return 0;
+        
+        int totalCount = 0;
+        foreach (var slot in GetAllTrackedSlots())
+        {
+            if (slot.currentData != null)
+            {
+                if (slot.currentData.Name == targetId || slot.currentData.Id.ToString() == targetId)
+                {
+                    totalCount += slot.currentCount;
+                }
+            }
+        }
+        return totalCount;
+    }
+
+    /// <summary>
     /// 인벤토리(퀵슬롯 포함)에서 특정 아이템을 지정된 수량만큼 차감합니다.
     /// </summary>
     public bool ConsumeItems(ItemData itemData, int count)

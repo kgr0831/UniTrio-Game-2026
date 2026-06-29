@@ -51,6 +51,15 @@ public class JustDodgeOutline : MonoBehaviour
         Sync();
     }
 
+    /// <summary>아웃라인 투명도를 0~1 범위로 설정합니다 (페이드 인/아웃용).</summary>
+    public void SetAlpha(float alpha)
+    {
+        if (_sr == null) return;
+        Color c = _sr.color;
+        c.a = alpha;
+        _sr.color = c;
+    }
+
     private void OnDestroy()
     {
         if (_matInstance != null) Destroy(_matInstance);

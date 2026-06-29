@@ -44,6 +44,25 @@ public abstract class MonsterBase : MonoBehaviour, IDamageable
 
         // 런타임 데이터 초기화가 SO 할당 이후에 이뤄지도록 Manager나 Spawner에서 주입하지만 
         // 여기서도 초기화 보장이 안되면 Spawner가 Init 해줍니다.
+
+        // 사망 시 QuestManager에 처치 보고
+        if (_health != null)
+            _health.OnDied += OnMonsterDied;
+    }
+
+    protected virtual void OnDisable()
+    {
+        if (_health != null)
+            _health.OnDied -= OnMonsterDied;
+    }
+
+    /// <summary>사망 시 QuestManager에 몬스터 처치를 보고합니다.</summary>
+    private void OnMonsterDied()
+    {
+        string monsterName = _runtime != null && _runtime.Data != null
+            ? _runtime.Data.name
+            : gameObject.name;
+        QuestEventBridge.ReportMonsterKill(monsterName);
     }
 
     protected virtual void Update()

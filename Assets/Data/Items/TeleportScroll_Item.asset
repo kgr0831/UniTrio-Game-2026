@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14671b4f5337bed41a3c05dbed445512, type: 3}
+  m_Name: TeleportScroll_Item
+  m_EditorClassIdentifier: Assembly-CSharp::ConsumableData
+  Id: 1004
+  Name: "\uC774\uB3D9 \uC2A4\uD06C\uB864"
+  Description: "\uADC0\uD658 \uC2A4\uD06C\uB864"
+  Type: 3
+  Icon: {fileID: 0}
+  DropPrefab: {fileID: 0}
+  HealAmount: 0
+  CookMethod: 0
+  CookingTime: 2
+  CookedResult: {fileID: 0}

@@ -25,7 +25,7 @@ public static class ChargeSkillHelper
         for (int i = 0; i < count; i++)
         {
             Collider2D col = _overlapResults[i];
-            if (!col.CompareTag("Entity")) continue;
+            if (!col.CompareTag("Entity") && !col.CompareTag("Gatherable")) continue;
 
             IDamageable target = col.GetComponentInParent<IDamageable>();
             if (target == null || !target.IsAlive) continue;
@@ -60,7 +60,7 @@ public static class ChargeSkillHelper
         for (int i = 0; i < count; i++)
         {
             Collider2D col = _overlapResults[i];
-            if (!col.CompareTag("Entity")) continue;
+            if (!col.CompareTag("Entity") && !col.CompareTag("Gatherable")) continue;
 
             IDamageable target = col.GetComponentInParent<IDamageable>();
             if (target == null || !target.IsAlive) continue;

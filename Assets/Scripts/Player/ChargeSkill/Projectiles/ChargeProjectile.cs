@@ -51,7 +51,7 @@ public class ChargeProjectile : MonoBehaviour
     {
         if (_exploded) return;
 
-        if (collision.CompareTag("Entity") || collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
+        if (collision.CompareTag("Entity") || collision.CompareTag("Gatherable") || collision.CompareTag("Wall") || collision.CompareTag("Obstacle"))
         {
             Explode();
         }

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bf894ad604e6b3409d3d86818943468, type: 3}
+  m_Name: StoneSwordRecipe
+  m_EditorClassIdentifier: Assembly-CSharp::CraftingRecipeSO
+  ResultItem: {fileID: 11400000, guid: aa2641e21cd62524d9839f8192879877, type: 2}
+  ResultCount: 1
+  RequiredIngredients:
+  - Item: {fileID: 11400000, guid: 0bb038164967a7b4ab476a1ac5cc1e30, type: 2}
+    Count: 1
+  - Item: {fileID: 11400000, guid: 040117baa396a2a4a838a08383ce5ba5, type: 2}
+    Count: 1
+  CraftingTime: 0

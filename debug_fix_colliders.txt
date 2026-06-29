@@ -1,0 +1,4 @@
+Reverted prefab overrides for TreeHits
+Reverted prefab overrides for RockHits
+Biome: grass, tileSize: (1, 1)
+Biome: dirt, tileSize: (1, 1)

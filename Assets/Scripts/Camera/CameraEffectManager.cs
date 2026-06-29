@@ -407,6 +407,24 @@ public class CameraEffectManager : MonoBehaviour
         }
     }
 
+    // ══════════════════════════════════════════════════════════════════
+    //  튜토리얼용 간단 팬: 타겟으로 이동 → 원래 플레이어로 복귀
+    // ══════════════════════════════════════════════════════════════════
+
+    /// <summary>카메라를 target 위치로 부드럽게 이동합니다. Z 거리(줌)는 유지됩니다.</summary>
+    public IEnumerator PanToTarget(Transform target, float duration, bool unscaled = true)
+    {
+        if (vcam == null || followComponent == null || target == null) yield break;
+        yield return MoveFollowRoutine(target, new Vector3(0f, 0f, followComponent.FollowOffset.z), duration, unscaled);
+    }
+
+    /// <summary>카메라를 원래 플레이어 추적 상태로 복귀시킵니다.</summary>
+    public IEnumerator PanRestore(float duration, bool unscaled = true)
+    {
+        if (vcam == null || followComponent == null || originalState.followTarget == null) yield break;
+        yield return MoveFollowRoutine(originalState.followTarget, originalState.followOffset, duration, unscaled);
+    }
+
     /// <summary>반지름 arenaRadius인 원이 화면에 모두 들어오는 카메라 거리(FollowOffset.z, 음수)를 계산한다(퍼스펙티브).</summary>
     private float ComputeArenaFitZ(float arenaRadius)
     {

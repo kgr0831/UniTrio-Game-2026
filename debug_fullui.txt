@@ -1,0 +1,4 @@
+Full UI Element: MinimapUI
+Full UI Element: characterIcon
+Full UI Element: MapFrame
+Full UI Element: UIGauge

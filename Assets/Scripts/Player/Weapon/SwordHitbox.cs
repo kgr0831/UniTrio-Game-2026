@@ -10,7 +10,7 @@ public class SwordHitbox : MonoBehaviour
     [SerializeField] private float _baseDamage = 0f;
 
     [Tooltip("이 무기가 공격할 수 있는 대상의 태그 목록. 기본값은 'Entity'.")]
-    [SerializeField] private string[] _targetTags = new string[] { "Entity", "Tree" };
+    [SerializeField] private string[] _targetTags = new string[] { "Entity", "Gatherable" };
 
     [Header("Hit VFX")]
     [SerializeField] private GameObject[] _hitVfxPrefabs;

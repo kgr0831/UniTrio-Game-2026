@@ -1,0 +1,11 @@
+Camera Component: Transform
+Camera Component: Camera
+Camera Component: AudioListener
+Camera Component: UniversalAdditionalCameraData
+Camera Component: CinemachineBrain
+Camera Component: CameraShakeController
+Camera Component: CinemachineImpulseSource
+VCAM Component: Transform
+VCAM Component: CinemachineCamera
+VCAM Component: CinemachineFollow
+VCAM Component: CinemachineImpulseListener
