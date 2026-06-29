@@ -22,6 +22,8 @@ public class CraftingUIManager : MonoBehaviour
     // 생성된 UI 인스턴스들을 관리하기 위한 리스트
     private List<RecipeUI> _activeUIs = new List<RecipeUI>();
 
+    public event System.Action<CraftingRecipeSO> OnItemCrafted;
+
     private void Awake()
     {
         // ItemDatabase 로드가 더 이상 필요 없습니다.
@@ -149,7 +151,10 @@ public class CraftingUIManager : MonoBehaviour
         InventoryManager.Instance.AddItem(recipe.ResultItem, recipe.ResultCount);
         Debug.Log($"[Crafting] 제작 성공! 획득: {recipe.ResultItem.Name} x{recipe.ResultCount}");
 
-        // 4. 인벤토리 상태가 변했으므로 UI 상태 갱신
+        // 4. 퀘스트 시스템에 제작 보고
+        QuestEventBridge.ReportItemCrafted(recipe.ResultItem.Name);
+
+        // 5. 인벤토리 상태가 변했으므로 UI 상태 갱신
         ValidateAllRecipes();
     }
 }

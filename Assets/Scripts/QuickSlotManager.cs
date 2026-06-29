@@ -24,6 +24,8 @@ public class QuickSlotManager : MonoBehaviour
     // 현재 무기가 장착된 퀵슬롯 인덱스 (-1 = 무기 미장착)
     private int _activeWeaponSlotIndex = -1;
 
+    public event System.Action<WeaponData, int> OnWeaponEquipped;
+
     // ── 차징 스킬 상태 추적 ──────────────────────────────────────
     private int            _chargingSlotIndex = -1;
     private BowBehaviour   _chargingBow;
@@ -191,6 +193,7 @@ public class QuickSlotManager : MonoBehaviour
             {
                 _weaponController.EquipWeaponByData(weapon);
                 _activeWeaponSlotIndex = slotIndex;
+                OnWeaponEquipped?.Invoke(weapon, slotIndex);
                 Debug.Log($"[QuickSlotManager] 무기 '{weapon.Name}' 장착 (슬롯 {slotIndex + 1})");
             }
         }
