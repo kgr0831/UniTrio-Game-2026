@@ -33,8 +33,13 @@ public class WandChargeSkill3 : IChargeSkill
     {
         float damage = ctx.BaseDamage * DAMAGE_MULTIPLIER;
         Color elementColor = ChargeSkillHelper.GetElementColor(ctx);
+        ElementType elem = ctx.ElementSystem != null ? ctx.ElementSystem.CurrentElement : ElementType.Fire;
 
         Debug.Log($"[WandCharge3] 집중 폭발 시작 — 데미지: {damage:F0}, 반경: {EXPLOSION_RADIUS}, 집중: {CHARGE_DURATION}초");
+
+        // C-5 차지3 집중 루프음 시작
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.StartWandChargeLoop(elem);
 
         if (ctx.PlayerMovement != null)
             ctx.PlayerMovement.SpeedMultiplier = 0f;
@@ -110,9 +115,17 @@ public class WandChargeSkill3 : IChargeSkill
         ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         Object.Destroy(gatherVfx, 2f);
 
+        // C-5 차지3 집중 루프음 정지
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.StopWandChargeLoop();
+
         // ── 폭발! ──
         Vector2 center = (Vector2)ctx.PlayerTransform.position;
         int hitCount = ChargeSkillHelper.ApplyAreaDamage(center, EXPLOSION_RADIUS, damage, ctx.PlayerTransform.gameObject);
+
+        // C-5 차지3 최종 대폭발음
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayWandExplosion(elem);
 
         // ── 원형 쇼크웨이브 VFX ──
         SpawnCircleShockwave(center, EXPLOSION_RADIUS, elementColor);

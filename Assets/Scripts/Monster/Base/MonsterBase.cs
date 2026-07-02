@@ -20,6 +20,11 @@ public abstract class MonsterBase : MonoBehaviour, IDamageable
 
     public bool IsAlive => _health != null && _health.IsAlive;
 
+    /// <summary>이 몬스터의 효과음 종류. 파생 클래스에서 오버라이드하면 피격/사망/경계음이 재생됩니다.</summary>
+    protected virtual MonsterSfxKind SfxKind => MonsterSfxKind.None;
+
+    private DetectionSystem _sfxDetection;
+
     public virtual void TakeDamage(float damage, GameObject source = null)
     {
         if (_health != null && _health.IsAlive)
@@ -35,6 +40,48 @@ public abstract class MonsterBase : MonoBehaviour, IDamageable
         _runtime        = GetComponent<MonsterRuntimeData>();
         _health         = GetComponent<HealthSystem>();
         _debuffReceiver = GetComponent<DebuffReceiver>();
+
+        // 종별 피격/사망/경계음 구독 (풀링 재사용 대비 Awake 1회 구독, OnDestroy 해제)
+        if (_health != null)
+        {
+            _health.OnHit  += HandleSfxHit;
+            _health.OnDied += HandleSfxDeath;
+        }
+
+        _sfxDetection = GetComponent<DetectionSystem>();
+        if (_sfxDetection != null)
+            _sfxDetection.OnTargetAcquired += HandleSfxAlert;
+    }
+
+    protected virtual void OnDestroy()
+    {
+        if (_health != null)
+        {
+            _health.OnHit  -= HandleSfxHit;
+            _health.OnDied -= HandleSfxDeath;
+        }
+        if (_sfxDetection != null)
+            _sfxDetection.OnTargetAcquired -= HandleSfxAlert;
+    }
+
+    // ── 종별 효과음 핸들러 ─────────────────────────────────────────
+    private void HandleSfxHit()
+    {
+        // 치명타(사망)일 때는 ApplyDamage에서 IsAlive가 먼저 false로 바뀌므로 사망음만 재생됨
+        if (_health != null && _health.IsAlive && AudioManager.Instance != null)
+            AudioManager.Instance.PlayMonsterHit(SfxKind);
+    }
+
+    private void HandleSfxDeath()
+    {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayMonsterDeath(SfxKind);
+    }
+
+    private void HandleSfxAlert()
+    {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayMonsterAlert(SfxKind);
     }
 
     protected virtual void OnEnable()

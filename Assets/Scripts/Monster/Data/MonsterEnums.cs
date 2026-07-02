@@ -8,6 +8,15 @@ public enum MonsterType
     Boss     = 2   // 보스
 }
 
+/// <summary>몬스터 효과음(SFX) 종류. AudioManager의 종별 클립 배열 인덱스로 사용.</summary>
+public enum MonsterSfxKind
+{
+    None        = 0,
+    Skeleton    = 1,
+    Bear        = 2,
+    Necromancer = 3
+}
+
 /// <summary>공격 범위 형태 구분</summary>
 public enum AttackShapeType
 {

@@ -68,10 +68,12 @@ public sealed class NecromancerFireball : MonoBehaviour
             var target = other.GetComponentInParent<IDamageable>();
             if (target != null && target.IsAlive)
                 target.TakeDamage(_damage, _owner != null ? _owner : gameObject);
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayNecromancerFireballExplosion();
             ReturnToPool();
         }
         else if (other.CompareTag("Wall") || other.CompareTag("Obstacle"))
         {
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayNecromancerFireballExplosion();
             ReturnToPool();
         }
     }

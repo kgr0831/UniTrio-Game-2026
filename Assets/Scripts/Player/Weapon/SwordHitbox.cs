@@ -113,8 +113,8 @@ public class SwordHitbox : MonoBehaviour
 
         target.TakeDamage(damage, gameObject);
 
-        // 적 피격음 (타격 대상마다 1회)
-        if (AudioManager.Instance != null)
+        // 적 피격음 (타격 대상마다 1회). 나무는 TreeHit에서 전용 나무음을 재생하므로 살점음 제외.
+        if (AudioManager.Instance != null && !other.CompareTag("Tree"))
             AudioManager.Instance.PlayHit();
 
         if (isTipCritical)

@@ -175,9 +175,17 @@ public class BuildingPlacementController : MonoBehaviour
             UpdateGhostColor(canPlace);
 
             // 5. 좌클릭 설치 및 소모 처리
-            if (Input.GetMouseButtonDown(0) && canPlace)
+            if (Input.GetMouseButtonDown(0))
             {
-                PlaceBuilding(cellCenterPos);
+                if (canPlace)
+                {
+                    PlaceBuilding(cellCenterPos);
+                }
+                else
+                {
+                    // H-9 배치 불가 거부음
+                    if (AudioManager.Instance != null) AudioManager.Instance.PlayUIDenied();
+                }
             }
         }
         else
@@ -280,6 +288,9 @@ public class BuildingPlacementController : MonoBehaviour
     {
         Instantiate(_currentBuildingData.BuildingPrefab, pos, Quaternion.identity);
         Debug.Log($"[Building] 건축물 설치 완료: {_currentBuildingData.Name}");
+
+        // H-8 건물 배치 확정음
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayBuildPlace();
 
         // 아이템 소모 로직 연동
         if (InventoryManager.Instance != null)

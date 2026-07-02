@@ -34,6 +34,7 @@ public class ChargeSystem : MonoBehaviour
     // ── 차징 상태 ────────────────────────────────────────────
     private bool  _isCharging;
     private float _chargeStartTime;
+    private int   _lastStage;   // C-7 단계 도달 신호용 (직전 프레임 단계)
 
     /// <summary>현재 차징 중인지 여부. 외부에서 읽을 수 있습니다.</summary>
     public bool IsCharging => _isCharging;
@@ -136,6 +137,10 @@ public class ChargeSystem : MonoBehaviour
         _isCharging      = true;
         _chargeStartTime = Time.time;
 
+        // C-6 차징 충전 루프 시작 + 단계 신호 기준값 초기화
+        _lastStage = _skillGauge != null ? _skillGauge.GetStage() : 0;
+        if (AudioManager.Instance != null) AudioManager.Instance.StartChargeLoop();
+
         // 이동속도 감소
         if (_playerMovement != null)
             _playerMovement.SpeedMultiplier = CHARGE_SPEED_MULTIPLIER;
@@ -191,6 +196,12 @@ public class ChargeSystem : MonoBehaviour
         float vfxProgress = _skillGauge != null ? Mathf.Clamp01(_skillGauge.CurrentGauge / 300f) : 0f;
         if (_chargeVFX != null)
             _chargeVFX.UpdateProgress(vfxProgress);
+
+        // C-7 단계 도달 신호 (100/200/300 돌파 순간 1회)
+        int stage = _skillGauge != null ? _skillGauge.GetStage() : 0;
+        if (stage > _lastStage && AudioManager.Instance != null)
+            AudioManager.Instance.PlayChargeReady();
+        _lastStage = stage;
     }
 
     // ── 차징 종료 (릴리즈 또는 게이지 소진) ──────────────────
@@ -233,6 +244,9 @@ public class ChargeSystem : MonoBehaviour
     {
         _isCharging = false;
 
+        // C-6 차징 충전 루프 정지
+        if (AudioManager.Instance != null) AudioManager.Instance.StopChargeLoop();
+
         // 이동속도 복원
         if (_playerMovement != null)
             _playerMovement.SpeedMultiplier = 1f;
@@ -260,6 +274,10 @@ public class ChargeSystem : MonoBehaviour
 
         ChargeSkillContext context = BuildContext(chargeLevel, weaponType);
         skill.Execute(context);
+
+        // 무기·단계별 "무거운 강화 릴리즈"음 — 일반 공격과 확실히 구분 (완드 제외, 완드는 자체 폭발음)
+        if (weaponType != WeaponType.Staff && AudioManager.Instance != null)
+            AudioManager.Instance.PlayChargeRelease(weaponType, chargeLevel);
 
         Debug.Log($"[ChargeSystem] 스킬 발동: {weaponType} {chargeLevel}단계");
     }

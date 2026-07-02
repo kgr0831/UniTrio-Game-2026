@@ -80,6 +80,10 @@ public sealed class DebuffReceiver : MonoBehaviour
             newDebuff.Apply(elementalAtk, resistance);
             _activeDebuffs[index] = newDebuff;
             OnDebuffApplied?.Invoke(element);
+
+            // D-2·4·6 원소 적중음 (신규 부착 시에만, 기존 피격음 위에 레이어)
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayElementHit(element);
         }
     }
 

@@ -21,6 +21,13 @@ public class WandChargeSkill2 : IChargeSkill
 
         SpawnChainProjectile(ctx, damage, elementColor);
 
+        // C-5 완드 차지2 시전음 (전이 적중음은 DebuffApplier → PlayElementHit로 자동 재생)
+        if (AudioManager.Instance != null)
+        {
+            ElementType elem = ctx.ElementSystem != null ? ctx.ElementSystem.CurrentElement : ElementType.Fire;
+            AudioManager.Instance.PlayWandChargeCast(elem);
+        }
+
         Debug.Log($"[WandCharge2] 전이 마법구 — 데미지: {damage:F0}, 전이: {CHAIN_COUNT}회 × {CHAINS_PER_HIT}개");
     }
 

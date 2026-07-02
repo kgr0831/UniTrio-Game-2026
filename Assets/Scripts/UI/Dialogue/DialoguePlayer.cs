@@ -68,6 +68,9 @@ public class DialoguePlayer : MonoBehaviour, IDialoguePlayer
     {
         if (!IsPlaying) return;
 
+        // J-8 대화 진행(넘김/완성)음
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDialogueAdvance();
+
         if (!IsLineComplete)
         {
             // 타이핑 중 → 즉시 완성

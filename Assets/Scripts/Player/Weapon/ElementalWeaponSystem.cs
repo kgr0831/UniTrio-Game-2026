@@ -247,6 +247,10 @@ public class ElementalWeaponSystem : MonoBehaviour
         // 순환: Earth → Fire → Ice → Earth
         _currentElement = (ElementType)(((int)_currentElement + 1) % 3);
 
+        // D-1 속성 전환음
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayElementSwitch(_currentElement);
+
         ApplyElementVisuals();
         ApplyTrailAndGhostColors();
 
@@ -663,10 +667,18 @@ public class ElementalWeaponSystem : MonoBehaviour
         NotifyGaugesChanged();
     }
 
+    private bool _wasGaugeFull;
+
     private void NotifyGaugesChanged()
     {
         float ratio = _unifiedGauge / GAUGE_MAX;
         OnGaugeChanged?.Invoke(ratio, _currentElement);
+
+        // D-7 원소 게이지 만충 신호 (비어있다 가득 찬 순간 1회)
+        bool isFull = _unifiedGauge >= GAUGE_MAX;
+        if (isFull && !_wasGaugeFull && AudioManager.Instance != null)
+            AudioManager.Instance.PlayGaugeFull();
+        _wasGaugeFull = isFull;
     }
 
     // ──────────────────────────────────────────────────────

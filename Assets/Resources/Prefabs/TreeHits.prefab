@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 6406990961470964298}
   - component: {fileID: 7364374970947197434}
   - component: {fileID: 8245542202453649514}
+  - component: {fileID: -8803828716226987502}
   m_Layer: 0
   m_Name: TreeHits
   m_TagString: Tree
@@ -33,7 +34,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 8, y: 8, z: 8}
+  m_LocalScale: {x: 3, y: 3, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -87,7 +88,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 10
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 1950004072, guid: d5c875e19cf3a924d96deb66edfd289d, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 09c390fdc098ce645b6f745b47333bb5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -127,11 +128,11 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0.07263422, y: 6.1536617}
+  m_Offset: {x: 0, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -141,7 +142,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 6.3221254, y: 9.307346}
+  m_Size: {x: 1.5, y: 2.5}
   m_EdgeRadius: 0
 --- !u!95 &7308888135207580376
 Animator:
@@ -228,3 +229,17 @@ MonoBehaviour:
   _yOffset: 0
   _footHug: 0.3
   _activeScale: 1.2
+--- !u!114 &-8803828716226987502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4351201107849012885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 557198dd64c7e9241876fda91fc664d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Tree
+  data: {fileID: 11400000, guid: 7d031a657101fa74e8463ea17e9f1abe, type: 2}
+  woodLogPrefab: {fileID: 0}

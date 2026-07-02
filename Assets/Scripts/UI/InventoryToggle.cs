@@ -181,5 +181,12 @@ public class InventoryToggle : MonoBehaviour
     private void SetPaused(bool paused)
     {
         Time.timeScale = paused ? 0f : 1f;
+
+        // I-4 패널 열기/닫기 + J-9 일시정지/해제음
+        if (AudioManager.Instance != null)
+        {
+            if (paused) AudioManager.Instance.PlayPanelOpen();
+            else        AudioManager.Instance.PlayPanelClose();
+        }
     }
 }

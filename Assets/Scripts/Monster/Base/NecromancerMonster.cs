@@ -16,6 +16,8 @@ using UnityEngine;
 [RequireComponent(typeof(MonsterNavigator))]
 public sealed class NecromancerMonster : MonsterBase
 {
+    protected override MonsterSfxKind SfxKind => MonsterSfxKind.Necromancer;
+
     [Header("Spell 거리")]
     [Tooltip("플레이어가 이 반경 이내이면 Spell2(소환). 보통 스켈레톤 감지 반경(6).")]
     [SerializeField] private float _spell2Radius = 6f;
@@ -213,6 +215,9 @@ public sealed class NecromancerMonster : MonsterBase
         ForceAnim(AnimSpell1, "Spell1");
         _castLockTimer = _spell1Duration;
         _spell1Timer   = _spell1Cooldown;
+
+        // F-9 파이어볼 시전(영창)음
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayNecromancerCast();
     }
 
     private void CastSpell2()
@@ -244,6 +249,9 @@ public sealed class NecromancerMonster : MonsterBase
             fb.SetStats(_fireballSpeed, _fireballDamage, _fireballMaxDistance);
             fb.SetOwner(gameObject);
         }
+
+        // F-10 파이어볼 발사음
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayNecromancerFireball();
     }
 
     // Spell2 애니메이션 이벤트(표시 프레임)에서 호출 — 양 옆에 스켈레톤 소환

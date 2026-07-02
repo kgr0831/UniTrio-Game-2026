@@ -67,6 +67,9 @@ public class PlayerReverseDissolveController : MonoBehaviour
 
         // 1. 상태 초기화 및 렌더러 활성화
         _spriteRenderer.enabled  = true;
+
+        // E-6 부활음 (역용해 시작과 동시에 1회)
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayResurrect();
         
         // 2회차 부활 대비: 원본 머티리얼이 유실되었다면 현재 머티리얼을 백업 (Dissolve 머티리얼이 아니어야 함)
         if (_originalMaterial == null || _originalMaterial.name.Contains("Dissolve"))

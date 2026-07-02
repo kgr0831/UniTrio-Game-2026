@@ -18,6 +18,8 @@ using UnityEngine;
 [RequireComponent(typeof(MonsterAttackHandler))]
 public sealed class BearMonster : MonsterBase
 {
+    protected override MonsterSfxKind SfxKind => MonsterSfxKind.Bear;
+
     [Header("Bear Attack Gating")]
     [Tooltip("이 값 이하로 플레이어와의 y좌표 차이가 좁혀지면 '정렬됨'으로 본다 (Unity 단위).")]
     [SerializeField] private float _yAlignThreshold = 0.8f;
@@ -130,6 +132,7 @@ public sealed class BearMonster : MonsterBase
 
             _runtime.CurrentState = MonsterState.Attack;
             _attacker.ExecuteAttack(target.position);
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayMonsterAttack(SfxKind);
             _attackLockTimer = _attackLockDuration;
             return BTStatus.Success;
         });

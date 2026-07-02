@@ -34,6 +34,21 @@ public class PlayerEntity : CharacterBase, ISkillUser
         _justDodge = GetComponent<JustDodgeController>();
         if (_justDodge == null)
             _justDodge = gameObject.AddComponent<JustDodgeController>();
+
+        // E-4 플레이어 피격음 (생존 시에만; 사망 블로우는 OnDeath에서 사망음 재생)
+        if (Health != null) Health.OnHit += HandlePlayerHitSfx;
+    }
+
+    private void HandlePlayerHitSfx()
+    {
+        if (IsAlive && AudioManager.Instance != null)
+            AudioManager.Instance.PlayPlayerHit();
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        if (Health != null) Health.OnHit -= HandlePlayerHitSfx;
     }
 
     // ── 회피 저스트 가로채기 ───────────────────────────────────────
@@ -64,6 +79,10 @@ public class PlayerEntity : CharacterBase, ISkillUser
     protected override void OnDeath()
     {
         _karma.AddKarma(1);
+
+        // E-5 플레이어 사망음
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayPlayerDeath();
+
         Debug.Log($"[Player] 사망 → 카르마 {_karma.KarmaPoints}pt");
         // Milestone 2: Death 상태 전환 처리 예정
     }

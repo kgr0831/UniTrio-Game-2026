@@ -59,6 +59,7 @@ public class MagicProjectile : MonoBehaviour
 
     private Color   _elementGlowColor;
     private bool    _hasElementColor;
+    private ElementType _element = ElementType.Fire; // 착탄 폭발음 속성 (기본 Fire)
     private Vector3 _originalScale;    // 프리팹의 원본 스케일 (차징 스킬 사용 후 복원용)
     private float   _sizeMultiplier = 1f; // 투사체·폭발 동시 스케일 배율 (기본 1 = 원본 크기)
 
@@ -91,6 +92,12 @@ public class MagicProjectile : MonoBehaviour
         _elementGlowColor = hdrColor;
         _hasElementColor  = true;
         _glowColor        = hdrColor;
+    }
+
+    /// <summary>착탄 폭발음 재생에 사용할 속성을 주입합니다.</summary>
+    public void SetElement(ElementType element)
+    {
+        _element = element;
     }
 
     private void Awake()
@@ -167,6 +174,10 @@ public class MagicProjectile : MonoBehaviour
     {
         _exploded = true;
         ApplyGlow(0f);
+
+        // C-4 완드 착탄/폭발음 (속성별)
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayWandExplosion(_element);
 
         // 렌더러를 즉시 끄고 풀에 반환 → 시각적으로 충돌 순간 즉시 소멸
         if (_glowRenderer != null) _glowRenderer.enabled = false;

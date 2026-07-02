@@ -238,6 +238,7 @@ public class QuickSlotManager : MonoBehaviour
         {
             if (NotificationUI.Instance != null) NotificationUI.Instance.ShowMessage("아직 쿨다운 중입니다!");
             else Debug.Log($"[QuickSlot] 쿨다운 중 ({_cooldowns[slotIndex]:F1}s)");
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayUIDenied();
             return;
         }
 
@@ -267,6 +268,7 @@ public class QuickSlotManager : MonoBehaviour
                 string weaponName = GetWeaponName(requiredWeapon);
                 if (NotificationUI.Instance != null) NotificationUI.Instance.ShowMessage($"{weaponName}을(를) 장착해주세요!");
                 else Debug.LogWarning($"{weaponName} 장착 필요");
+                if (AudioManager.Instance != null) AudioManager.Instance.PlayUIDenied();
                 return;
             }
         }
@@ -276,6 +278,7 @@ public class QuickSlotManager : MonoBehaviour
         {
             if (NotificationUI.Instance != null) NotificationUI.Instance.ShowMessage("마나가 부족합니다!");
             else Debug.Log("마나가 부족합니다!");
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayUIDenied();
             return;
         }
 
@@ -335,6 +338,9 @@ public class QuickSlotManager : MonoBehaviour
     // 소모품 전용 차감 로직
     private void ConsumeItem(InventorySlot slot)
     {
+        // I-11 소비 아이템 사용음
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayItemUse();
+
         int newCount = slot.currentCount - 1;
 
         if (newCount <= 0)

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -34,6 +35,10 @@ public sealed class DetectionSystem : MonoBehaviour
     public bool      HasTarget      => _runtime.DetectedPlayer != null;
     public Transform DetectedTarget => _runtime.DetectedPlayer;
 
+    /// <summary>대상이 없다가 새로 감지되는 순간(rising edge) 1회 발생. F-1 경계음 등에 사용.</summary>
+    public event Action OnTargetAcquired;
+    private bool _hadTarget;
+
     private void Awake()
     {
         _runtime = GetComponent<MonsterRuntimeData>();
@@ -53,6 +58,11 @@ public sealed class DetectionSystem : MonoBehaviour
         _checkTimer = 0f;
 
         PerformDetection();
+
+        // 대상 감지 rising edge → 경계음 이벤트 발생
+        bool has = HasTarget;
+        if (has && !_hadTarget) OnTargetAcquired?.Invoke();
+        _hadTarget = has;
     }
 
     private void PerformDetection()

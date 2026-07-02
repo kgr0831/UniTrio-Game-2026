@@ -22,6 +22,8 @@ public sealed class SkeletonMonster : MonsterBase
 {
     private enum Phase { Hidden, Revealing, IdleDelay, Active, Dead }
 
+    protected override MonsterSfxKind SfxKind => MonsterSfxKind.Skeleton;
+
     [Header("Reveal (등장)")]
     [Tooltip("등장(Trigger) 애니메이션이 끝난 뒤 Idle을 유지하는 시간(초).")]
     [SerializeField] private float _idleDelayAfterReveal = 0.5f;
@@ -298,6 +300,7 @@ public sealed class SkeletonMonster : MonsterBase
             _runtime.CurrentState = MonsterState.Attack;
             ForceAnim(AnimAttack, "Attack");
             _attacker.ExecuteAttack(target.position);
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayMonsterAttack(SfxKind);
             _attackLockTimer = _attackLockDuration;
             return;
         }

@@ -74,6 +74,9 @@ public class BonfireInteractable : MonoBehaviour, IInteractable
     // 5개 슬롯 배열 (인스턴스별 영속 데이터)
     private CookSlot[] _slots = new CookSlot[SLOT_COUNT];
 
+    // I-9 조리 진행 루프음 재생 상태 (엣지 감지용)
+    private bool _cookLoopActive;
+
     // ── 연료 상태 ───────────────────────────────────────────
 
     /// <summary>현재 장착된 연료 데이터</summary>
@@ -289,6 +292,34 @@ public class BonfireInteractable : MonoBehaviour, IInteractable
                 CompleteCooking(i);
             }
         }
+
+        // I-9 조리 진행 루프음: 조리 중 슬롯 유무 엣지에서 start/stop
+        UpdateCookingLoop();
+    }
+
+    /// <summary>조리 중인 슬롯 유무를 감지해 진행 루프음을 켜고 끕니다.</summary>
+    private void UpdateCookingLoop()
+    {
+        bool anyCooking = false;
+        for (int i = 0; i < SLOT_COUNT; i++)
+        {
+            if (_slots[i].IsCooking) { anyCooking = true; break; }
+        }
+
+        if (anyCooking == _cookLoopActive) return; // 상태 변화 없음
+        _cookLoopActive = anyCooking;
+
+        if (AudioManager.Instance == null) return;
+        if (anyCooking) AudioManager.Instance.StartCookingLoop();
+        else            AudioManager.Instance.StopCookingLoop();
+    }
+
+    private void OnDisable()
+    {
+        // 씬 전환/비활성화 시 조리 루프음이 남지 않도록 정지
+        if (_cookLoopActive && AudioManager.Instance != null)
+            AudioManager.Instance.StopCookingLoop();
+        _cookLoopActive = false;
     }
 
     private void CompleteCooking(int slotIndex)
@@ -304,6 +335,10 @@ public class BonfireInteractable : MonoBehaviour, IInteractable
         }
 
         OnCookingCompleted?.Invoke(slotIndex, result);
+
+        // I-10 모닥불 요리 완료음
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayCookComplete();
 
         // ── 대기열 처리 ──
         if (_slots[slotIndex].QueuedCount > 0)

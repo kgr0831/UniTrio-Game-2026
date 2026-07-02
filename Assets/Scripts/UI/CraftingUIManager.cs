@@ -129,6 +129,7 @@ public class CraftingUIManager : MonoBehaviour
             if (InventoryManager.Instance.GetItemCount(req.Item) < req.Count)
             {
                 Debug.LogWarning("[Crafting] 재료가 부족하여 제작이 취소되었습니다.");
+                if (AudioManager.Instance != null) AudioManager.Instance.PlayCraftFail();
                 return;
             }
         }
@@ -148,6 +149,9 @@ public class CraftingUIManager : MonoBehaviour
         // 3. 결과물 획득
         InventoryManager.Instance.AddItem(recipe.ResultItem, recipe.ResultCount);
         Debug.Log($"[Crafting] 제작 성공! 획득: {recipe.ResultItem.Name} x{recipe.ResultCount}");
+
+        // I-7·8 제작 완료음
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayCraftSuccess();
 
         // 4. 인벤토리 상태가 변했으므로 UI 상태 갱신
         ValidateAllRecipes();

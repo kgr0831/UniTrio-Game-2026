@@ -36,6 +36,9 @@ public sealed class EquipmentManager : MonoBehaviour
         _stats.RegisterBonus(gadget);
         _equippedBonuses[slot] = gadget;
 
+        // I-6 장착음
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayItemEquip();
+
         Debug.Log($"[EquipmentManager] {gadget.Name} 보너스 등록 (DEF +{gadget.DefBonus}, ATK +{gadget.AtkBonus})");
     }
 
@@ -50,6 +53,10 @@ public sealed class EquipmentManager : MonoBehaviour
         {
             _stats.UnregisterBonus(oldProvider);
             _equippedBonuses.Remove(slot);
+
+            // I-6 해제음
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayItemUnequip();
+
             Debug.Log("[EquipmentManager] 장비 보너스 해제 완료");
         }
     }

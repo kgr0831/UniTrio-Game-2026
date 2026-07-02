@@ -311,7 +311,15 @@ public class WandBehaviour : WeaponBehaviourBase
                 Color c = _elementalSystem.GetCurrentAuraColor() * 1.5f;
                 c.a = 1f;
                 mp.SetElementColor(c);
+                mp.SetElement(_elementalSystem.CurrentElement);
             }
+        }
+
+        // C-4 완드 발사음 (속성별)
+        if (AudioManager.Instance != null)
+        {
+            ElementType elem = _elementalSystem != null ? _elementalSystem.CurrentElement : ElementType.Fire;
+            AudioManager.Instance.PlayWandFire(elem);
         }
     }
 

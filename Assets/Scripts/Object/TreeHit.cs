@@ -20,5 +20,9 @@ public class TreeHit : MonoBehaviour, IDamageable
             // HealthSystem에 0의 데미지를 가해서 실제 체력을 깎지 않고 피격 연출(플래시, OnHit 이벤트)만 유발함.
             _healthSystem.ApplyDamage(0f);
         }
+
+        // H-1 나무 베기 타격음 (무기 무관, 모든 공격원에서 동일하게 재생)
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayTreeChop();
     }
 }

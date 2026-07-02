@@ -142,7 +142,10 @@ public class FloatingMagneticItem : MonoBehaviour
             // 누가 이 데이터를 처리할지는 관심사가 아닙니다 (Decoupling).
             Core.ItemEvents.TriggerItemCollected(identity.ItemData, identity.ItemCount);
         }
-        
+
+        // I-3 아이템 획득음
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayItemAcquire();
+
         // 풀에 반납 가능성이 높으므로 비활성화
         gameObject.SetActive(false);
     }

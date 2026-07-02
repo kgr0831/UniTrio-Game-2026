@@ -41,7 +41,15 @@ public class WandChargeSkill1 : IChargeSkill
                 Color c = ctx.ElementSystem.GetCurrentAuraColor() * 1.5f;
                 c.a = 1f;
                 mp.SetElementColor(c);
+                mp.SetElement(ctx.ElementSystem.CurrentElement);
             }
+        }
+
+        // C-5 완드 차지1 시전음 (착탄 폭발음은 MagicProjectile에서 자동 재생)
+        if (AudioManager.Instance != null)
+        {
+            ElementType elem = ctx.ElementSystem != null ? ctx.ElementSystem.CurrentElement : ElementType.Fire;
+            AudioManager.Instance.PlayWandChargeCast(elem);
         }
 
         Debug.Log($"[WandCharge1] 강화 마법구 발사 — 데미지: {damage:F0}, 크기: {SIZE_MULTIPLIER}x");

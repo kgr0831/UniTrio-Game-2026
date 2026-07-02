@@ -178,6 +178,9 @@ public static class ChargeSkillHelper
     /// </summary>
     public static void SpawnPiercingArrow(ChargeSkillContext ctx, float speed, float damage, float sizeMult, Color elementColor)
     {
+        // C-3 활 차지 발사음 (관통 화살 1발마다)
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayBowChargeShot();
+
         GameObject arrowObj = new GameObject("PiercingArrow_Charge");
         arrowObj.transform.position = ctx.PlayerTransform.position;
 
