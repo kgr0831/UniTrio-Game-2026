@@ -1,6 +1,8 @@
 {
   "permissions": {
     "allow": [
+      "mcp__UnityMCP",
+      "mcp__coplay-mcp",
       "mcp__UnityMCP__create_script",
       "mcp__UnityMCP__set_active_instance",
       "mcp__UnityMCP__manage_scene",
@@ -101,7 +103,35 @@
       "PowerShell($g1=[guid]::NewGuid\\(\\).ToString\\(\"N\"\\); $g2=[guid]::NewGuid\\(\\).ToString\\(\"N\"\\); Write-Output \"SHADER_GUID=$g1\"; Write-Output \"MAT_GUID=$g2\")",
       "Bash(git rev-list *)",
       "mcp__coplay-mcp__list_game_objects_in_hierarchy",
-      "PowerShell(git *)"
+      "PowerShell(git *)",
+      "PowerShell(& \"C:\\\\Windows\\\\Temp\\\\claude\\\\K--unity-DemoProject-UniTrio-Game-2026\\\\5b42f5b4-6acc-49bf-b7e9-4f30054177ce\\\\scratchpad\\\\gen_tiles.ps1\")",
+      "Bash(grep \"m_LocalPosition: {x:.*[0-9],[0-9]\" \"Assets/Scenes/Unitro.unity\")",
+      "Bash(grep -c \"m_LocalPosition: {x: [0-9-]*,[0-9]\" \"Assets/Scenes/Unitro.unity\")",
+      "Bash(grep -n \"&710000001$\" \"Assets/Scenes/Unitro.unity\")",
+      "Bash(grep -n \"&709000001$\" \"Assets/Scenes/Unitro.unity\")",
+      "Bash(grep -cE \"^--- !u!1 &7[01][0-9]{7}$\" \"Assets/Scenes/Unitro.unity\")",
+      "Bash(grep -cE \"^--- !u!4 &7[01][0-9]{7}$\" \"Assets/Scenes/Unitro.unity\")",
+      "Bash(grep -cE \"^--- !u!212 &7[01][0-9]{7}$\" \"Assets/Scenes/Unitro.unity\")",
+      "Bash(grep -c \"^--- !u!1 &709000001$\" \"Assets/Scenes/Unitro.unity\")",
+      "PowerShell(& \"C:\\\\Windows\\\\Temp\\\\claude\\\\K--unity-DemoProject-UniTrio-Game-2026\\\\5b42f5b4-6acc-49bf-b7e9-4f30054177ce\\\\scratchpad\\\\gen_tiles_v2.ps1\")",
+      "Bash(grep -iE \"\\\\.\\(cs|unity|prefab\\)$\")",
+      "Bash(ls -la \"Assets/Resources/Tile/Wall\")",
+      "Bash(grep -c \"WallField\" \"Assets/Scenes/Unitro2.unity\")",
+      "Bash(cat \"Assets/Resources/Tile/grass/Tilemap_Wild_0.asset\")",
+      "Bash(cat \"Assets/Resources/Tile/grass/Tilemap_Wild_0.asset.meta\")",
+      "PowerShell(Out-Null *)",
+      "PowerShell($k = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey\\('Software\\\\Unity Technologies\\\\Unity Editor 5.x'\\); $k.GetValueNames\\(\\) | Where-Object { $_ -match 'Refresh|kAuto' } | ForEach-Object { $v = $k.GetValue\\($_\\); if \\($v -is [byte[]]\\) { $v = [System.Text.Encoding]::ASCII.GetString\\($v\\).Trim\\([char]0\\) }; \"$_ = $v\" })",
+      "PowerShell($k = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey\\('Software\\\\Unity Technologies\\\\Unity Editor 5.x'\\); $k.GetValueNames\\(\\) | Where-Object { $_ -match 'DirectoryMonitoring|Monitor|Watch' } | ForEach-Object { $v = $k.GetValue\\($_\\); if \\($v -is [byte[]]\\) { $v = [System.Text.Encoding]::ASCII.GetString\\($v\\).Trim\\([char]0\\) }; \"$_ = $v\" })",
+      "PowerShell(Get-Process *)",
+      "Bash(xargs -n1 basename)",
+      "Bash(grep -nE \"name: wall_1$|internalID|first: \\\\{|spriteID\" \"Assets/Resources/Dummy/wall.png.meta\")",
+      "Bash(grep -A3 -B3 \"wall_1$\")",
+      "PowerShell(claude mcp *)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:coplaydev.github.io)",
+      "Bash(grep -E \"spriteMode|textureType|name: wall_0$|name: wall_35$\" \"K:/unity/DemoProject/UniTrio-Game-2026/Assets/Resources/Dummy/wall.png.meta\")"
     ]
   }
 }
